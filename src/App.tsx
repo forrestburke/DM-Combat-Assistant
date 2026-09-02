@@ -7,6 +7,8 @@ import { EncounterAxesPanel } from './components/EncounterAxesPanel';
 import { TraitTriggerPanel } from './components/TraitTriggerPanel';
 import { MonsterCard } from './components/MonsterCard';
 import { ImportModal } from './components/ImportModal';
+import { SceneNotesPanel } from './components/SceneNotesPanel';
+import { AddMonsterForm } from './components/AddMonsterForm';
 
 function App() {
   const encounter = useEncounterStore((s) => s.encounter);
@@ -40,12 +42,14 @@ function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-1 space-y-4">
+            <SceneNotesPanel />
             <PartyPanel />
             <EncounterAxesPanel />
             <TraitTriggerPanel />
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-4">
+            <AddMonsterForm />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {encounter.round.monsters.map((m) => (
                 <MonsterCard key={m.id} monster={m} />

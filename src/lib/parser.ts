@@ -1,11 +1,15 @@
 import type {
+  AbilityScores,
   AttackProfile,
   Encounter,
   EncounterAxes,
   MonsterCombatState,
+  MonsterStyle,
   PartyMember,
   RoundState,
+  SceneContext,
   TacticalPosture,
+  TraitDetail,
   TraitTrigger,
 } from '../types/encounter';
 
@@ -133,6 +137,18 @@ function parsePartyMember(block: Block): PartyMember {
     hpMax,
     tacticalPriority: requireField(fields, 'tacticalpriority', context),
     conditions: parseList(fields.get('conditions')),
+    referenceLink: fields.get('referencelink') || fields.get('dndbeyond') || undefined,
+  };
+}
+
+function parseScene(block: Block | undefined): SceneContext {
+  if (!block) return { environment: '', terrain: '', combatSituation: '', timeOfDay: '' };
+  const fields = parseBullets(block.lines);
+  return {
+    environment: fields.get('environment') ?? '',
+    terrain: fields.get('terrain') ?? '',
+    combatSituation: fields.get('combatsituation') ?? '',
+    timeOfDay: fields.get('timeofday') ?? '',
   };
 }
 
@@ -225,6 +241,17 @@ function parseAttacks(lines: string[], context: string): AttackProfile[] {
     });
 }
 
+function parseTraitDetails(lines: string[]): TraitDetail[] {
+  return lines
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('-'))
+    .map((line) => {
+      const m = line.slice(1).trim().match(/^([^:]+):\s*(.*)$/);
+      if (!m) throw new MarkdownParseError(`Trait line "${line}" must have format: Name: full description text`);
+      return { name: m[1].trim(), description: m[2].trim() };
+    });
+}
+
 function parsePosture(block: Block, context: string): TacticalPosture {
   const fields = parseBullets(block.lines);
   return {
@@ -234,6 +261,21 @@ function parsePosture(block: Block, context: string): TacticalPosture {
     bonusAction: fields.get('bonusaction'),
     tags: parseList(fields.get('tags')),
   };
+}
+
+const defaultAbilityScores: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+const validStyles: MonsterStyle[] = ['brute', 'skirmisher', 'pack', 'mindless', 'ambusher', 'leader'];
+
+function parseAbilityScores(raw: string | undefined, context: string): AbilityScores {
+  if (!raw) return { ...defaultAbilityScores };
+  const scores = { ...defaultAbilityScores };
+  for (const part of raw.split(',')) {
+    const m = part.trim().match(/^(STR|DEX|CON|INT|WIS|CHA)\s+(\d+)/i);
+    if (!m) throw new MarkdownParseError(`Invalid ability score entry "${part.trim()}" in ${context}. Expected "STR 16, DEX 10, ...".`);
+    const key = m[1].toLowerCase() as keyof AbilityScores;
+    scores[key] = Number(m[2]);
+  }
+  return scores;
 }
 
 function parseMonster(block: Block): MonsterCombatState {
@@ -249,6 +291,7 @@ function parseMonster(block: Block): MonsterCombatState {
   const { current: hpCurrent, max: hpMax } = parseHp(requireField(fields, 'hp', context), context);
 
   const subBlocks = splitByHeading(block.lines, 4);
+  const traitsBlock = subBlocks.find((b) => /^traits$/i.test(b.heading));
   const attacksBlock = subBlocks.find((b) => /^attacks$/i.test(b.heading));
   const postureABlock = subBlocks.find((b) => /^posture a:/i.test(b.heading));
   const postureBBlock = subBlocks.find((b) => /^posture b:/i.test(b.heading));
@@ -267,7 +310,14 @@ function parseMonster(block: Block): MonsterCombatState {
     hpCurrent,
     hpMax,
     speed: parseInt10(requireField(fields, 'speed', context), 'Speed', context),
+    abilityScores: parseAbilityScores(fields.get('abilityscores'), context),
+    savingThrows: fields.get('savingthrows') || undefined,
+    style: (() => {
+      const raw = fields.get('style')?.toLowerCase();
+      return raw && validStyles.includes(raw as MonsterStyle) ? (raw as MonsterStyle) : undefined;
+    })(),
     passives: parseList(fields.get('passives')),
+    traitDetails: traitsBlock ? parseTraitDetails(traitsBlock.lines) : undefined,
     attacks: parseAttacks(attacksBlock.lines, context),
     reactionCue: requireField(fields, 'reactioncue', context),
     postureA: parsePosture(postureABlock, `${context} Posture A`),
@@ -276,6 +326,19 @@ function parseMonster(block: Block): MonsterCombatState {
     activePosture: 'A',
     isDefeated: false,
   };
+}
+
+/**
+ * Parses a single "### Name (Base Type)" monster block (the same format
+ * used under "## Monsters") without needing a full encounter document.
+ * Used by the "paste a stat block" flow.
+ */
+export function parseSingleMonsterMarkdown(monsterMarkdown: string): MonsterCombatState {
+  const blocks = splitByHeading(toLines(monsterMarkdown), 3);
+  if (blocks.length === 0) {
+    throw new MarkdownParseError('No "### Name (Base Type)" heading found. Start the block with e.g. "### Zombie Plague Spreader (Medium Undead)".');
+  }
+  return parseMonster(blocks[0]);
 }
 
 /**
@@ -310,6 +373,7 @@ export function parseEncounterMarkdown(markdown: string): Encounter {
   }
 
   const topSections = splitByHeading(lines, 2);
+  const sceneSection = topSections.find((b) => /^scene$/i.test(b.heading));
   const partySection = topSections.find((b) => /^party$/i.test(b.heading));
   const axesSection = topSections.find((b) => /^encounter axes$/i.test(b.heading));
   const traitsSection = topSections.find((b) => /^trait triggers$/i.test(b.heading));
@@ -342,6 +406,7 @@ export function parseEncounterMarkdown(markdown: string): Encounter {
   return {
     id: slugify(name),
     name,
+    scene: parseScene(sceneSection),
     party,
     axes,
     traitTriggers,

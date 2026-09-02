@@ -1,0 +1,1633 @@
+<title>Tactics Table</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+
+<style>
+  :root{
+    --ink:#100e0a;
+    --panel:#17130d;
+    --panel-raised:#1e1810;
+    --line:#342b1c;
+    --line-soft:#241e14;
+    --parchment:#ded1b3;
+    --parchment-dim:#93876c;
+    --parchment-faint:#5f5744;
+    --blood:#b23c37;
+    --blood-soft:rgba(178,60,55,.15);
+    --blood-text:#e0837e;
+    --amber:#c9974b;
+    --amber-soft:rgba(201,151,75,.15);
+    --amber-text:#e0c088;
+    --arcane:#4fa89a;
+    --arcane-soft:rgba(79,168,154,.15);
+    --arcane-text:#7fc3b8;
+    --moss:#7f9c53;
+    --moss-soft:rgba(127,156,83,.18);
+    --grain: rgba(255,255,255,.012);
+    --veil: rgba(6,5,3,.78);
+  }
+  :root[data-theme="light"]{
+    --ink:#f1ead9;
+    --panel:#fdfaf3;
+    --panel-raised:#f4ecd9;
+    --line:#d9cba3;
+    --line-soft:#e7dcbe;
+    --parchment:#2c2415;
+    --parchment-dim:#5c5236;
+    --parchment-faint:#8a7d5c;
+    --blood:#9c2f2b;
+    --blood-soft:rgba(156,47,43,.12);
+    --blood-text:#7a2621;
+    --amber:#8a6624;
+    --amber-soft:rgba(138,102,36,.12);
+    --amber-text:#6e5119;
+    --arcane:#2c7c6f;
+    --arcane-soft:rgba(44,124,111,.12);
+    --arcane-text:#215f55;
+    --moss:#5d7a3a;
+    --moss-soft:rgba(93,122,58,.14);
+    --grain: rgba(0,0,0,.02);
+    --veil: rgba(30,24,10,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:
+      repeating-linear-gradient(135deg, var(--grain) 0px, var(--grain) 1px, transparent 1px, transparent 3px),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+  }
+  h1,h2,h3,.display{ font-family:'Cinzel', Georgia, serif; text-wrap:balance; }
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace;}
+  .eyebrow{ font-size:10.5px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; }
+  ::selection{ background:var(--blood-soft); color:var(--parchment); }
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--panel);}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px;}
+  button{font-family:inherit;cursor:pointer;}
+  button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--arcane); outline-offset:1px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
+
+  .shell{max-width:1360px; margin:0 auto; padding:1px 20px 40px;}
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(var(--ink), var(--ink) 80%, transparent);
+    border-bottom:1px solid var(--line-soft);
+    padding:16px 20px 14px;
+  }
+  .topbar-inner{max-width:1360px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand h1{font-size:19px; font-weight:600; letter-spacing:.02em; margin:0; color:var(--parchment);}
+  .brand p{margin:2px 0 0; font-size:12px; color:var(--parchment-dim);}
+  .topbar-actions{display:flex; align-items:center; gap:8px;}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
+    padding:7px 12px; font-size:11.5px; font-weight:500; letter-spacing:.02em;
+    border-radius:2px; transition:border-color .15s, color .15s, background .15s;
+  }
+  .btn:hover{color:var(--parchment); border-color:var(--parchment-faint);}
+  .btn-arcane{border-color:rgba(79,168,154,.4); color:var(--arcane); background:var(--arcane-soft);}
+  .btn-arcane:hover{border-color:var(--arcane); background:rgba(79,168,154,.24);}
+  .btn-blood{border-color:rgba(178,60,55,.45); color:var(--blood-text); background:var(--blood-soft);}
+  .btn-blood:hover{border-color:var(--blood); background:rgba(178,60,55,.24);}
+  .btn[disabled]{opacity:.35; cursor:not-allowed;}
+  .icon-toggle{
+    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); border-radius:2px;
+  }
+  .icon-toggle:hover{ color:var(--parchment); border-color:var(--parchment-faint); }
+
+  /* axes strip — top of page */
+  .axes-strip{ margin:18px 0; }
+  .axes-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .axes-head h2{font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
+  .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
+  .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
+  .axis-eyebrow{display:flex; align-items:center; gap:5px; margin-bottom:4px;}
+  .axis-title{font-size:13px; font-weight:600; color:var(--parchment); margin:0;}
+  .axis-desc{font-size:11.5px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
+  .axis-note{font-size:11px; margin-top:6px; line-height:1.5; font-style:italic; padding-left:8px; border-left:2px solid var(--c, var(--line));}
+  .axis-badge{font-size:10px; padding:2px 8px; border:1px solid var(--c, var(--line)); color:var(--c, var(--parchment-dim)); flex-shrink:0;}
+
+  /* round tracker */
+  .roundbar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); padding:12px 16px; margin:0 0 18px;
+  }
+  .roundbar-stats{display:flex; align-items:center; gap:22px;}
+  .stat-label{font-size:10px; color:var(--parchment-faint); letter-spacing:.1em; text-transform:uppercase; margin:0 0 2px;}
+  .stat-value{font-size:24px; font-weight:600; line-height:1; margin:0; font-variant-numeric:tabular-nums;}
+  .stat-divider{width:1px; height:28px; background:var(--line);}
+  .active-name{font-size:15px; font-weight:600; color:var(--blood); margin:0; font-family:'Cinzel',serif;}
+  .roundbar-actions{display:flex; gap:8px;}
+
+  /* generic plate / card */
+  .plate{ position:relative; background:var(--panel); border:1px solid var(--line); }
+  .plate-head{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--line-soft); }
+  .plate-head h2{font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment);}
+  .corner{position:absolute; width:9px; height:9px; pointer-events:none;}
+  .corner-tl{top:-1px; left:-1px; border-top:1.5px solid var(--c, var(--line)); border-left:1.5px solid var(--c, var(--line));}
+  .corner-tr{top:-1px; right:-1px; border-top:1.5px solid var(--c, var(--line)); border-right:1.5px solid var(--c, var(--line));}
+  .corner-bl{bottom:-1px; left:-1px; border-bottom:1.5px solid var(--c, var(--line)); border-left:1.5px solid var(--c, var(--line));}
+  .corner-br{bottom:-1px; right:-1px; border-bottom:1.5px solid var(--c, var(--line)); border-right:1.5px solid var(--c, var(--line));}
+
+  .stack > * + *{margin-top:16px;}
+
+  /* party */
+  .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft);}
+  .party-row:last-child{border-bottom:none;}
+  .party-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .party-name{font-weight:600; color:var(--parchment); font-size:13px;}
+  .party-role{font-size:10.5px; color:var(--parchment-faint); margin-left:6px;}
+  .party-ac{display:flex; align-items:center; gap:4px; font-size:11px; color:var(--parchment-dim); flex-shrink:0;}
+  .party-priority{font-size:11px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
+  .link-icon{color:var(--parchment-faint); flex-shrink:0; display:inline-flex;}
+  .link-icon:hover{color:var(--arcane);}
+  .icon-btn{color:var(--parchment-faint); background:none; border:none; padding:2px; display:inline-flex;}
+  .icon-btn:hover{color:var(--blood);}
+
+  .disclosure{ border-top:1px solid var(--line-soft); }
+  .disclosure-toggle{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:9px; font-size:11px; color:var(--parchment-dim); background:none; border:none;
+  }
+  .disclosure-toggle:hover{ color:var(--parchment); }
+  .disclosure-body{ padding:0 14px 12px; display:flex; flex-direction:column; gap:6px; }
+
+  .field{padding:9px 14px;}
+  .field label{display:block; font-size:9.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:4px;}
+  .text-input{
+    width:100%; background:var(--ink); border:1px solid var(--line); color:var(--parchment);
+    font-size:11.5px; padding:6px 8px; font-family:inherit;
+  }
+  .text-input::placeholder{color:var(--parchment-faint);}
+  .add-btn{
+    display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--arcane); background:var(--arcane-soft);
+    color:var(--arcane); font-size:11px; font-weight:600; padding:7px; transition:background .15s;
+  }
+  .add-btn:hover{background:rgba(79,168,154,.24);}
+  .add-btn[disabled]{opacity:.35; cursor:not-allowed;}
+
+  /* hp bar */
+  .hp-row{display:flex; align-items:center; gap:8px; margin-top:7px;}
+  .hp-track{flex:1; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
+  .hp-fill{height:100%; transition:width .25s ease;}
+  .hp-track::after{
+    content:''; position:absolute; inset:0;
+    background:repeating-linear-gradient(90deg, rgba(0,0,0,.3) 0 1px, transparent 1px 8%);
+    pointer-events:none;
+  }
+  .hp-text{font-size:10.5px; color:var(--parchment-dim); width:52px; text-align:right; flex-shrink:0;}
+  .stepper{
+    display:flex; align-items:center; justify-content:center; width:20px; height:20px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); flex-shrink:0;
+    transition:border-color .15s, color .15s;
+  }
+  .stepper:hover.dmg{border-color:var(--blood); color:var(--blood-text);}
+  .stepper:hover.heal{border-color:var(--moss); color:#a9c684;}
+
+  /* scene */
+  .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
+  .monster-add .grow{flex:1; min-width:220px;}
+  .monster-add .hint{font-size:10px; color:var(--parchment-faint); margin-top:4px;}
+  .monster-add .qty{width:52px; text-align:center;}
+  .monster-add .add-btn{border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); padding:7px 14px;}
+  .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
+  .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
+
+  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; margin-top:16px;}
+  .mcard{padding:0; transition:opacity .2s;}
+  .mcard.defeated{opacity:.4;}
+  .mcard-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 14px; cursor:pointer;}
+  .mcard-head:hover{ background:var(--panel-raised); }
+  .mcard-name{font-size:15px; font-weight:600; color:var(--parchment); margin:0;}
+  .mcard-type{font-size:10.5px; color:var(--parchment-faint); margin-top:1px;}
+  .mcard-body{padding:0 14px 13px;}
+  .ac-badge{display:flex; align-items:center; gap:4px; font-size:11px; color:var(--parchment-dim); flex-shrink:0;}
+  .mcard-collapsed-meta{ display:flex; align-items:center; gap:10px; padding:0 14px 12px; }
+  .posture-chip{ font-size:9.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; }
+  .chevron{ color:var(--parchment-faint); transition:transform .15s; flex-shrink:0; }
+  .chevron.open{ transform:rotate(90deg); }
+
+  .abl-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; margin:10px 0; background:var(--line-soft);}
+  .abl-cell{ background:var(--panel); text-align:center; padding:5px 2px; }
+  .abl-cell .k{font-size:8.5px; font-weight:700; color:var(--parchment-faint);}
+  .abl-cell .v{font-size:10.5px; color:var(--parchment); }
+  .abl-cell .v span{color:var(--parchment-faint);}
+
+  .posture-row{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:4px;}
+  .posture-btn{ border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); font-size:10px; font-weight:600; letter-spacing:.03em; padding:6px 4px; text-align:center; }
+  .posture-btn.active{border-color:var(--c); background:var(--c-soft); color:var(--c);}
+  .posture-detail{border:1px solid var(--c); background:var(--c-soft); padding:10px 12px; margin-top:5px;}
+  .posture-detail p{font-size:11px; line-height:1.55; color:var(--parchment); margin:5px 0 0;}
+  .posture-detail p:first-child{margin-top:0;}
+  .posture-detail b{color:var(--parchment-dim); font-weight:600;}
+  .tag-row{display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;}
+  .tag{font-size:9px; border:1px solid var(--line); color:var(--parchment-dim); padding:1.5px 7px; border-radius:20px;}
+
+  .section-label{display:flex; align-items:center; gap:5px; margin:13px 0 6px;}
+  .section-label span{font-size:9.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint);}
+  .attack-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:11.5px; padding:2px 0;}
+  .attack-name{color:var(--parchment); font-weight:500; flex-shrink:0;}
+  .attack-stats{color:var(--parchment-dim); font-size:10.5px; text-align:right;}
+
+  .callout{display:flex; align-items:flex-start; gap:6px; margin-top:11px;}
+  .callout p{font-size:10.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
+  .callout.reaction svg{color:var(--amber); margin-top:1px; flex-shrink:0;}
+  .callout.passive svg{color:var(--parchment-faint); margin-top:1px; flex-shrink:0;}
+
+  .trait-block{ border:1px solid var(--line); background:var(--ink); padding:10px 12px; margin-top:11px; }
+  .trait-block .lbl{font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); display:block; margin-bottom:6px;}
+  .trait-block p{font-size:11px; line-height:1.5; color:var(--parchment-dim); margin:6px 0 0;}
+  .trait-block p:first-of-type{margin-top:0;}
+  .trait-block b{color:var(--parchment); font-weight:600;}
+  .trigger-dc{font-size:10px; color:var(--amber-text); margin-top:3px; display:block;}
+
+  /* modal */
+  .modal-veil{position:fixed; inset:0; background:var(--veil); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal{width:100%; max-width:640px; background:var(--panel); border:1px solid var(--line); box-shadow:0 24px 60px -20px rgba(0,0,0,.5); max-height:90vh; overflow-y:auto;}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; background:var(--panel);}
+  .modal-head h2{font-size:13px; font-weight:600; letter-spacing:.05em; margin:0; display:flex; align-items:center; gap:7px; color:var(--parchment);}
+  .modal-close{color:var(--parchment-faint);}
+  .modal-close:hover{color:var(--parchment);}
+  .modal-body{padding:14px 16px;}
+  textarea{
+    width:100%; height:200px; resize:vertical; background:var(--ink); border:1px solid var(--line);
+    color:var(--parchment); font-size:11px; padding:10px; font-family:'IBM Plex Mono', monospace; line-height:1.5;
+  }
+  textarea::placeholder{color:var(--parchment-faint);}
+  .error-box{display:flex; align-items:flex-start; gap:7px; border:1px solid rgba(178,60,55,.45); background:var(--blood-soft); padding:9px 11px; margin-top:11px;}
+  .error-box svg{color:var(--blood); margin-top:1px; flex-shrink:0;}
+  .error-box p{font-size:11px; line-height:1.5; color:var(--blood-text); margin:0;}
+  .modal-foot{display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--line-soft); position:sticky; bottom:0; background:var(--panel);}
+
+  .upload-drop{
+    border:1.5px dashed var(--line); background:var(--ink); padding:20px; text-align:center; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--parchment-dim); font-size:11.5px;
+  }
+  .upload-drop:hover{ border-color:var(--arcane); color:var(--parchment); }
+  .upload-drop.busy{ opacity:.6; cursor:wait; }
+  .tab-row{display:flex; gap:4px; margin-bottom:10px;}
+  .tab-btn{ flex:1; padding:7px; font-size:11px; font-weight:600; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+  .tab-btn.active{ border-color:var(--arcane); background:var(--arcane-soft); color:var(--arcane); }
+
+  .main-grid{display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start;}
+  @media (max-width:900px){ .main-grid{grid-template-columns:1fr;} }
+</style>
+
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const {useState, useEffect, useMemo, useRef} = React;
+
+/* ---------- theme ---------- */
+const THEME_KEY = 'tactics-table-theme';
+function useTheme(){
+  const [theme, setTheme] = useState(()=>{ try{ return localStorage.getItem(THEME_KEY) || 'dark'; }catch(e){ return 'dark'; } });
+  useEffect(()=>{
+    document.documentElement.setAttribute('data-theme', theme);
+    try{ localStorage.setItem(THEME_KEY, theme); }catch(e){}
+  }, [theme]);
+  return [theme, ()=>setTheme(t=>t==='dark'?'light':'dark')];
+}
+
+/* ---------- icons ---------- */
+function Icon({name, size=15, style}) {
+  const c = {width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor",
+    strokeWidth:1.75, strokeLinecap:"round", strokeLinejoin:"round", style};
+  switch(name){
+    case 'blade': return <svg {...c}><path d="M12 2 L14 9 L12 22 L10 9 Z"/><path d="M7 9 H17"/></svg>;
+    case 'party': return <svg {...c}><path d="M5 21V3"/><path d="M5 4 H17 L13 8 L17 12 H5"/></svg>;
+    case 'compass': return <svg {...c}><circle cx="12" cy="12" r="9"/><path d="M9.5 15 L12 9 L14.5 15 L12 13 Z"/></svg>;
+    case 'zap': return <svg {...c} fill="currentColor" stroke="none"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"/></svg>;
+    case 'shield': return <svg {...c}><path d="M12 2 L20 5 V11 C20 16 16 20 12 22 C8 20 4 16 4 11 V5 Z"/></svg>;
+    case 'minus': return <svg {...c}><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+    case 'plus': return <svg {...c}><line x1="5" y1="12" x2="19" y2="12"/><line x1="12" y1="5" x2="12" y2="19"/></svg>;
+    case 'skull': return <svg {...c}><circle cx="12" cy="10" r="7"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M9 16 V19 H11 V21 H13 V19 H15 V16"/></svg>;
+    case 'crosshair': return <svg {...c}><circle cx="12" cy="12" r="7"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>;
+    case 'upload': return <svg {...c}><path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M4 17 V20 H20 V17"/></svg>;
+    case 'x': return <svg {...c}><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>;
+    case 'alert': return <svg {...c}><path d="M12 3 L22 20 H2 Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none"/></svg>;
+    case 'skip': return <svg {...c}><path d="M6 5 L15 12 L6 19 Z" fill="currentColor" stroke="none"/><line x1="18" y1="5" x2="18" y2="19"/></svg>;
+    case 'chevron': return <svg {...c}><path d="M9 5 L16 12 L9 19"/></svg>;
+    case 'reset': return <svg {...c}><path d="M4 4 V10 H10"/><path d="M20 13 A8 8 0 1 1 7 6.5"/></svg>;
+    case 'clock': return <svg {...c}><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L16 14"/></svg>;
+    case 'mountain': return <svg {...c}><path d="M3 20 L9 8 L13 14 L16 10 L21 20 Z"/></svg>;
+    case 'link': return <svg {...c}><path d="M9 15 L15 9"/><path d="M11 6 L13.5 3.5 A4 4 0 0 1 19 9 L16.5 11.5"/><path d="M13 18 L10.5 20.5 A4 4 0 0 1 5 15 L7.5 12.5"/></svg>;
+    case 'trash': return <svg {...c}><path d="M4 7 H20"/><path d="M8 7 V4 H16 V7"/><path d="M6 7 L7 21 H17 L18 7"/></svg>;
+    case 'userplus': return <svg {...c}><circle cx="9" cy="8" r="4"/><path d="M2 21 C2 16 5 14 9 14 C13 14 16 16 16 21"/><line x1="18" y1="8" x2="18" y2="14"/><line x1="15" y1="11" x2="21" y2="11"/></svg>;
+    case 'scroll': return <svg {...c}><path d="M6 4 H16 A2 2 0 0 1 18 6 V18 A2 2 0 0 0 20 20 H8 A2 2 0 0 1 6 18 Z"/><path d="M6 4 A2 2 0 0 0 4 6 A2 2 0 0 0 6 8"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>;
+    case 'swords': return <svg {...c}><path d="M5 5 L13 13 L11 15 L9 15 L9 13 Z"/><path d="M5 5 L3 5 L3 7"/><path d="M19 5 L11 13 L13 15 L15 15 L15 13 Z"/><path d="M19 5 L21 5 L21 7"/><path d="M4 20 L8 16"/><path d="M20 20 L16 16"/></svg>;
+    case 'map': return <svg {...c}><path d="M9 4 L4 6 V20 L9 18 L15 20 L20 18 V4 L15 6 L9 4 Z"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/></svg>;
+    case 'sparkles': return <svg {...c}><path d="M12 3 L13.5 8.5 L19 10 L13.5 11.5 L12 17 L10.5 11.5 L5 10 L10.5 8.5 Z"/><path d="M19 16 L19.7 18.3 L22 19 L19.7 19.7 L19 22 L18.3 19.7 L16 19 L18.3 18.3 Z"/></svg>;
+    case 'clip': return <svg {...c}><path d="M9 3 H15 V6 H9 Z"/><path d="M6 4 H8 V20 H16 V4 H18 V21 A1 1 0 0 1 17 22 H7 A1 1 0 0 1 6 21 Z"/></svg>;
+    case 'copy': return <svg {...c}><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8 V5 A1 1 0 0 0 15 4 H5 A1 1 0 0 0 4 5 V15 A1 1 0 0 0 5 16 H8"/></svg>;
+    case 'chevron-down': return <svg {...c}><path d="M5 9 L12 16 L19 9"/></svg>;
+    case 'sun': return <svg {...c}><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.5" y1="4.5" x2="6.2" y2="6.2"/><line x1="17.8" y1="17.8" x2="19.5" y2="19.5"/><line x1="4.5" y1="19.5" x2="6.2" y2="17.8"/><line x1="17.8" y1="6.2" x2="19.5" y2="4.5"/></svg>;
+    case 'moon': return <svg {...c}><path d="M20 14.5 A8.5 8.5 0 1 1 9.5 4 A7 7 0 0 0 20 14.5 Z"/></svg>;
+    case 'photo': return <svg {...c}><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M3 17 L9 12 L13 15 L16 12.5 L21 16.5"/></svg>;
+    default: return null;
+  }
+}
+
+/* ---------- sample data ---------- */
+const sampleEncounter = {
+  id: 'sample-01', name: 'Ambush at Blackroot Hollow',
+  scene: {
+    environment: 'Old-growth forest, dusk light barely reaching the ground',
+    terrain: 'Broken canopy, root snarls, a shallow creek bisecting the clearing',
+    combatSituation: 'Ambush — goblins spring from cover as the party enters the hollow',
+    timeOfDay: 'Dusk',
+  },
+  party: [
+    {id:'pc-1', name:'Sable', role:'Rogue', ac:15, hpCurrent:27, hpMax:27, tacticalPriority:'Soft target — low AC, no armor proficiency', conditions:[]},
+    {id:'pc-2', name:'Ithren', role:'Druid', ac:14, hpCurrent:24, hpMax:24, tacticalPriority:'Disrupt Concentration — Conjure Animals caster', conditions:[]},
+    {id:'pc-3', name:'Bram', role:'Paladin', ac:18, hpCurrent:38, hpMax:38, tacticalPriority:'Hard target — ignore unless isolated', conditions:[]},
+    {id:'pc-4', name:'Voss', role:'Cleric', ac:16, hpCurrent:30, hpMax:30, tacticalPriority:'Priority — removes conditions & heals', conditions:[]},
+  ],
+  axes: {
+    winCondition:{ title:'Break the Warband, Not the Room',
+      description:'Goblins fight to protect the Hollow long enough for the shaman to finish the ritual. They are not suicidal raiders — they scout, harass, and flee.',
+      moraleThresholds:'At 50% of the band defeated, remaining goblins attempt to disengage on their next turn. At 75%, any goblin below half HP flees immediately.'},
+    battlefieldOptimizer:{ title:'Broken Canopy & Root Snarls',
+      description:'Dense undergrowth and low branches favor Small, agile creatures. Difficult terrain bands snake through the clearing.',
+      mechanicalBenefit:'Goblins ignore difficult terrain from root snarls. PCs moving through snarls spend 2ft per 1ft.'},
+    hazardOrClock:{ title:'Ritual Completion Clock', initiativeCount:20,
+      triggerEffect:"At initiative count 20 (losing ties), the shaman advances the ritual by 1 stage. At Stage 3, a Blackroot Treant animates and joins the goblins." },
+  },
+  traitTriggers: [
+    {id:'tt-1', name:'Nimble Escape', creatureName:'Goblin Skulker', triggerCondition:'End of goblin turn, if it took the Attack or Disengage action', mechanicalEffect:'May take the Disengage or Hide action as a bonus action.', formulaOrDC:'No roll — automatic bonus action'},
+    {id:'tt-2', name:'Ritual Surge', creatureName:'Blackroot Shaman', triggerCondition:'Shaman takes damage while concentrating on the ritual', mechanicalEffect:'Must succeed on a Constitution save or lose concentration; ritual clock resets to Stage 0.', formulaOrDC:'DC 10 + damage taken'},
+  ],
+  round: {
+    roundNumber:1, initiativeCount:20, activeTurnIndex:0,
+    monsters: [
+      { id:'mon-1', name:'Skarn', baseType:'Goblin Skulker', ac:15, hpCurrent:7, hpMax:7, speed:30,
+        abilityScores:{str:8,dex:14,con:10,int:10,wis:8,cha:8}, style:'skirmisher',
+        passives:['Nimble Escape','Pack Tactics (as ally variant)'],
+        attacks:[
+          {name:'Scimitar', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [slashing]'},
+          {name:'Shortbow', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'80/320 ft', damage:'1d6+2 [piercing]'},
+        ],
+        reactionCue:'No reaction — spends bonus action on Nimble Escape instead.',
+        postureA:{trigger:'Target is isolated or below half HP', movement:'Move to flank the softest visible target, using cover from root snarls.', action:'Attack with Scimitar if adjacent, otherwise Shortbow.', bonusAction:'None — commit to the attack.', tags:['Focus: Soft target','Advantage: Flanking (if used)']},
+        postureB:{trigger:'Below 30% HP or two allies already defeated', movement:'Disengage and retreat 30ft toward the tree line.', action:'Shortbow attack only if a clean shot is available.', bonusAction:'Nimble Escape (Hide) after moving.', tags:['Disengage','Hide']},
+        postureC:{trigger:'Ritual clock at Stage 2+', movement:"Reposition to block the party's path to the shaman.", action:'Attack the nearest PC attempting to close on the shaman.', bonusAction:'Nimble Escape if forced to retreat after.', tags:['Zone control','Protect shaman']},
+        activePosture:'A', isDefeated:false },
+      { id:'mon-2', name:'Nix', baseType:'Goblin Skulker', ac:15, hpCurrent:7, hpMax:7, speed:30,
+        abilityScores:{str:8,dex:14,con:10,int:10,wis:8,cha:8}, style:'skirmisher',
+        passives:['Nimble Escape'],
+        attacks:[
+          {name:'Scimitar', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [slashing]'},
+          {name:'Shortbow', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'80/320 ft', damage:'1d6+2 [piercing]'},
+        ],
+        reactionCue:'No reaction — spends bonus action on Nimble Escape instead.',
+        postureA:{trigger:'Target is isolated or below half HP', movement:'Move to flank the softest visible target.', action:'Attack with Scimitar if adjacent, otherwise Shortbow.', bonusAction:'None — commit to the attack.', tags:['Focus: Soft target']},
+        postureB:{trigger:'Below 30% HP or two allies already defeated', movement:'Disengage and retreat 30ft toward the tree line.', action:'Shortbow attack only if a clean shot is available.', bonusAction:'Nimble Escape (Hide) after moving.', tags:['Disengage','Hide']},
+        postureC:{trigger:'Ritual clock at Stage 2+', movement:"Reposition to block the party's path to the shaman.", action:'Attack the nearest PC attempting to close on the shaman.', bonusAction:'Nimble Escape if forced to retreat after.', tags:['Zone control','Protect shaman']},
+        activePosture:'A', isDefeated:false },
+      { id:'mon-3', name:'Grutha the Blackroot Shaman', baseType:'Goblin Boss (Ritual Caster)', ac:17, hpCurrent:21, hpMax:21, speed:30,
+        abilityScores:{str:10,dex:14,con:12,int:12,wis:11,cha:14}, style:'leader',
+        passives:['Ritual Surge','Pack Tactics'],
+        attacks:[
+          {name:'Blighted Bolt', type:'Save', formula:'DC 13 Dexterity save', reachOrRange:'60 ft', damage:'2d8 [necrotic] (half on save)'},
+          {name:'Scimitar', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [slashing]'},
+        ],
+        reactionCue:'Reaction reserved for Ritual Surge concentration save context only.',
+        postureA:{trigger:'Ritual not yet interrupted, shaman unengaged', movement:'Hold position near the ritual circle, staying behind the two skulkers.', action:'Cast Blighted Bolt at the most threatening PC closing distance.', bonusAction:'Advance the ritual clock (free action at count 20).', tags:['Concentration','Protected by skulkers']},
+        postureB:{trigger:'Engaged in melee or below 50% HP', movement:'Retreat behind the Blackroot Treant or into root snarls.', action:'Scimitar if cornered, otherwise Blighted Bolt at range.', bonusAction:'None.', tags:['Retreat','Protect concentration']},
+        postureC:{trigger:'A PC is within 10ft of the ritual circle', movement:'None — stand ground to keep concentration.', action:'Blighted Bolt on the closest intruder to the circle.', bonusAction:'Advance ritual clock if still count 20.', tags:['Hold the circle','Concentration priority']},
+        activePosture:'A', isDefeated:false },
+    ],
+  },
+};
+
+/* ---------- markdown parser ---------- */
+class MarkdownParseError extends Error {}
+function slugify(name){ return (name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')) || 'item'; }
+function toLines(md){ return md.replace(/\r\n/g,'\n').split('\n'); }
+function splitByHeading(lines, level){
+  const marker = '#'.repeat(level) + ' ';
+  const blocks = []; let current = null;
+  for(const line of lines){
+    const isThisLevel = line.startsWith(marker);
+    const hMatch = line.match(/^#+/);
+    const isShallower = /^#{1,6} /.test(line) && hMatch[0].length < level;
+    if(isThisLevel){ if(current) blocks.push(current); current = {heading:line.slice(marker.length).trim(), lines:[]}; }
+    else if(isShallower){ if(current) blocks.push(current); current = null; }
+    else if(current){ current.lines.push(line); }
+  }
+  if(current) blocks.push(current);
+  return blocks;
+}
+function parseBullets(lines){
+  const map = new Map();
+  for(const line of lines){
+    const m = line.match(/^-\s*([A-Za-z][A-Za-z0-9 /_-]*)\s*:\s*(.*)$/);
+    if(!m) continue;
+    map.set(m[1].trim().toLowerCase().replace(/[\s_-]+/g,''), m[2].trim());
+  }
+  return map;
+}
+function requireField(map, key, context){
+  const v = map.get(key);
+  if(v === undefined) throw new MarkdownParseError(`Missing required field "${key}" in ${context}.`);
+  return v;
+}
+function splitTrailingParen(heading){
+  const t = heading.trim();
+  if(!t.endsWith(')')) return null;
+  let depth = 0;
+  for(let i=t.length-1; i>=0; i--){
+    const ch = t[i];
+    if(ch === ')') depth++;
+    else if(ch === '('){ depth--; if(depth === 0) return {name:t.slice(0,i).trim(), inner:t.slice(i+1,-1).trim()}; }
+  }
+  return null;
+}
+function parseHp(raw, context){
+  const m = raw.match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+  if(!m) throw new MarkdownParseError(`Invalid HP format "${raw}" in ${context}. Expected "current/max".`);
+  return {current:Number(m[1]), max:Number(m[2])};
+}
+function parseInt10(raw, field, context){
+  const n = Number(raw);
+  if(!Number.isFinite(n)) throw new MarkdownParseError(`Invalid number "${raw}" for "${field}" in ${context}.`);
+  return n;
+}
+function parseList(raw){ return raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : []; }
+const defaultAbilityScores = {str:10,dex:10,con:10,int:10,wis:10,cha:10};
+const validStyles = ['brute','skirmisher','pack','mindless','ambusher','leader'];
+function parseAbilityScores(raw, context){
+  if(!raw) return {...defaultAbilityScores};
+  const scores = {...defaultAbilityScores};
+  for(const part of raw.split(',')){
+    const m = part.trim().match(/^(STR|DEX|CON|INT|WIS|CHA)\s+(\d+)/i);
+    if(!m) throw new MarkdownParseError(`Invalid ability score entry "${part.trim()}" in ${context}. Expected "STR 16, DEX 10, ...".`);
+    scores[m[1].toLowerCase()] = Number(m[2]);
+  }
+  return scores;
+}
+function parseTraitDetails(lines){
+  return lines.map(l=>l.trim()).filter(l=>l.startsWith('-')).map(line=>{
+    const m = line.slice(1).trim().match(/^([^:]+):\s*(.*)$/);
+    if(!m) throw new MarkdownParseError(`Trait line "${line}" must have format: Name: full description text`);
+    return {name:m[1].trim(), description:m[2].trim()};
+  });
+}
+
+function parsePartyMember(block){
+  const context = `party member "${block.heading}"`;
+  const f = parseBullets(block.lines);
+  const role = requireField(f,'role',context);
+  const roles = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
+  const hp = parseHp(requireField(f,'hp',context), context);
+  return {id:slugify(block.heading), name:block.heading, role:roles.includes(role)?role:'Custom',
+    species: f.get('species') || undefined,
+    ac:parseInt10(requireField(f,'ac',context),'AC',context), hpCurrent:hp.current, hpMax:hp.max,
+    tacticalPriority:requireField(f,'tacticalpriority',context), conditions:parseList(f.get('conditions')),
+    referenceLink: f.get('referencelink') || f.get('dndbeyond') || undefined};
+}
+function parseScene(block){
+  if(!block) return {environment:'', terrain:'', combatSituation:'', timeOfDay:''};
+  const f = parseBullets(block.lines);
+  return {environment:f.get('environment') ?? '', terrain:f.get('terrain') ?? '', combatSituation:f.get('combatsituation') ?? '', timeOfDay:f.get('timeofday') ?? ''};
+}
+function parseAxes(sections){
+  const winB = sections.find(b=>/^win condition:/i.test(b.heading));
+  const optB = sections.find(b=>/^battlefield optimizer:/i.test(b.heading));
+  const hazB = sections.find(b=>/^hazard\s*\/?\s*clock:/i.test(b.heading));
+  if(!winB) throw new MarkdownParseError('Missing "Win Condition:" section under Encounter Axes.');
+  if(!optB) throw new MarkdownParseError('Missing "Battlefield Optimizer:" section under Encounter Axes.');
+  if(!hazB) throw new MarkdownParseError('Missing "Hazard/Clock:" section under Encounter Axes.');
+  const wf = parseBullets(winB.lines), of = parseBullets(optB.lines), hf = parseBullets(hazB.lines);
+  const initRaw = requireField(hf,'initiativecount','Hazard/Clock section');
+  const initiativeCount = initRaw.trim().toLowerCase()==='round end' ? 'Round End' : parseInt10(initRaw,'Initiative Count','Hazard/Clock section');
+  return {
+    winCondition:{ title:winB.heading.replace(/^win condition:\s*/i,'').trim(), description:requireField(wf,'description','Win Condition section'), moraleThresholds:requireField(wf,'moralethresholds','Win Condition section')},
+    battlefieldOptimizer:{ title:optB.heading.replace(/^battlefield optimizer:\s*/i,'').trim(), description:requireField(of,'description','Battlefield Optimizer section'), mechanicalBenefit:requireField(of,'mechanicalbenefit','Battlefield Optimizer section')},
+    hazardOrClock:{ title:hazB.heading.replace(/^hazard\s*\/?\s*clock:\s*/i,'').trim(), initiativeCount, triggerEffect:requireField(hf,'triggereffect','Hazard/Clock section')},
+  };
+}
+function parseTraitTrigger(block){
+  const context = `trait trigger "${block.heading}"`;
+  const split = splitTrailingParen(block.heading);
+  if(!split) throw new MarkdownParseError(`Trait trigger heading "${block.heading}" must be in the form "Name (Creature)".`);
+  const f = parseBullets(block.lines);
+  return {id:slugify(block.heading), name:split.name, creatureName:split.inner,
+    triggerCondition:requireField(f,'triggercondition',context), mechanicalEffect:requireField(f,'mechanicaleffect',context), formulaOrDC:requireField(f,'formula/dc',context)};
+}
+function parseAttacks(lines, context){
+  const validTypes = ['Melee','Ranged','Save'];
+  return lines.map(l=>l.trim()).filter(l=>l.startsWith('-')).map(line=>{
+    const parts = line.slice(1).split('|').map(p=>p.trim());
+    if(parts.length < 5) throw new MarkdownParseError(`Attack line "${line}" in ${context} must have format: Name | Type | Formula | Range | Damage [| Notes]`);
+    const [name, type, formula, reachOrRange, damage, notes] = parts;
+    if(!validTypes.includes(type)) throw new MarkdownParseError(`Attack "${name}" in ${context} has invalid type "${type}". Expected Melee, Ranged, or Save.`);
+    return {name, type, formula, reachOrRange, damage, notes: notes || undefined};
+  });
+}
+function parsePosture(block, context){
+  const f = parseBullets(block.lines);
+  return {trigger:requireField(f,'trigger',context), movement:requireField(f,'movement',context), action:requireField(f,'action',context), bonusAction:f.get('bonusaction'), tags:parseList(f.get('tags'))};
+}
+function parseMonster(block){
+  const context = `monster "${block.heading}"`;
+  const split = splitTrailingParen(block.heading);
+  if(!split) throw new MarkdownParseError(`Monster heading "${block.heading}" must be in the form "Name (Base Type)".`);
+  const f = parseBullets(block.lines);
+  const hp = parseHp(requireField(f,'hp',context), context);
+  const sub = splitByHeading(block.lines, 4);
+  const traitsB = sub.find(b=>/^traits$/i.test(b.heading));
+  const attacksB = sub.find(b=>/^attacks$/i.test(b.heading));
+  const pA = sub.find(b=>/^posture a:/i.test(b.heading));
+  const pB = sub.find(b=>/^posture b:/i.test(b.heading));
+  const pC = sub.find(b=>/^posture c:/i.test(b.heading));
+  if(!attacksB) throw new MarkdownParseError(`Missing "#### Attacks" section in ${context}.`);
+  if(!pA) throw new MarkdownParseError(`Missing "#### Posture A:" section in ${context}.`);
+  if(!pB) throw new MarkdownParseError(`Missing "#### Posture B:" section in ${context}.`);
+  if(!pC) throw new MarkdownParseError(`Missing "#### Posture C:" section in ${context}.`);
+  const styleRaw = f.get('style')?.toLowerCase();
+  return {id:slugify(split.name), name:split.name, baseType:split.inner,
+    ac:parseInt10(requireField(f,'ac',context),'AC',context), hpCurrent:hp.current, hpMax:hp.max,
+    speed:parseInt10(requireField(f,'speed',context),'Speed',context),
+    abilityScores: parseAbilityScores(f.get('abilityscores'), context),
+    savingThrows: f.get('savingthrows') || undefined,
+    style: validStyles.includes(styleRaw) ? styleRaw : undefined,
+    passives:parseList(f.get('passives')),
+    traitDetails: traitsB ? parseTraitDetails(traitsB.lines) : undefined,
+    attacks:parseAttacks(attacksB.lines, context), reactionCue:requireField(f,'reactioncue',context),
+    postureA:parsePosture(pA, `${context} Posture A`), postureB:parsePosture(pB, `${context} Posture B`), postureC:parsePosture(pC, `${context} Posture C`),
+    activePosture:'A', isDefeated:false};
+}
+function parseEncounterMarkdown(markdown){
+  const lines = toLines(markdown);
+  const titleLine = lines.find(l=>l.startsWith('# '));
+  if(!titleLine) throw new MarkdownParseError('Missing top-level heading, e.g. "# Encounter: <name>".');
+  const name = titleLine.replace(/^#\s*(Encounter:)?\s*/i,'').trim();
+  if(!name) throw new MarkdownParseError('Encounter name is empty. Use "# Encounter: <name>".');
+  const top = splitByHeading(lines, 2);
+  const sceneS = top.find(b=>/^scene$/i.test(b.heading));
+  const partyS = top.find(b=>/^party$/i.test(b.heading));
+  const axesS = top.find(b=>/^encounter axes$/i.test(b.heading));
+  const traitsS = top.find(b=>/^trait triggers$/i.test(b.heading));
+  const monstersS = top.find(b=>/^monsters$/i.test(b.heading));
+  if(!partyS) throw new MarkdownParseError('Missing "## Party" section.');
+  if(!axesS) throw new MarkdownParseError('Missing "## Encounter Axes" section.');
+  if(!monstersS) throw new MarkdownParseError('Missing "## Monsters" section.');
+  const party = splitByHeading(partyS.lines, 3).map(parsePartyMember);
+  if(party.length === 0) throw new MarkdownParseError('Party section has no members.');
+  const axes = parseAxes(splitByHeading(axesS.lines, 3));
+  const traitTriggers = traitsS ? splitByHeading(traitsS.lines, 3).map(parseTraitTrigger) : [];
+  const monsterBlocks = splitByHeading(monstersS.lines, 3);
+  if(monsterBlocks.length === 0) throw new MarkdownParseError('Monsters section has no entries.');
+  const monsters = monsterBlocks.map(parseMonster);
+  const round = {roundNumber:1, initiativeCount: typeof axes.hazardOrClock.initiativeCount === 'number' ? axes.hazardOrClock.initiativeCount : 20, activeTurnIndex:0, monsters};
+  return {id:slugify(name), name, scene:parseScene(sceneS), party, axes, traitTriggers, round};
+}
+function parseSingleMonsterMarkdown(monsterMarkdown){
+  const blocks = splitByHeading(toLines(monsterMarkdown), 3);
+  if(blocks.length === 0) throw new MarkdownParseError('No "### Name (Base Type)" heading found. Start the block with e.g. "### Zombie Plague Spreader (Medium Undead)".');
+  return parseMonster(blocks[0]);
+}
+
+/* ---------- local SRD monster compendium ---------- */
+const srdMonsters = [
+  { name:'Goblin', baseType:'Small Humanoid (Goblinoid)', ac:15, hpMax:7, speed:30, abilityScores:{str:8,dex:14,con:10,int:10,wis:8,cha:8}, passives:['Nimble Escape'],
+    attacks:[{name:'Scimitar', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [slashing]'},{name:'Shortbow', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'80/320 ft', damage:'1d6+2 [piercing]'}], style:'skirmisher', environments:['forest','hills','ruins','road'] },
+  { name:'Hobgoblin', baseType:'Medium Humanoid (Goblinoid)', ac:18, hpMax:11, speed:30, abilityScores:{str:13,dex:12,con:12,int:10,wis:10,cha:9}, passives:['Martial Advantage'],
+    attacks:[{name:'Longsword', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d8+1 [slashing]'},{name:'Longbow', type:'Ranged', formula:'1d20+3 vs AC', reachOrRange:'150/600 ft', damage:'1d8+1 [piercing]'}], style:'leader', environments:['ruins','dungeon','road','hills'] },
+  { name:'Bugbear', baseType:'Medium Humanoid (Goblinoid)', ac:16, hpMax:27, speed:30, abilityScores:{str:15,dex:14,con:13,int:8,wis:11,cha:9}, passives:['Surprise Attack'],
+    attacks:[{name:'Morningstar', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft (10 ft w/ reach)', damage:'2d8+2 [piercing]'},{name:'Javelin', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'30/120 ft', damage:'1d6+2 [piercing]'}], style:'brute', environments:['forest','cave','ruins'] },
+  { name:'Kobold', baseType:'Small Dragon-kin', ac:12, hpMax:5, speed:30, abilityScores:{str:7,dex:15,con:9,int:8,wis:7,cha:8}, passives:['Pack Tactics','Sunlight Sensitivity'],
+    attacks:[{name:'Dagger', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d4+2 [piercing]'},{name:'Sling', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'30/120 ft', damage:'1d4+2 [bludgeoning]'}], style:'pack', environments:['cave','dungeon'] },
+  { name:'Orc', baseType:'Medium Humanoid', ac:13, hpMax:15, speed:30, abilityScores:{str:16,dex:12,con:16,int:7,wis:11,cha:10}, passives:['Aggressive'],
+    attacks:[{name:'Greataxe', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d12+3 [slashing]'},{name:'Javelin', type:'Ranged', formula:'1d20+5 vs AC', reachOrRange:'30/120 ft', damage:'1d6+3 [piercing]'}], style:'brute', environments:['hills','mountain','forest','ruins'] },
+  { name:'Bandit', baseType:'Medium Humanoid', ac:12, hpMax:11, speed:30, abilityScores:{str:11,dex:12,con:12,int:10,wis:10,cha:10}, passives:[],
+    attacks:[{name:'Scimitar', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d6+1 [slashing]'},{name:'Light Crossbow', type:'Ranged', formula:'1d20+3 vs AC', reachOrRange:'80/320 ft', damage:'1d8+1 [piercing]'}], style:'skirmisher', environments:['road','urban','forest','hills'] },
+  { name:'Bandit Captain', baseType:'Medium Humanoid', ac:15, hpMax:65, speed:30, abilityScores:{str:15,dex:16,con:14,int:14,wis:11,cha:14}, passives:[],
+    attacks:[{name:'Scimitar (x2)', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d6+3 [slashing]'},{name:'Dagger', type:'Ranged', formula:'1d20+5 vs AC', reachOrRange:'20/60 ft', damage:'1d4+3 [piercing]'}], style:'leader', environments:['road','urban','forest','hills'] },
+  { name:'Skeleton', baseType:'Medium Undead', ac:13, hpMax:13, speed:30, abilityScores:{str:10,dex:14,con:15,int:6,wis:8,cha:5}, passives:['Vulnerable to bludgeoning'],
+    attacks:[{name:'Shortsword', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [piercing]'},{name:'Shortbow', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'80/320 ft', damage:'1d6+2 [piercing]'}], style:'mindless', environments:['dungeon','crypt','ruins','undead'] },
+  { name:'Zombie', baseType:'Medium Undead', ac:8, hpMax:22, speed:20, abilityScores:{str:13,dex:6,con:16,int:3,wis:6,cha:5}, passives:['Undead Fortitude'],
+    attacks:[{name:'Slam', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d6+1 [bludgeoning]'}], style:'mindless', environments:['dungeon','crypt','ruins','undead','swamp'] },
+  { name:'Ghoul', baseType:'Medium Undead', ac:12, hpMax:22, speed:30, abilityScores:{str:13,dex:15,con:16,int:7,wis:10,cha:6}, passives:[],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'2d6 [piercing]'},{name:'Claws', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'2d4+2 [slashing] (paralysis, DC 10 Con)'}], style:'brute', environments:['crypt','dungeon','undead','ruins'] },
+  { name:'Ghast', baseType:'Medium Undead', ac:13, hpMax:36, speed:30, abilityScores:{str:16,dex:17,con:10,int:11,wis:10,cha:8}, passives:['Stench','Turning Defiance'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'2d6+3 [piercing]'},{name:'Claws', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'2d4+3 [slashing] (paralysis, DC 10 Con)'}], style:'brute', environments:['crypt','dungeon','undead'] },
+  { name:'Wolf', baseType:'Medium Beast', ac:13, hpMax:11, speed:40, abilityScores:{str:12,dex:15,con:12,int:3,wis:12,cha:6}, passives:['Pack Tactics','Keen Hearing and Smell'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'2d4+2 [piercing] (knockdown, DC 11 Str)'}], style:'pack', environments:['forest','tundra','hills','mountain'] },
+  { name:'Dire Wolf', baseType:'Large Beast', ac:14, hpMax:22, speed:50, abilityScores:{str:17,dex:15,con:15,int:3,wis:12,cha:7}, passives:['Pack Tactics','Keen Hearing and Smell'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'2d6+3 [piercing] (knockdown, DC 13 Str)'}], style:'pack', environments:['forest','tundra','mountain'] },
+  { name:'Giant Rat', baseType:'Small Beast', ac:12, hpMax:7, speed:30, abilityScores:{str:7,dex:15,con:11,int:2,wis:10,cha:4}, passives:['Pack Tactics','Keen Smell'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d4+2 [piercing]'}], style:'pack', environments:['urban','sewer','dungeon'] },
+  { name:'Giant Spider', baseType:'Large Beast', ac:14, hpMax:26, speed:30, abilityScores:{str:14,dex:16,con:12,int:2,wis:11,cha:4}, passives:['Spider Climb','Web Sense','Web Walker'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d8+3 [piercing] + 2d8 [poison] (DC 11 Con half)'},{name:'Web (recharge 5-6)', type:'Ranged', formula:'1d20+5 vs AC', reachOrRange:'30/60 ft', damage:'Restrained until DC 12 Str/escape'}], style:'ambusher', environments:['forest','cave','dungeon'] },
+  { name:'Giant Scorpion', baseType:'Large Beast', ac:15, hpMax:52, speed:40, abilityScores:{str:15,dex:13,con:15,int:1,wis:9,cha:3}, passives:[],
+    attacks:[{name:'Claw (x2)', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d8+2 [bludgeoning] (grapple)'},{name:'Sting', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d10+2 [piercing] + 4d10 [poison] (DC 12 Con half)'}], style:'brute', environments:['desert','cave'] },
+  { name:'Ogre', baseType:'Large Giant', ac:11, hpMax:59, speed:40, abilityScores:{str:19,dex:8,con:16,int:5,wis:7,cha:7}, passives:[],
+    attacks:[{name:'Greatclub', type:'Melee', formula:'1d20+6 vs AC', reachOrRange:'5 ft', damage:'2d8+4 [bludgeoning]'}], style:'brute', environments:['hills','mountain','cave','forest'] },
+  { name:'Owlbear', baseType:'Large Monstrosity', ac:13, hpMax:59, speed:40, abilityScores:{str:20,dex:12,con:17,int:3,wis:12,cha:7}, passives:['Keen Sight and Smell'],
+    attacks:[{name:'Claws', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d8+5 [slashing]'},{name:'Beak', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'1d10+5 [piercing]'}], style:'brute', environments:['forest','mountain'] },
+  { name:'Gelatinous Cube', baseType:'Large Ooze', ac:6, hpMax:84, speed:15, abilityScores:{str:14,dex:3,con:20,int:1,wis:6,cha:1}, passives:['Ooze Cube (transparent)','Engulf'],
+    attacks:[{name:'Pseudopod', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'3d6 [acid]'}], style:'mindless', environments:['dungeon','cave'] },
+  { name:'Mimic', baseType:'Medium Monstrosity (Shapechanger)', ac:12, hpMax:58, speed:15, abilityScores:{str:17,dex:12,con:15,int:5,wis:13,cha:8}, passives:['Shapechanger','False Appearance','Grappler'],
+    attacks:[{name:'Pseudopod', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d8+3 [bludgeoning] + adhesive'},{name:'Bite', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d8+3 [piercing] + 1d8 [acid]'}], style:'ambusher', environments:['dungeon','cave','ruins'] },
+  { name:'Ettin', baseType:'Large Giant', ac:12, hpMax:85, speed:40, abilityScores:{str:21,dex:8,con:17,int:6,wis:10,cha:8}, passives:['Two Heads','Wakeful'],
+    attacks:[{name:'Battleaxe (x2)', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d8+5 [slashing]'}], style:'brute', environments:['hills','mountain','cave'] },
+  { name:'Troll', baseType:'Large Giant', ac:15, hpMax:84, speed:30, abilityScores:{str:18,dex:13,con:20,int:7,wis:9,cha:7}, passives:['Regeneration','Keen Smell'],
+    attacks:[{name:'Claw (x2)', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d6+4 [slashing]'},{name:'Bite', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d6+4 [piercing]'}], style:'brute', environments:['swamp','forest','mountain','cave'] },
+  { name:'Hobgoblin Captain', baseType:'Medium Humanoid (Goblinoid)', ac:17, hpMax:45, speed:30, abilityScores:{str:15,dex:14,con:14,int:12,wis:10,cha:13}, passives:['Martial Advantage'],
+    attacks:[{name:'Glaive (x2)', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'10 ft', damage:'1d10+2 [slashing]'}], style:'leader', environments:['ruins','dungeon','road','hills'] },
+];
+
+function generatePostures(style){
+  switch(style){
+    case 'brute': return {
+      postureA:{trigger:'Combat starts or a target is within reach', movement:'Closes distance directly to the nearest or most threatening target.', action:'Attacks with its heaviest weapon.', bonusAction:'None.', tags:['Focus: Nearest threat']},
+      postureB:{trigger:'Below 25% HP', movement:'Holds ground — brutes rarely retreat.', action:'Keeps attacking the target that hurt it most, even at disadvantage.', bonusAction:'None.', tags:['No morale','Fights to the end']},
+      postureC:{trigger:'A choke point or doorway is available', movement:'Plants itself in the choke point to block the party.', action:'Attacks whoever tries to push past.', bonusAction:'None.', tags:['Zone control']},
+    };
+    case 'skirmisher': return {
+      postureA:{trigger:'Target is isolated or below half HP', movement:'Moves to flank or gain cover on the softest visible target.', action:'Attacks with melee if adjacent, otherwise uses its ranged option.', bonusAction:'None — commits to the attack.', tags:['Focus: Soft target']},
+      postureB:{trigger:'Below 30% HP or half the group already down', movement:'Disengages and retreats toward cover or allies.', action:'Ranged attack only if a clean shot is available without provoking.', bonusAction:'Hide or Disengage if available.', tags:['Disengage','Hide']},
+      postureC:{trigger:'An objective or ally needs protecting', movement:'Repositions to block the path to whatever it is guarding.', action:'Attacks whoever is closing on the objective.', bonusAction:'None.', tags:['Zone control','Protect objective']},
+    };
+    case 'pack': return {
+      postureA:{trigger:'Two or more pack members can reach the same target', movement:'Circles to flank alongside packmates for advantage.', action:'Attacks the target the pack has surrounded.', bonusAction:'None.', tags:['Pack Tactics','Flanking']},
+      postureB:{trigger:'Half the pack is down or it is alone', movement:'Falls back toward remaining packmates rather than fighting solo.', action:'Only attacks if cornered.', bonusAction:'None.', tags:['Regroup']},
+      postureC:{trigger:'Prey is fleeing', movement:'Drives the target toward the rest of the pack.', action:'Harassing attacks to slow escape rather than finish the kill alone.', bonusAction:'None.', tags:['Herd','Cut off retreat']},
+    };
+    case 'mindless': return {
+      postureA:{trigger:'A living creature is within range', movement:'Shambles directly toward the nearest living creature, ignoring danger.', action:'Attacks whatever is closest.', bonusAction:'None.', tags:['No tactics','No morale']},
+      postureB:{trigger:'Reduced to 0 HP', movement:'N/A — has no self-preservation instinct and never willingly retreats.', action:'Continues attacking until destroyed.', bonusAction:'None.', tags:['Fights to destruction']},
+      postureC:{trigger:'Multiple living creatures are present', movement:'Moves toward whichever is nearest, regardless of threat level.', action:'Attacks without prioritizing softer or harder targets.', bonusAction:'None.', tags:['No target priority']},
+    };
+    case 'ambusher': return {
+      postureA:{trigger:'Undetected and a target passes within range', movement:'Waits hidden until the trigger, then strikes the most isolated target.', action:'Opens with its strongest attack while it has surprise.', bonusAction:'None.', tags:['Ambush','Surprise']},
+      postureB:{trigger:'Discovered early or below 30% HP', movement:'Withdraws into terrain, water, webbing, or its disguised form.', action:'Only attacks opportunistically while retreating.', bonusAction:'Uses any escape/mobility trait available.', tags:['Disengage','Reset ambush']},
+      postureC:{trigger:'A second target wanders near', movement:'Uses terrain or disguise to bait the new target closer.', action:'Switches targets to whichever creature is most isolated.', bonusAction:'None.', tags:['Bait','Re-target']},
+    };
+    case 'leader': return {
+      postureA:{trigger:'Allies are still standing', movement:'Stays with the group, positioning to support rather than lead the charge.', action:'Attacks alongside allies, focusing fire on whatever they have targeted.', bonusAction:"Directs an ally's attack or movement if it has the trait for it.", tags:['Focus fire','Command']},
+      postureB:{trigger:'Isolated or below 40% HP', movement:'Falls back behind remaining allies.', action:'Fights defensively, avoiding being cut off.', bonusAction:'None.', tags:['Protect self','Retreat behind allies']},
+      postureC:{trigger:'Allies are routing or half the group is down', movement:'Moves to rally fleeing allies or covers their retreat.', action:'Attacks whoever is pursuing its allies.', bonusAction:'Issues a rally/retreat order if it has one.', tags:['Rally','Cover retreat']},
+    };
+    default: return generatePostures('skirmisher');
+  }
+}
+
+function findSrdMonster(query, extra){
+  const q = query.trim().toLowerCase();
+  if(!q) return undefined;
+  const pool = extra && extra.length ? [...extra, ...srdMonsters] : srdMonsters;
+  return pool.find(m=>m.name.toLowerCase()===q) ?? pool.find(m=>m.name.toLowerCase().startsWith(q));
+}
+
+/* ---------- custom monster library (persisted across all encounters) ---------- */
+const CUSTOM_MONSTERS_KEY = 'tactics-table-custom-monsters-v1';
+function loadCustomMonsters(){
+  try{ const raw = localStorage.getItem(CUSTOM_MONSTERS_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
+}
+function saveCustomMonsters(list){
+  try{ localStorage.setItem(CUSTOM_MONSTERS_KEY, JSON.stringify(list)); }catch(e){}
+}
+/** Builds a reusable template from a fully-built monster (strips per-encounter combat state). */
+function monsterToTemplate(m){
+  return { name:m.name, baseType:m.baseType, ac:m.ac, hpMax:m.hpMax, speed:m.speed, abilityScores:m.abilityScores,
+    savingThrows:m.savingThrows, passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, style:m.style||'skirmisher', environments:[] };
+}
+
+let customMonsterCounter = 0;
+const defaultAbilities = {str:10,dex:10,con:10,int:10,wis:10,cha:10};
+
+/* Full rules text for every passive used in the local SRD compendium, so
+   "Autofilled" monsters get complete trait text, not just a short label. */
+const TRAIT_TEXT = {
+  'Nimble Escape': "Can take the Disengage or Hide action as a bonus action on each of its turns.",
+  'Pack Tactics': "Has advantage on an attack roll against a creature if at least one of this creature's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+  'Sunlight Sensitivity': "While in sunlight, has disadvantage on attack rolls, and on Wisdom (Perception) checks that rely on sight.",
+  'Aggressive': "As a bonus action, can move up to its speed toward a hostile creature it can see.",
+  'Martial Advantage': "Once per turn, can deal an extra 2d6 damage to a creature it hits with a weapon attack if at least one of this creature's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+  'Surprise Attack': "If it surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 2d6 damage.",
+  'Vulnerable to bludgeoning': "Some tables rule that skeletal creatures take extra damage from bludgeoning weapons — check before applying; it isn't printed on every version of this stat block.",
+  'Undead Fortitude': "If damage reduces it to 0 HP, it must make a Constitution saving throw (DC 5 + damage taken) unless the damage is radiant or from a critical hit. On a success, it drops to 1 HP instead.",
+  'Keen Hearing and Smell': "Has advantage on Wisdom (Perception) checks that rely on hearing or smell.",
+  'Keen Smell': "Has advantage on Wisdom (Perception) checks that rely on smell.",
+  'Keen Sight and Smell': "Has advantage on Wisdom (Perception) checks that rely on sight or smell.",
+  'Spider Climb': "Can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check.",
+  'Web Sense': "While in contact with a web, knows the exact location of any other creature in contact with the same web.",
+  'Web Walker': "Ignores movement restrictions caused by webbing.",
+  'Ooze Cube (transparent)': "Is nearly transparent; a creature that fails to notice it can be surprised by it, and a creature within 5 feet that can't see it has disadvantage on saves against its Engulf.",
+  'Engulf': "Can move over a Medium or smaller creature's space as part of its movement; a creature it moves over must save or be engulfed, taking acid damage and being unable to breathe unless holding its breath.",
+  'Shapechanger': "Can use its action to polymorph into an object or back into its true form.",
+  'False Appearance': "While it remains motionless and disguised as an object, is indistinguishable from a normal object of that kind.",
+  'Grappler': "Has advantage on attack rolls against any creature it is grappling.",
+  'Two Heads': "Has advantage on Wisdom (Perception) checks and on saving throws against being blinded, charmed, deafened, frightened, stunned, and knocked unconscious.",
+  'Wakeful': "When one of its heads is asleep, the other head is awake.",
+  'Regeneration': "Regains hit points at the start of its turn unless it has taken acid or fire damage since its last turn; a creature can knock it out only by simultaneously dealing enough damage.",
+  'Stench': "Any creature that starts its turn within 5 feet of it must succeed on a Constitution save or be poisoned until the start of its next turn.",
+  'Turning Defiance': "Has advantage on saving throws against effects that turn undead.",
+};
+function passivesToTraitDetails(passives){
+  return passives.map(p=>{
+    const base = p.replace(/\s*\([^)]*\)\s*$/,'').trim();
+    const desc = TRAIT_TEXT[base] || TRAIT_TEXT[p];
+    return desc ? {name:p, description:desc} : {name:p, description:''};
+  }).filter(t=>t.description);
+}
+
+function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
+  const lookupName = rawName.trim().replace(/\s+\d+$/, '');
+  const template = findSrdMonster(lookupName, extraTemplates);
+  const name = rawName.trim() || 'Unnamed Creature';
+  const base = template
+    ? {baseType:template.baseType, ac:template.ac, hpMax:template.hpMax, speed:template.speed, abilityScores:template.abilityScores, passives:template.passives, traitDetails:template.traitDetails, savingThrows:template.savingThrows, attacks:template.attacks, style:template.style}
+    : {baseType:'Custom entry — no SRD match', ac:10, hpMax:10, speed:30, abilityScores:defaultAbilities, passives:[], attacks:[], style:'skirmisher'};
+  const ac = overrides?.ac ?? base.ac;
+  const hpMax = overrides?.hpMax ?? base.hpMax;
+  const speed = overrides?.speed ?? base.speed;
+  if(!template) customMonsterCounter += 1;
+  return {
+    id: template ? `${template.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${idSuffix}` : `custom-${idSuffix}-${customMonsterCounter}`,
+    name, baseType: base.baseType, ac, hpCurrent: hpMax, hpMax, speed, abilityScores: base.abilityScores,
+    passives: base.passives, traitDetails: base.traitDetails || passivesToTraitDetails(base.passives), savingThrows: base.savingThrows, attacks: base.attacks,
+    reactionCue: template ? 'Autofilled from the local compendium — review before running.' : 'No stat block found in the local compendium — stats entered manually.',
+    style: base.style, ...generatePostures(base.style), activePosture:'A', isDefeated:false,
+  };
+}
+
+function normalizeGeneratedMonster(data, idSuffix){
+  const abilityScores = {...defaultAbilities, ...(data.abilityScores || {})};
+  const style = validStyles.includes(data.style) ? data.style : 'skirmisher';
+  const postures = generatePostures(style);
+  const clean = (p)=> p && p.trigger && p.movement && p.action ? {trigger:String(p.trigger), movement:String(p.movement), action:String(p.action), bonusAction: p.bonusAction ? String(p.bonusAction) : undefined, tags: Array.isArray(p.tags) ? p.tags.map(String) : []} : null;
+  const hpMax = Number(data.hpMax) || 10;
+  return {
+    id: `img-${idSuffix}`,
+    name: String(data.name || 'Unnamed Creature'),
+    baseType: String(data.baseType || 'Unknown'),
+    ac: Number(data.ac) || 10,
+    hpCurrent: hpMax, hpMax,
+    speed: Number(data.speed) || 30,
+    abilityScores,
+    savingThrows: data.savingThrows ? String(data.savingThrows) : undefined,
+    style,
+    passives: Array.isArray(data.passives) ? data.passives.map(String) : [],
+    traitDetails: Array.isArray(data.traitDetails) ? data.traitDetails.filter(t=>t && t.name && t.description).map(t=>({name:String(t.name), description:String(t.description)})) : undefined,
+    attacks: Array.isArray(data.attacks) ? data.attacks.filter(a=>a && a.name).map(a=>({name:String(a.name), type:['Melee','Ranged','Save'].includes(a.type)?a.type:'Melee', formula:String(a.formula||''), reachOrRange:String(a.reachOrRange||''), damage:String(a.damage||'')})) : [],
+    reactionCue: String(data.reactionCue || 'Transcribed from an uploaded image — review before running.'),
+    postureA: clean(data.postureA) || postures.postureA,
+    postureB: clean(data.postureB) || postures.postureB,
+    postureC: clean(data.postureC) || postures.postureC,
+    activePosture: 'A', isDefeated: false,
+  };
+}
+
+/* ---------- scene suggestions ---------- */
+const TAG_KEYWORDS = {
+  forest:['forest','wood','woods','tree','jungle','grove','hollow'], cave:['cave','cavern','underground','tunnel','grotto'],
+  dungeon:['dungeon','corridor','vault','chamber','keep','fortress'], crypt:['crypt','tomb','grave','mausoleum','catacomb'],
+  ruins:['ruin','ruins','temple','abandoned','derelict'], urban:['city','town','street','alley','rooftop','tavern','urban','market'],
+  sewer:['sewer','drain','gutter'], road:['road','path','trail','crossroads','highway'], hills:['hill','hills'],
+  mountain:['mountain','peak','cliff','pass','summit'], desert:['desert','dune','sand','wasteland'], swamp:['swamp','marsh','bog','mire'],
+  tundra:['tundra','snow','ice','glacier','frozen'], water:['water','river','lake','sea','ocean','flood','flooded','cellar','lagoon'],
+};
+const MAP_ELEMENTS = {
+  forest:['Broken canopy for partial cover/concealment','Root snarls or undergrowth as difficult terrain','A fallen tree or streambed as a natural chokepoint'],
+  cave:['Stalagmites/stalactites for cover and difficult terrain','Narrow tunnels as chokepoints','Uneven footing — consider a Dex save hazard for rushing in'],
+  dungeon:['Doorways and corridors as chokepoints','Rubble or collapsed sections as difficult terrain','A trap or pressure plate tied to the hazard/clock'],
+  crypt:['Sarcophagi or alcoves for cover and ambush spots','Narrow burial corridors as chokepoints','A ritual circle or altar as a possible hazard focus'],
+  ruins:['Broken walls and rubble for cover','A partially collapsed floor as dangerous terrain','Elevation changes from crumbled stairs'],
+  urban:['Rooftops and alleys for verticality and flanking routes','Crowds or stalls the party may need to avoid harming','Windows and doorways as entry/escape routes'],
+  sewer:['Narrow walkways over water as difficult terrain','Grates and tunnels as chokepoints','Poor visibility — consider dim light or darkness'],
+  road:['Wagons, carts, or roadside rocks for cover','Open ground favoring ranged combatants','A ditch or treeline flanking the road for ambushers'],
+  hills:['Elevation for a high-ground advantage','Loose scree as difficult terrain','Long sightlines favoring ranged attackers'],
+  mountain:['Narrow ledges and drop-offs — consider a fall hazard','Elevation and high-ground advantage','Wind or weather as an environmental factor'],
+  desert:['Dunes for concealment and difficult terrain','Heat/exhaustion as a slow-building hazard','Long sightlines favoring ranged attackers'],
+  swamp:['Difficult terrain from mud and standing water','Poor visibility from fog or reeds','A submerged hazard (quicksand, leeches)'],
+  tundra:['Difficult terrain from snow and ice','Cold as an environmental hazard','Poor visibility in whiteout conditions'],
+  water:['Difficult terrain / swimming rules in deep water','A current or rising tide as an escalating hazard',"Limited footing for anyone who can't swim"],
+};
+const TIME_NOTES = {
+  dusk:'Dim light — consider granting darkvision creatures an edge over PCs without it.', night:'Darkness — torches become a tactical resource.',
+  midnight:'Darkness — torches become a tactical resource.', dawn:'Low light and long shadows — a good excuse for an ambush.',
+  morning:'Full visibility — no lighting penalty to plan around.', noon:'Full visibility, and bright light if that matters to any trait.',
+  afternoon:'Full visibility — no lighting penalty to plan around.',
+};
+function detectTags(scene){
+  const text = `${scene.environment} ${scene.terrain} ${scene.combatSituation}`.toLowerCase();
+  const tags = [];
+  for(const [tag, keywords] of Object.entries(TAG_KEYWORDS)) if(keywords.some(k=>text.includes(k))) tags.push(tag);
+  return tags;
+}
+function suggestMapElements(scene){
+  const tags = detectTags(scene);
+  const elements = [];
+  if(tags.length === 0){ elements.push('Add a few words to Environment or Terrain above for tailored suggestions.'); elements.push('Generic default: aim for at least one chokepoint and one piece of cover per 2 PCs.'); }
+  else tags.forEach(tag=>elements.push(...(MAP_ELEMENTS[tag] ?? [])));
+  const timeKey = scene.timeOfDay.trim().toLowerCase();
+  const timeNote = Object.entries(TIME_NOTES).find(([k])=>timeKey.includes(k))?.[1];
+  if(timeNote) elements.push(timeNote);
+  return [...new Set(elements)];
+}
+function generateEncounterRoster(scene){
+  const tags = detectTags(scene);
+  const fallbackTags = ['forest','ruins','road'];
+  const pool = tags.length > 0 ? srdMonsters.filter(m=>m.environments.some(e=>tags.includes(e))) : [];
+  const candidates = pool.length > 0 ? pool : srdMonsters.filter(m=>m.environments.some(e=>fallbackTags.includes(e)));
+  const anchors = candidates.filter(m=>m.style==='brute'||m.style==='leader').sort((a,b)=>b.hpMax-a.hpMax);
+  const swarms = candidates.filter(m=>['skirmisher','pack','mindless','ambusher'].includes(m.style));
+  const suffix = Date.now();
+  const roster = [];
+  const anchor = anchors[0];
+  if(anchor) roster.push(buildMonsterFromName(anchor.name, `${suffix}-anchor`));
+  const swarmPick = swarms.length > 0 ? swarms[Math.floor(Math.random()*swarms.length)] : candidates[0];
+  if(swarmPick){ const count = anchor ? 2 : 3; for(let i=0;i<count;i++) roster.push(buildMonsterFromName(`${swarmPick.name} ${i+1}`, `${suffix}-swarm-${i}`)); }
+  if(roster.length === 0){ roster.push(buildMonsterFromName('Goblin 1', `${suffix}-fb-0`)); roster.push(buildMonsterFromName('Goblin 2', `${suffix}-fb-1`)); }
+  return roster;
+}
+
+/* ---------- axes suggester ---------- */
+const AXES_PRESETS = {
+  brute:{win:'Grind Them Down', winDesc:'These are frontline bruisers with no fear response — they close distance and swing until something dies.', morale:'No morale check. They fight until reduced to 0 HP.',
+    optimizer:'Choke the Approach', optDesc:'Their advantage is raw damage in melee — avoid getting surrounded.', benefit:'A doorway or narrow ledge lets one PC hold the line while brutes queue up.',
+    hazard:'Second Wave', trigger:"If the fight runs past round 4-5, consider a reinforcement or environmental hazard."},
+  skirmisher:{win:"Bleed Them Out, Don't Corner Them", winDesc:'These skirmishers hit soft targets and retreat rather than committing to a stand-up fight.', morale:'Once half the group is down, survivors disengage.',
+    optimizer:'Deny Them Cover', optDesc:'Their tactic depends on cover and mobility to hit-and-run.', benefit:'Open ground with sightlines forces a straight fight, which favors the party.',
+    hazard:'They Call For Help', trigger:'If a skirmisher escapes early, treat that as a countdown to reinforcements.'},
+  pack:{win:'Break Up the Flank', winDesc:'This group wins through numbers advantage (Pack Tactics) — isolate one PC and gang up.', morale:'Once roughly half the pack is down, survivors fall back toward each other.',
+    optimizer:"Don't Get Surrounded", optDesc:'Open ground lets the pack circle a target for advantage.', benefit:'Terrain that limits how many can reach one PC removes their main edge.',
+    hazard:'The Pack Regroups', trigger:'If the party splits up, the pack redirects toward whoever is most isolated.'},
+  mindless:{win:'Not a Fair Fight to Win by Attrition', winDesc:'No tactics, no morale, no self-preservation — they keep coming until destroyed.', morale:'None. They never retreat, never stop.',
+    optimizer:'Control the Chokepoint, Not the Room', optDesc:'The real question is how many can reach the party at once.', benefit:'A corridor turns an "endless" threat into a manageable one.',
+    hazard:'The Real Clock Is Elsewhere', trigger:'Pair with a hazard unrelated to the monsters — a ritual, a collapsing structure, a rising tide.'},
+  ambusher:{win:'Win the Ambush, Not the Slugfest', winDesc:'The threat is front-loaded: surprise and the first strike.', morale:'Withdraws into terrain/disguise once discovered or hurt.',
+    optimizer:'Deny It a Second Ambush', optDesc:'Its danger resets if it can hide and re-approach.', benefit:'Once spotted, keeping line of sight denies its main trick entirely.',
+    hazard:'It Baits a Second Target', trigger:'If it survives its opening ambush, expect it to lure a separated party member.'},
+  leader:{win:'Cut Off the Head', winDesc:'This group fights in a coordinated way as long as its leader is alive and visible.', morale:'If the leader drops or is cut off, allies may break and run.',
+    optimizer:'Isolate the Leader', optDesc:'The leader stays protected behind allies by default.', benefit:'Any position that gives a clean shot at the leader short-circuits the group.',
+    hazard:'Rally Point', trigger:'If the leader is threatened, expect a retreat/rally order rather than accepting the loss.'},
+};
+function suggestAxes(monsters, scene){
+  const living = monsters.filter(m=>!m.isDefeated);
+  const tally = new Map();
+  living.forEach(m=>{ if(m.style) tally.set(m.style, (tally.get(m.style) ?? 0) + 1); });
+  const dominant = [...tally.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] ?? 'skirmisher';
+  const preset = AXES_PRESETS[dominant];
+  const names = living.map(m=>m.name).join(', ') || 'the monsters';
+  const terrain = scene.terrain.trim(); const situation = scene.combatSituation.trim();
+  return {
+    winCondition:{ title:preset.win, description:`${preset.winDesc}${situation?` Context: ${situation}.`:''} (Roster: ${names})`, moraleThresholds:preset.morale },
+    battlefieldOptimizer:{ title:preset.optimizer, description:`${preset.optDesc}${terrain?` Terrain on hand: ${terrain}.`:' No terrain notes yet.'}`, mechanicalBenefit:preset.benefit },
+    hazardOrClock:{ title:preset.hazard, initiativeCount:20, triggerEffect:preset.trigger },
+  };
+}
+
+/* ---------- helpers ---------- */
+function clampPct(cur, max){ return max<=0 ? 0 : Math.max(0, Math.min(1, cur/max)); }
+function hpColor(pct){ if(pct<=0) return 'var(--line)'; if(pct<=0.3) return 'var(--blood)'; if(pct<=0.6) return 'var(--amber)'; return 'var(--moss)'; }
+function abilityMod(score){ const mod = Math.floor((score-10)/2); return mod>=0?`+${mod}`:`${mod}`; }
+const POSTURE_META = { A:{label:'Offensive', color:'var(--blood)', soft:'var(--blood-soft)'}, B:{label:'Defensive', color:'var(--arcane)', soft:'var(--arcane-soft)'}, C:{label:'Hazard', color:'var(--amber)', soft:'var(--amber-soft)'} };
+function computeAutoPosture(m){ if(m.hpMax<=0) return m.activePosture; const pct = m.hpCurrent/m.hpMax; if(pct<=0.3) return 'B'; return m.activePosture==='B' ? 'A' : m.activePosture; }
+const STORAGE_KEY = 'tactics-table-encounter-v2';
+
+/* ---------- components ---------- */
+function HpBar({current, max, height=6}){
+  const pct = clampPct(current, max);
+  return <div className="hp-track" style={{height}}><div className="hp-fill" style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>;
+}
+
+const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
+
+function AddPartyMemberForm({onAdd, onDone}){
+  const [name, setName] = useState(''); const [role, setRole] = useState('Custom');
+  const [species, setSpecies] = useState(''); const [ac, setAc] = useState('15'); const [hp, setHp] = useState('20');
+  const [priority, setPriority] = useState(''); const [link, setLink] = useState('');
+  function submit(){
+    if(!name.trim()) return;
+    const hpMax = Math.max(1, Number(hp) || 1);
+    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, ac:Number(ac)||10, hpCurrent:hpMax, hpMax,
+      tacticalPriority: priority.trim() || 'No tactical note yet', conditions:[], referenceLink: link.trim() || undefined });
+    onDone();
+  }
+  return (
+    <div className="disclosure-body">
+      <input className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="PC name"/>
+      <div style={{display:'flex', gap:6}}>
+        <select className="text-input" value={role} onChange={e=>setRole(e.target.value)} style={{flex:1}}>{PC_ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select>
+        <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:56}}/>
+        <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:56}}/>
+      </div>
+      <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
+      <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
+      <input className="text-input" value={link} onChange={e=>setLink(e.target.value)} placeholder="D&D Beyond link (optional)"/>
+      <button className="add-btn" disabled={!name.trim()} onClick={submit}><Icon name="userplus" size={13}/>Add PC</button>
+    </div>
+  );
+}
+
+function PartyContent({party, onDelta, onAdd, onRemove}){
+  const [showAdd, setShowAdd] = useState(false);
+  return (
+    <React.Fragment>
+      {party.map(p=>(
+        <div className="party-row" key={p.id}>
+          <div className="party-top">
+            <div style={{display:'flex', alignItems:'center', gap:6, minWidth:0}}>
+              <span className="party-name">{p.name}</span>
+              <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
+              {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={11}/></a>}
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+              <div className="party-ac"><Icon name="shield" size={11}/>{p.ac}</div>
+              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={12}/></button>
+            </div>
+          </div>
+          <div className="hp-row">
+            <button className="stepper dmg" onClick={()=>onDelta(p.id,-1)} aria-label={`Damage ${p.name}`}><Icon name="minus" size={10}/></button>
+            <HpBar current={p.hpCurrent} max={p.hpMax}/>
+            <button className="stepper heal" onClick={()=>onDelta(p.id,1)} aria-label={`Heal ${p.name}`}><Icon name="plus" size={10}/></button>
+            <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
+          </div>
+          <p className="party-priority">{p.tacticalPriority}</p>
+        </div>
+      ))}
+      <div className="disclosure">
+        <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
+          <Icon name="userplus" size={12}/> {showAdd ? 'Cancel' : 'Add PC'}
+        </button>
+        {showAdd && <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>}
+      </div>
+    </React.Fragment>
+  );
+}
+
+function SceneContent({scene, onChange, onGenerate}){
+  const fields = [
+    ['environment','Environment','e.g. flooded cellar, mountain pass, city rooftops'],
+    ['terrain','Terrain','e.g. difficult terrain, chokepoints, cover'],
+    ['combatSituation','Combat Situation','e.g. ambush, escort, defend the door'],
+    ['timeOfDay','Time of Day','e.g. dusk, midnight, high noon'],
+  ];
+  return (
+    <React.Fragment>
+      {fields.map(([key,label,placeholder])=>(
+        <div className="field" key={key}>
+          <label>{label}</label>
+          <input className="text-input" value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+        </div>
+      ))}
+      <div style={{padding:'0 14px 14px'}}>
+        <button className="add-btn" style={{borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate}>
+          <Icon name="sparkles" size={13}/>Generate Encounter
+        </button>
+        <p style={{fontSize:10, color:'var(--parchment-faint)', marginTop:6}}>Adds a matched roster from the SRD compendium and drafts the axes above from it.</p>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function PrepPanel({scene, onSceneChange, onGenerate, party, onPartyDelta, onPartyAdd, onPartyRemove}){
+  const [tab, setTab] = useState('scene');
+  return (
+    <div className="plate">
+      <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
+      <div style={{padding:'10px 14px 0'}}>
+        <div className="tab-row" style={{marginBottom:0}}>
+          <button className={"tab-btn"+(tab==='scene'?' active':'')} onClick={()=>setTab('scene')}><Icon name="scroll" size={11}/> Scene</button>
+          <button className={"tab-btn"+(tab==='party'?' active':'')} onClick={()=>setTab('party')}><Icon name="party" size={11}/> Party</button>
+        </div>
+      </div>
+      {tab==='scene'
+        ? <SceneContent scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
+        : <PartyContent party={party} onDelta={onPartyDelta} onAdd={onPartyAdd} onRemove={onPartyRemove}/>}
+    </div>
+  );
+}
+
+function MapElementsStrip({scene}){
+  const elements = useMemo(()=>suggestMapElements(scene), [scene]);
+  return (
+    <div className="axis-card" style={{marginTop:12}}>
+      <div className="axis-eyebrow">
+        <Icon name="map" size={11} style={{color:'var(--arcane)'}}/>
+        <span className="eyebrow" style={{color:'var(--arcane)'}}>Recommended Map Elements</span>
+      </div>
+      <ul style={{margin:'6px 0 0', paddingLeft:0, listStyle:'none', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', columnGap:20}}>
+        {elements.map(el=><li key={el} style={{fontSize:11, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:6, marginTop:3}}><span style={{color:'var(--parchment-faint)'}}>–</span><span>{el}</span></li>)}
+      </ul>
+    </div>
+  );
+}
+
+const AXES_COLLAPSE_KEY = 'tactics-table-axes-collapsed';
+function AxesStrip({axes, monsters, scene, onSuggest}){
+  const [open, setOpen] = useState(()=>{ try{ return localStorage.getItem(AXES_COLLAPSE_KEY) !== '1'; }catch(e){ return true; } });
+  useEffect(()=>{ try{ localStorage.setItem(AXES_COLLAPSE_KEY, open ? '0' : '1'); }catch(e){} }, [open]);
+  const cells = [
+    {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds},
+    {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit},
+    {key:'haz', eyebrow:'Hazard / Clock', color:'var(--amber)', textColor:'var(--amber-text)', icon:'clock', title:axes.hazardOrClock.title, desc:null, note:axes.hazardOrClock.triggerEffect, badge:axes.hazardOrClock.initiativeCount},
+  ];
+  return (
+    <div className="axes-strip">
+      <div className="axes-head" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
+        <h2><Icon name="chevron" size={12} className={"chevron"+(open?" open":"")}/><Icon name="compass" size={14} style={{color:'var(--amber)'}}/>Encounter Axes</h2>
+        <button className="btn" disabled={monsters.length===0} onClick={ev=>{ev.stopPropagation(); onSuggest(suggestAxes(monsters, scene));}} title="Redraft axes from the current monster roster">
+          <Icon name="sparkles" size={11}/>Suggest from Roster
+        </button>
+      </div>
+      {open && (
+        <React.Fragment>
+          <div className="axes-grid">
+            {cells.map(c=>(
+              <div className="axis-card" key={c.key}>
+                <div className="corner corner-tl" style={{'--c':c.color}}/><div className="corner corner-tr" style={{'--c':c.color}}/><div className="corner corner-bl" style={{'--c':c.color}}/><div className="corner corner-br" style={{'--c':c.color}}/>
+                <div className="axis-eyebrow">
+                  {c.icon && <Icon name={c.icon} size={11} style={{color:c.color}}/>}
+                  <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
+                </div>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
+                  <p className="axis-title">{c.title}</p>
+                  {c.badge !== undefined && <span className="axis-badge mono" style={{'--c':c.color}}>Count {c.badge}</span>}
+                </div>
+                {c.desc && <p className="axis-desc">{c.desc}</p>}
+                <p className="axis-note" style={{'--c':c.color, color:c.textColor}}>{c.note}</p>
+              </div>
+            ))}
+          </div>
+          <MapElementsStrip scene={scene}/>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function RoundTracker({round, onNextTurn, onNextRound, onReset}){
+  const living = round.monsters.filter(m=>!m.isDefeated);
+  const active = living[round.activeTurnIndex % Math.max(living.length,1)];
+  return (
+    <div className="roundbar">
+      <div className="roundbar-stats">
+        <div><p className="stat-label">Round</p><p className="stat-value mono">{round.roundNumber}</p></div>
+        <div className="stat-divider"/>
+        <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
+      </div>
+      <div className="roundbar-actions">
+        <button className="btn" onClick={onReset}><Icon name="reset" size={12}/>Reset</button>
+        <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={12}/>Next Turn</button>
+        <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={12}/>Next Round</button>
+      </div>
+    </div>
+  );
+}
+
+function PostureDetail({posture, color}){
+  return (
+    <div className="posture-detail" style={{'--c':color}}>
+      <p><b>Trigger </b>{posture.trigger}</p>
+      <p><b>Move </b>{posture.movement}</p>
+      <p><b>Action </b>{posture.action}</p>
+      {posture.bonusAction && <p><b>Bonus </b>{posture.bonusAction}</p>}
+      {posture.tags && posture.tags.length>0 && <div className="tag-row">{posture.tags.map(t=><span className="tag" key={t}>{t}</span>)}</div>}
+    </div>
+  );
+}
+
+function AbilityRow({monster}){
+  const abilities = [['str','STR'],['dex','DEX'],['con','CON'],['int','INT'],['wis','WIS'],['cha','CHA']];
+  return (
+    <div>
+      <div className="abl-grid">
+        {abilities.map(([k,label])=>(
+          <div className="abl-cell" key={k}>
+            <div className="k">{label}</div>
+            <div className="v mono">{monster.abilityScores[k]} <span>({abilityMod(monster.abilityScores[k])})</span></div>
+          </div>
+        ))}
+      </div>
+      {monster.savingThrows && <p style={{fontSize:10, color:'var(--parchment-faint)', margin:'0 0 8px'}}><b>Proficient saves: </b>{monster.savingThrows}</p>}
+    </div>
+  );
+}
+
+function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, traitTriggers}){
+  const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
+  const meta = POSTURE_META[monster.activePosture];
+  const cornerColor = isActiveTurn && !monster.isDefeated ? 'var(--blood)' : 'var(--line)';
+  const matchedTriggers = traitTriggers.filter(t=>{
+    const c = t.creatureName.toLowerCase();
+    return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
+  });
+
+  return (
+    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")}>
+      <div className="corner corner-tl" style={{'--c':cornerColor}}/><div className="corner corner-tr" style={{'--c':cornerColor}}/>
+      <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
+      <div className="mcard-head" onClick={onToggleExpand}>
+        <div style={{minWidth:0, display:'flex', alignItems:'center', gap:8}}>
+          <Icon name="chevron" size={13} className={"chevron" + (expanded ? " open" : "")}/>
+          <div style={{minWidth:0}}>
+            <p className="mcard-name">{monster.name}</p>
+            <p className="mcard-type">{monster.baseType}</p>
+          </div>
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}} onClick={e=>e.stopPropagation()}>
+          <span className="ac-badge"><Icon name="shield" size={11}/>{monster.ac}</span>
+          <button className="stepper" onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" style={monster.isDefeated ? {borderColor:'var(--parchment-faint)', color:'var(--parchment)'} : {}}><Icon name="skull" size={11}/></button>
+          <button className="stepper" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`}><Icon name="trash" size={11}/></button>
+        </div>
+      </div>
+
+      <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
+        <button className="stepper dmg" onClick={()=>onDelta(monster.id,-1)} aria-label={`Damage ${monster.name}`}><Icon name="minus" size={10}/></button>
+        <HpBar current={monster.hpCurrent} max={monster.hpMax}/>
+        <button className="stepper heal" onClick={()=>onDelta(monster.id,1)} aria-label={`Heal ${monster.name}`}><Icon name="plus" size={10}/></button>
+        <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
+        <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
+      </div>
+
+      {expanded && (
+        <div className="mcard-body">
+          <AbilityRow monster={monster}/>
+
+          <div className="posture-row">
+            {['A','B','C'].map(key=>{
+              const active = monster.activePosture===key; const m = POSTURE_META[key];
+              return <button key={key} className={"posture-btn"+(active?" active":"")} style={{'--c':m.color,'--c-soft':m.soft}} onClick={()=>onPosture(monster.id,key)}>{key} · {m.label}</button>;
+            })}
+          </div>
+          <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
+
+          <div className="section-label"><Icon name="blade" size={11} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span></div>
+          {monster.attacks.map(a=>(
+            <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
+          ))}
+
+          <div className="callout reaction"><Icon name="zap" size={12}/><p>{monster.reactionCue}</p></div>
+          {monster.passives.length>0 && <div className="callout passive"><Icon name="crosshair" size={12}/><p>{monster.passives.join(' · ')}</p></div>}
+
+          {(monster.traitDetails?.length > 0 || matchedTriggers.length > 0) && (
+            <div className="trait-block">
+              <span className="lbl">Traits &amp; Triggers</span>
+              {monster.traitDetails?.map(t=>(
+                <p key={t.name}><b>{t.name}. </b>{t.description}</p>
+              ))}
+              {matchedTriggers.map(t=>(
+                <p key={t.id}><b>{t.name}. </b>When {t.triggerCondition.toLowerCase()} — {t.mechanicalEffect}
+                  <span className="trigger-dc mono">{t.formulaOrDC}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
+  const [collapsed, setCollapsed] = useState(false);
+  const [name, setName] = useState(''); const [count, setCount] = useState('1');
+  const [ac, setAc] = useState(''); const [hp, setHp] = useState(''); const [speed, setSpeed] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [mode, setMode] = useState('quick'); // quick | paste | image
+  const [pasteText, setPasteText] = useState(''); const [pasteError, setPasteError] = useState(null);
+  const [saveOnPaste, setSaveOnPaste] = useState(true); const [saveOnImage, setSaveOnImage] = useState(true);
+  const [sampleApi, setSampleApi] = useState(null); const [imagesOk, setImagesOk] = useState(false);
+  const [busy, setBusy] = useState(false); const [imgError, setImgError] = useState(null);
+  const [diag, setDiag] = useState('checking'); // checking | no-claude | no-sample | no-images | ready | error
+  const [diagDetail, setDiagDetail] = useState('');
+  const fileInputRef = useRef(null);
+
+  const match = findSrdMonster(name, customMonsters);
+
+  useEffect(()=>{
+    if(match){ setAc(String(match.ac)); setHp(String(match.hpMax)); setSpeed(String(match.speed)); }
+  }, [match?.name]);
+
+  useEffect(()=>{
+    (async ()=>{
+      try{
+        if(!window.claude || typeof window.claude.use !== 'function'){ setDiag('no-claude'); return; }
+        const s = await window.claude.use('sample');
+        if(!s){ setDiag('no-sample'); return; }
+        setSampleApi(s);
+        const limits = await s.limits();
+        if(limits && limits.images){ setImagesOk(true); setDiag('ready'); }
+        else { setDiag('no-images'); setDiagDetail(JSON.stringify(limits)); }
+      }catch(e){ setDiag('error'); setDiagDetail((e && (e.code || e.message)) ? `${e.code||''} ${e.message||''}`.trim() : String(e)); }
+    })();
+  }, []);
+
+  function handleQuickAdd(){
+    if(!name.trim()) return;
+    const qty = Math.max(1, Math.min(12, Number(count) || 1));
+    const suffix = Date.now();
+    const overrides = { ac: ac.trim()?Number(ac):undefined, hpMax: hp.trim()?Number(hp):undefined, speed: speed.trim()?Number(speed):undefined };
+    for(let i=0;i<qty;i++){ const label = qty>1?`${name.trim()} ${i+1}`:name.trim(); onAdd(buildMonsterFromName(label, `${suffix}-${i}`, overrides, customMonsters)); }
+    setName(''); setCount('1'); setAc(''); setHp(''); setSpeed('');
+  }
+
+  function handlePasteAdd(){
+    try{
+      const monster = parseSingleMonsterMarkdown(pasteText);
+      onAdd(monster);
+      if(saveOnPaste) onSaveCustom(monsterToTemplate(monster));
+      setPasteText(''); setPasteError(null); setMode('quick');
+    }
+    catch(e){ setPasteError(e instanceof MarkdownParseError ? e.message : 'Unexpected error while parsing the stat block.'); }
+  }
+
+  async function handleImageFile(file){
+    if(!file) return;
+    if(!sampleApi){
+      setImgError("This view can't ask Claude to read images right now (see the note above) — use Paste Stat Block instead, or drop the image in the chat and ask Claude to hand you the paste-ready text.");
+      return;
+    }
+    setBusy(true); setImgError(null);
+    try{
+      const prompt = 'You are transcribing a Dungeons & Dragons 5e monster stat block from an image into strict JSON for a DM reference tool. '
+        + 'Read the image and reply with ONLY a JSON object (no markdown fences, no commentary) in this exact shape:\n'
+        + '{"name":string,"baseType":string,"ac":number,"hpMax":number,"speed":number,'
+        + '"abilityScores":{"str":number,"dex":number,"con":number,"int":number,"wis":number,"cha":number},'
+        + '"savingThrows":string (proficient saves only, e.g. "Dex +4, Wis +3", or "" if none/unclear),'
+        + '"passives":[string,...] (short trait names only),'
+        + '"traitDetails":[{"name":string,"description":string (full rules text as printed)},...],'
+        + '"attacks":[{"name":string,"type":"Melee"|"Ranged"|"Save","formula":string (e.g. "1d20+5 vs AC" or "DC 12 Constitution save"),"reachOrRange":string,"damage":string},...],'
+        + '"reactionCue":string (one sentence on resource/reaction usage),'
+        + '"style":"brute"|"skirmisher"|"pack"|"mindless"|"ambusher"|"leader" (whichever best fits how it fights),'
+        + '"postureA":{"trigger":string,"movement":string,"action":string,"bonusAction":string,"tags":[string,...]},'
+        + '"postureB":{...same shape...},'
+        + '"postureC":{...same shape...}}\n'
+        + 'postureA is its offensive tactic, postureB is what it does when hurt/losing, postureC is a situational tactic tied to terrain, allies, or an objective. '
+        + 'Base the postures on this specific creature\'s actual traits and how a tactically-minded DM would play it — not generic filler. '
+        + "If a field isn't legible in the image, make a reasonable inference consistent with the rest of the stat block.";
+      const data = await sampleApi.json(prompt, {images: file, modelTier: 'default'});
+      const monster = normalizeGeneratedMonster(data, Date.now());
+      onAdd(monster);
+      if(saveOnImage) onSaveCustom(monsterToTemplate(monster));
+      setMode('quick');
+    }catch(e){
+      const msg = {
+        not_granted: "You declined to let this page ask Claude — image transcription won't work this session.",
+        images_unavailable: 'Image upload is not available in this view.',
+        image_rejected: 'That image was rejected (wrong type, too large, or undecodable). Try a clearer photo or screenshot.',
+        rate_limited: 'Too many requests right now — wait a moment and try again.',
+        invalid_json: "Claude's reply couldn't be read as the expected shape. Try again, or use Paste/Quick add instead.",
+      }[e?.code] || (e?.message || 'Something went wrong reading that image.');
+      setImgError(msg);
+    }finally{ setBusy(false); }
+  }
+
+  return (
+    <div className="plate">
+      <div className="plate-head" style={{cursor:'pointer'}} onClick={()=>setCollapsed(v=>!v)}>
+        <Icon name="chevron" size={12} className={"chevron"+(!collapsed?" open":"")}/>
+        <Icon name="swords" size={14} style={{color:'var(--blood)'}}/>
+        <h2 style={{flex:1}}>Add Monster</h2>
+      </div>
+      {!collapsed && <div style={{padding:'12px 14px'}}>
+      <div className="tab-row">
+        <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')}>Quick Add</button>
+        <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')}>Paste Stat Block</button>
+        <button className={"tab-btn"+(mode==='image'?' active':'')} onClick={()=>setMode('image')}><Icon name="photo" size={11}/> Upload Image</button>
+      </div>
+
+      {mode === 'quick' && (
+        <div className="monster-add-row">
+          <div className="grow">
+            <input list="srd-monster-names" className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name (SRD compendium + your saved monsters)…"/>
+            <datalist id="srd-monster-names">
+              {customMonsters.map(m=><option key={'c-'+m.name} value={m.name}/>)}
+              {srdMonsters.map(m=><option key={m.name} value={m.name}/>)}
+            </datalist>
+            <p className="hint">{name.trim()===''?'Type a name — matches autofill AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No SRD match — set stats manually below.'}</p>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:5}}>
+            <label style={{fontSize:9.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
+            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
+          </div>
+          <button className="add-btn" disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={13}/>Add</button>
+          <button className="disclosure-toggle" style={{width:'auto', padding:'7px 4px'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide':'Manual stats'}</button>
+          {showAdvanced && (
+            <div style={{display:'flex', gap:8, width:'100%'}}>
+              <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}}/>
+              <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:70}}/>
+              <input className="text-input" value={speed} onChange={e=>setSpeed(e.target.value)} placeholder="Speed" style={{width:80}}/>
+            </div>
+          )}
+          {customMonsters.length > 0 && (
+            <div style={{width:'100%', marginTop:4}}>
+              <p style={{fontSize:9.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'4px 0'}}>My Monsters</p>
+              <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
+                {customMonsters.map(m=>(
+                  <span key={m.name} className="tag" style={{display:'inline-flex', alignItems:'center', gap:5, padding:'3px 4px 3px 9px'}}>
+                    {m.name}
+                    <button className="icon-btn" style={{padding:0}} onClick={()=>onRemoveCustom(m.name)} aria-label={`Remove ${m.name} from My Monsters`}><Icon name="x" size={10}/></button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === 'paste' && (
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <p style={{fontSize:10, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first.</p>
+          <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
+            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Passives: ...\n- Reaction Cue: ...\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
+          {pasteError && <div className="error-box"><Icon name="alert" size={13}/><p>{pasteError}</p></div>}
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:10.5, color:'var(--parchment-dim)'}}>
+            <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
+            Save to My Monsters (reuse this one in other encounters)
+          </label>
+          <button className="add-btn" disabled={!pasteText.trim()} onClick={handlePasteAdd}><Icon name="clip" size={13}/>Parse &amp; Add</button>
+        </div>
+      )}
+
+      {mode === 'image' && (
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <p style={{fontSize:10, color:'var(--parchment-faint)'}}>Upload a photo or screenshot of a stat block — this page asks Claude (your account, your consent) to transcribe it directly into a monster entry.</p>
+          <div className={"upload-drop"+(busy?' busy':'')} onClick={()=>!busy && fileInputRef.current?.click()}>
+            <Icon name="photo" size={20}/>
+            <span>{busy ? 'Reading the image… this can take up to a minute.' : 'Click to choose an image'}</span>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden
+            onChange={e=>{ const f = e.target.files?.[0]; if(f) handleImageFile(f); e.target.value=''; }}/>
+          {diag !== 'ready' && (
+            <div className="error-box">
+              <Icon name="alert" size={13}/>
+              <p>{
+                {checking:'Checking whether this view can transcribe images… try picking a file in a moment.',
+                 'no-claude':"This artifact host doesn't expose the capability this page needs for image transcription. Use Paste Stat Block instead — you can still ask me to read an image and hand you the paste-ready text.",
+                 'no-sample':'Image transcription is not granted in this view.',
+                 'no-images':'This account/view supports asking Claude but not sending images to it. Use Paste Stat Block instead.',
+                 error:`Something went wrong checking availability (${diagDetail}). You can still try picking a file.`}[diag]
+              }</p>
+            </div>
+          )}
+          {imgError && <div className="error-box"><Icon name="alert" size={13}/><p>{imgError}</p></div>}
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:10.5, color:'var(--parchment-dim)'}}>
+            <input type="checkbox" checked={saveOnImage} onChange={e=>setSaveOnImage(e.target.checked)}/>
+            Save to My Monsters (reuse this one in other encounters)
+          </label>
+        </div>
+      )}
+      </div>}
+    </div>
+  );
+}
+
+function ImportModal({onClose, onImport}){
+  const [text, setText] = useState(''); const [error, setError] = useState(null);
+  function handleImport(){
+    try{ const enc = parseEncounterMarkdown(text); onImport(enc); onClose(); }
+    catch(e){ setError(e instanceof MarkdownParseError ? e.message : 'Unexpected error while parsing markdown.'); }
+  }
+  return (
+    <div className="modal-veil" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-head">
+          <h2><Icon name="upload" size={14} style={{color:'var(--arcane)'}}/>Import Encounter Markdown</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={15}/></button>
+        </div>
+        <div className="modal-body">
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the encounter markdown here…"/>
+          {error && <div className="error-box"><Icon name="alert" size={13}/><p>{error}</p></div>}
+        </div>
+        <div className="modal-foot">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-arcane" disabled={!text.trim()} onClick={handleImport}>Parse &amp; Load</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ENCOUNTERS_KEY = 'tactics-table-encounters-v1';
+function blankEncounter(name){
+  return {
+    id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name,
+    scene:{environment:'', terrain:'', combatSituation:'', timeOfDay:''}, party:[],
+    axes:{ winCondition:{title:'Win Condition — not set yet', description:'Use Generate Encounter, Suggest from Roster, or fill this in by hand.', moraleThresholds:'—'},
+           battlefieldOptimizer:{title:'Battlefield Optimizer — not set yet', description:'', mechanicalBenefit:'—'},
+           hazardOrClock:{title:'Hazard / Clock — not set yet', initiativeCount:20, triggerEffect:'—'} },
+    traitTriggers:[], round:{roundNumber:1, initiativeCount:20, activeTurnIndex:0, monsters:[]},
+  };
+}
+function loadEncounterStore(){
+  try{
+    const raw = localStorage.getItem(ENCOUNTERS_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.encounters) && parsed.encounters.length>0) return parsed;
+    }
+    const old = localStorage.getItem(STORAGE_KEY);
+    if(old){
+      const enc = JSON.parse(old);
+      if(!enc.scene) enc.scene = {environment:'', terrain:'', combatSituation:'', timeOfDay:''};
+      return { encounters:[enc], activeId: enc.id };
+    }
+  }catch(e){}
+  return { encounters:[sampleEncounter], activeId: sampleEncounter.id };
+}
+
+function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
+  return (
+    <div style={{display:'flex', alignItems:'center', gap:6, overflowX:'auto', padding:'10px 20px 0', maxWidth:1360, margin:'0 auto'}}>
+      {encounters.map(e=>{
+        const isActive = e.id===activeId;
+        const isRenaming = renamingId===e.id;
+        return (
+          <div key={e.id}
+            style={{display:'flex', alignItems:'center', gap:6, flexShrink:0, padding:'6px 6px 6px 10px', cursor: isRenaming?'default':'pointer',
+              border:'1px solid var(--line)', borderBottom: isActive ? '2px solid var(--blood)' : '1px solid var(--line)',
+              background: isActive ? 'var(--panel)' : 'var(--panel-raised)'}}
+            onClick={()=>!isRenaming && onSelect(e.id)}
+            onDoubleClick={()=>onRenameStart(e.id, e.name)}
+            title="Click to switch, double-click to rename">
+            {isRenaming ? (
+              <input autoFocus value={renameValue} onChange={ev=>onRenameChange(ev.target.value)}
+                onClick={ev=>ev.stopPropagation()}
+                onBlur={()=>onRenameCommit(e.id)}
+                onKeyDown={ev=>{ if(ev.key==='Enter') onRenameCommit(e.id); if(ev.key==='Escape') onRenameCommit(e.id, true); }}
+                style={{background:'var(--ink)', border:'1px solid var(--arcane)', color:'var(--parchment)', fontSize:11.5, padding:'2px 5px', width:130}}/>
+            ) : (
+              <span className="mono" style={{fontSize:11.5, fontWeight: isActive?600:500, color: isActive?'var(--parchment)':'var(--parchment-dim)'}}>{e.name}</span>
+            )}
+            {!isRenaming && (
+              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDuplicate(e.id);}} aria-label={`Duplicate ${e.name}`} title="Duplicate this encounter">
+                <Icon name="copy" size={11}/>
+              </button>
+            )}
+            {!isRenaming && encounters.length>1 && (
+              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`}><Icon name="x" size={11}/></button>
+            )}
+          </div>
+        );
+      })}
+      <button className="icon-btn" style={{border:'1px dashed var(--line)', padding:'6px 9px', flexShrink:0}} onClick={onAdd} aria-label="New encounter" title="New encounter">
+        <Icon name="plus" size={13}/>
+      </button>
+    </div>
+  );
+}
+
+function App(){
+  const [theme, toggleTheme] = useTheme();
+  const [store, setStore] = useState(loadEncounterStore);
+  const [customMonsters, setCustomMonsters] = useState(loadCustomMonsters);
+  const [importOpen, setImportOpen] = useState(false);
+  const [expandedIds, setExpandedIds] = useState(()=>new Set());
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  function toggleExpanded(id){ setExpandedIds(prev=>{ const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }); }
+  function expand(id){ setExpandedIds(prev=>{ const next = new Set(prev); next.add(id); return next; }); }
+
+  useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
+  useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
+
+  const encounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
+  function updateActive(fn){ setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===s.activeId ? fn(e) : e)})); }
+
+  function addEncounterTab(){
+    const enc = blankEncounter(`Encounter ${store.encounters.length+1}`);
+    setStore(s=>({encounters:[...s.encounters, enc], activeId: enc.id}));
+    setRenamingId(enc.id); setRenameValue(enc.name);
+  }
+  function selectEncounterTab(id){ setStore(s=>({...s, activeId:id})); }
+  function duplicateEncounterTab(id){
+    setStore(s=>{
+      const source = s.encounters.find(e=>e.id===id);
+      if(!source) return s;
+      const clone = { ...JSON.parse(JSON.stringify(source)), id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: `${source.name} (Copy)` };
+      const idx = s.encounters.findIndex(e=>e.id===id);
+      const encounters = [...s.encounters.slice(0, idx+1), clone, ...s.encounters.slice(idx+1)];
+      return { encounters, activeId: clone.id };
+    });
+  }
+  function deleteEncounterTab(id){
+    setStore(s=>{
+      if(s.encounters.length<=1) return s;
+      const encounters = s.encounters.filter(e=>e.id!==id);
+      const activeId = s.activeId===id ? encounters[0].id : s.activeId;
+      return {encounters, activeId};
+    });
+  }
+  function startRename(id, name){ setRenamingId(id); setRenameValue(name); }
+  function commitRename(id, cancel){
+    if(!cancel) setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===id ? {...e, name: renameValue.trim() || e.name} : e)}));
+    setRenamingId(null);
+  }
+
+  function addCustomMonster(template){ setCustomMonsters(list=>[...list.filter(m=>m.name.toLowerCase()!==template.name.toLowerCase()), template]); }
+  function removeCustomMonster(name){ setCustomMonsters(list=>list.filter(m=>m.name!==name)); }
+
+  function updateMonsterHp(id, delta){
+    updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=>{
+      if(m.id!==id) return m;
+      const hpCurrent = Math.max(0, Math.min(m.hpMax, m.hpCurrent+delta));
+      const next = {...m, hpCurrent, isDefeated: hpCurrent<=0};
+      return {...next, activePosture: computeAutoPosture(next)};
+    })}}));
+  }
+  function setMonsterPosture(id, posture){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, activePosture:posture} : m)}})); }
+  function toggleDefeated(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:!m.isDefeated} : m)}})); }
+  function updatePartyHp(id, delta){ updateActive(enc=>({...enc, party:enc.party.map(p=> p.id===id ? {...p, hpCurrent:Math.max(0,Math.min(p.hpMax,p.hpCurrent+delta))} : p)})); }
+  function addPartyMember(member){ updateActive(enc=>({...enc, party:[...enc.party, member]})); }
+  function removePartyMember(id){ updateActive(enc=>({...enc, party:enc.party.filter(p=>p.id!==id)})); }
+  function addMonster(monster){ updateActive(enc=>({...enc, round:{...enc.round, monsters:[...enc.round.monsters, monster]}})); expand(monster.id); }
+  function removeMonster(id){
+    updateActive(enc=>{
+      const monsters = enc.round.monsters.filter(m=>m.id!==id);
+      const count = Math.max(monsters.filter(m=>!m.isDefeated).length, 1);
+      return {...enc, round:{...enc.round, monsters, activeTurnIndex: enc.round.activeTurnIndex % count}};
+    });
+  }
+  function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
+  function setAxes(axes){ updateActive(enc=>({...enc, axes})); }
+  function handleGenerateEncounter(){
+    const roster = generateEncounterRoster(encounter.scene);
+    updateActive(enc=>{
+      const monsters = [...enc.round.monsters, ...roster];
+      return {...enc, round:{...enc.round, monsters}, axes: suggestAxes(monsters, enc.scene)};
+    });
+  }
+  function nextTurn(){
+    updateActive(enc=>{
+      const living = enc.round.monsters.filter(m=>!m.isDefeated);
+      const count = Math.max(living.length,1);
+      const nextIndex = (enc.round.activeTurnIndex+1)%count;
+      const next = living[nextIndex];
+      if(next) expand(next.id);
+      return {...enc, round:{...enc.round, activeTurnIndex:nextIndex}};
+    });
+  }
+  function nextRound(){ updateActive(enc=>({...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeTurnIndex:0}})); }
+  function resetRound(){ updateActive(enc=>({...enc, round:{...enc.round, roundNumber:1, activeTurnIndex:0}})); }
+  function importEncounter(imported){ updateActive(enc=>({...imported, id: enc.id})); }
+
+  const living = encounter.round.monsters.filter(m=>!m.isDefeated);
+  const activeMonster = living[encounter.round.activeTurnIndex % Math.max(living.length,1)];
+
+  return (
+    <React.Fragment>
+      <div className="topbar">
+        <div className="topbar-inner">
+          <div className="brand">
+            <Icon name="blade" size={22} style={{color:'var(--blood)'}}/>
+            <div><h1>Tactics Table</h1><p>{encounter.name}</p></div>
+          </div>
+          <div className="topbar-actions">
+            <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
+              <Icon name={theme==='dark' ? 'sun' : 'moon'} size={14}/>
+            </button>
+            <button className="btn" onClick={()=>setImportOpen(true)}><Icon name="upload" size={12}/>Import Markdown</button>
+          </div>
+        </div>
+        <EncounterTabs encounters={store.encounters} activeId={store.activeId} onSelect={selectEncounterTab} onAdd={addEncounterTab} onDuplicate={duplicateEncounterTab} onDelete={deleteEncounterTab}
+          renamingId={renamingId} renameValue={renameValue} onRenameStart={startRename} onRenameChange={setRenameValue} onRenameCommit={commitRename}/>
+      </div>
+
+      {importOpen && <ImportModal onClose={()=>setImportOpen(false)} onImport={importEncounter}/>}
+
+      <div className="shell">
+        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}/>
+        <RoundTracker round={encounter.round} onNextTurn={nextTurn} onNextRound={nextRound} onReset={resetRound}/>
+        <div className="main-grid">
+          <div className="stack">
+            <PrepPanel scene={encounter.scene} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
+              party={encounter.party} onPartyDelta={updatePartyHp} onPartyAdd={addPartyMember} onPartyRemove={removePartyMember}/>
+          </div>
+          <div className="stack">
+            <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
+            <div className="monster-grid">
+              {encounter.round.monsters.map(m=>(
+                <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
+                  expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
+                  onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster}
+                  traitTriggers={encounter.traitTriggers}/>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>

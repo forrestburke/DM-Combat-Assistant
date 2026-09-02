@@ -1,14 +1,29 @@
-import { Clock, Compass, Mountain } from 'lucide-react';
+import { Clock, Compass, Mountain, Sparkles } from 'lucide-react';
 import { useEncounterStore } from '../store/useEncounterStore';
+import { suggestAxes } from '../lib/axesSuggester';
 
 export function EncounterAxesPanel() {
   const axes = useEncounterStore((s) => s.encounter.axes);
+  const monsters = useEncounterStore((s) => s.encounter.round.monsters);
+  const scene = useEncounterStore((s) => s.encounter.scene);
+  const setAxes = useEncounterStore((s) => s.setAxes);
 
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/60">
-      <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
-        <Compass size={16} className="text-amber-400" />
-        <h2 className="text-sm font-semibold text-zinc-200 tracking-wide">ENCOUNTER AXES</h2>
+      <div className="flex items-center justify-between gap-2 border-b border-zinc-800 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Compass size={16} className="text-amber-400" />
+          <h2 className="text-sm font-semibold text-zinc-200 tracking-wide">ENCOUNTER AXES</h2>
+        </div>
+        <button
+          onClick={() => setAxes(suggestAxes(monsters, scene))}
+          disabled={monsters.length === 0}
+          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Redraft axes from the current monster roster"
+        >
+          <Sparkles size={11} />
+          Suggest
+        </button>
       </div>
 
       <div className="divide-y divide-zinc-800">

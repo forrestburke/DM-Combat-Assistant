@@ -3,6 +3,12 @@ import type { Encounter } from '../types/encounter';
 export const sampleEncounter: Encounter = {
   id: 'sample-01',
   name: 'Ambush at Blackroot Hollow',
+  scene: {
+    environment: 'Old-growth forest, dusk light barely reaching the ground',
+    terrain: 'Broken canopy, root snarls, a shallow creek bisecting the clearing',
+    combatSituation: 'Ambush — goblins spring from cover as the party enters the hollow',
+    timeOfDay: 'Dusk',
+  },
   party: [
     {
       id: 'pc-1',
@@ -103,6 +109,8 @@ export const sampleEncounter: Encounter = {
         hpCurrent: 7,
         hpMax: 7,
         speed: 30,
+        abilityScores: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
+        style: 'skirmisher',
         passives: ['Nimble Escape', 'Pack Tactics (as ally variant)'],
         attacks: [
           {
@@ -153,6 +161,8 @@ export const sampleEncounter: Encounter = {
         hpCurrent: 7,
         hpMax: 7,
         speed: 30,
+        abilityScores: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
+        style: 'skirmisher',
         passives: ['Nimble Escape'],
         attacks: [
           {
@@ -203,6 +213,8 @@ export const sampleEncounter: Encounter = {
         hpCurrent: 21,
         hpMax: 21,
         speed: 30,
+        abilityScores: { str: 10, dex: 14, con: 12, int: 12, wis: 11, cha: 14 },
+        style: 'leader',
         passives: ['Ritual Surge', 'Pack Tactics'],
         attacks: [
           {

@@ -1,7 +1,44 @@
-import { Crosshair, Minus, Plus, Skull, Sword, Zap } from 'lucide-react';
+import { Crosshair, Minus, Plus, Skull, Sword, Trash2, Zap } from 'lucide-react';
 import type { MonsterCombatState, TacticalPosture } from '../types/encounter';
 import { useEncounterStore } from '../store/useEncounterStore';
 import { HpBar } from './HpBar';
+
+function abilityMod(score: number): string {
+  const mod = Math.floor((score - 10) / 2);
+  return mod >= 0 ? `+${mod}` : `${mod}`;
+}
+
+function AbilityScoreRow({ monster }: { monster: MonsterCombatState }) {
+  const abilities: { key: keyof MonsterCombatState['abilityScores']; label: string }[] = [
+    { key: 'str', label: 'STR' },
+    { key: 'dex', label: 'DEX' },
+    { key: 'con', label: 'CON' },
+    { key: 'int', label: 'INT' },
+    { key: 'wis', label: 'WIS' },
+    { key: 'cha', label: 'CHA' },
+  ];
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-6 gap-1 text-center">
+        {abilities.map((a) => (
+          <div key={a.key} className="rounded border border-zinc-800 bg-zinc-950/60 py-1">
+            <div className="text-[9px] font-bold text-zinc-500">{a.label}</div>
+            <div className="text-[11px] text-zinc-200 tabular-nums">
+              {monster.abilityScores[a.key]}{' '}
+              <span className="text-zinc-500">({abilityMod(monster.abilityScores[a.key])})</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {monster.savingThrows && (
+        <p className="mt-1 text-[10px] text-zinc-500">
+          <span className="font-semibold">Proficient saves: </span>
+          {monster.savingThrows}
+        </p>
+      )}
+    </div>
+  );
+}
 
 const POSTURE_META: Record<'A' | 'B' | 'C', { label: string; color: string; border: string; bg: string }> = {
   A: { label: 'Offensive', color: 'text-red-300', border: 'border-red-800', bg: 'bg-red-950/60' },
@@ -50,6 +87,7 @@ export function MonsterCard({ monster }: { monster: MonsterCombatState }) {
   const updateMonsterHp = useEncounterStore((s) => s.updateMonsterHp);
   const setMonsterPosture = useEncounterStore((s) => s.setMonsterPosture);
   const toggleMonsterDefeated = useEncounterStore((s) => s.toggleMonsterDefeated);
+  const removeMonster = useEncounterStore((s) => s.removeMonster);
 
   const postures: Record<'A' | 'B' | 'C', TacticalPosture> = {
     A: monster.postureA,
@@ -82,6 +120,13 @@ export function MonsterCard({ monster }: { monster: MonsterCombatState }) {
           >
             <Skull size={13} />
           </button>
+          <button
+            onClick={() => removeMonster(monster.id)}
+            className="rounded p-1.5 border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
+            aria-label={`Remove ${monster.name} from combat`}
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
       </div>
 
@@ -106,6 +151,8 @@ export function MonsterCard({ monster }: { monster: MonsterCombatState }) {
             {monster.hpCurrent}/{monster.hpMax}
           </span>
         </div>
+
+        <AbilityScoreRow monster={monster} />
 
         {/* Posture selector */}
         <div className="mt-3 grid grid-cols-3 gap-1.5">
@@ -160,6 +207,18 @@ export function MonsterCard({ monster }: { monster: MonsterCombatState }) {
           <div className="mt-2 flex items-start gap-1.5">
             <Crosshair size={12} className="text-zinc-500 mt-0.5 shrink-0" />
             <p className="text-[11px] text-zinc-500 leading-snug">{monster.passives.join(' · ')}</p>
+          </div>
+        )}
+
+        {monster.traitDetails && monster.traitDetails.length > 0 && (
+          <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-2.5 space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Traits & Actions (full text)</span>
+            {monster.traitDetails.map((t) => (
+              <p key={t.name} className="text-[11px] text-zinc-400 leading-snug">
+                <span className="font-semibold text-zinc-300">{t.name}. </span>
+                {t.description}
+              </p>
+            ))}
           </div>
         )}
       </div>

@@ -1,5 +1,11 @@
 # Encounter: Ambush at Blackroot Hollow
 
+## Scene
+- Environment: Old-growth forest, dusk light barely reaching the ground
+- Terrain: Broken canopy, root snarls, a shallow creek bisecting the clearing
+- Combat Situation: Ambush — goblins spring from cover as the party enters the hollow
+- Time of Day: Dusk
+
 ## Party
 
 ### Sable
@@ -67,6 +73,8 @@
 - AC: 15
 - HP: 7/7
 - Speed: 30
+- Ability Scores: STR 8, DEX 14, CON 10, INT 10, WIS 8, CHA 8
+- Style: skirmisher
 - Passives: Nimble Escape, Pack Tactics (as ally variant)
 - Reaction Cue: No reaction — spends bonus action on Nimble Escape instead.
 
@@ -99,6 +107,8 @@
 - AC: 15
 - HP: 7/7
 - Speed: 30
+- Ability Scores: STR 8, DEX 14, CON 10, INT 10, WIS 8, CHA 8
+- Style: skirmisher
 - Passives: Nimble Escape
 - Reaction Cue: No reaction — spends bonus action on Nimble Escape instead.
 
@@ -131,6 +141,8 @@
 - AC: 17
 - HP: 21/21
 - Speed: 30
+- Ability Scores: STR 10, DEX 14, CON 12, INT 12, WIS 11, CHA 14
+- Style: leader
 - Passives: Ritual Surge, Pack Tactics
 - Reaction Cue: Shield-adjacent trait: none. Reaction reserved for Ritual Surge concentration save context only.
 

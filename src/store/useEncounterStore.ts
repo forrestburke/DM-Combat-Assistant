@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Encounter, MonsterCombatState, PartyMember } from '../types/encounter';
+import type { Encounter, EncounterAxes, MonsterCombatState, PartyMember, SceneContext } from '../types/encounter';
 import { sampleEncounter } from '../data/sampleEncounter';
 
 interface EncounterStore {
@@ -8,21 +8,31 @@ interface EncounterStore {
   setEncounter: (encounter: Encounter) => void;
   loadSample: () => void;
 
+  // Scene notes (free-text, on-the-fly context)
+  setScene: (patch: Partial<SceneContext>) => void;
+  setAxes: (axes: EncounterAxes) => void;
+
   // Monster actions
   updateMonsterHp: (monsterId: string, delta: number) => void;
   setMonsterPosture: (monsterId: string, posture: 'A' | 'B' | 'C') => void;
   toggleMonsterDefeated: (monsterId: string) => void;
   updateMonster: (monsterId: string, patch: Partial<MonsterCombatState>) => void;
+  addMonster: (monster: MonsterCombatState) => void;
+  removeMonster: (monsterId: string) => void;
 
   // Party actions
   updatePartyHp: (memberId: string, delta: number) => void;
   updateParty: (memberId: string, patch: Partial<PartyMember>) => void;
+  addPartyMember: (member: PartyMember) => void;
+  removePartyMember: (memberId: string) => void;
 
   // Round control
   nextTurn: () => void;
   nextRound: () => void;
   resetRound: () => void;
 }
+
+const emptyScene: SceneContext = { environment: '', terrain: '', combatSituation: '', timeOfDay: '' };
 
 function computeAutoPosture(m: MonsterCombatState): 'A' | 'B' | 'C' {
   if (m.hpMax <= 0) return m.activePosture;
@@ -38,6 +48,13 @@ export const useEncounterStore = create<EncounterStore>()(
 
       setEncounter: (encounter) => set({ encounter }),
       loadSample: () => set({ encounter: sampleEncounter }),
+
+      setScene: (patch) =>
+        set((state) => ({
+          encounter: { ...state.encounter, scene: { ...state.encounter.scene, ...patch } },
+        })),
+
+      setAxes: (axes) => set((state) => ({ encounter: { ...state.encounter, axes } })),
 
       updateMonsterHp: (monsterId, delta) =>
         set((state) => ({
@@ -95,6 +112,30 @@ export const useEncounterStore = create<EncounterStore>()(
           },
         })),
 
+      addMonster: (monster) =>
+        set((state) => ({
+          encounter: {
+            ...state.encounter,
+            round: { ...state.encounter.round, monsters: [...state.encounter.round.monsters, monster] },
+          },
+        })),
+
+      removeMonster: (monsterId) =>
+        set((state) => {
+          const monsters = state.encounter.round.monsters.filter((m) => m.id !== monsterId);
+          const count = Math.max(monsters.filter((m) => !m.isDefeated).length, 1);
+          return {
+            encounter: {
+              ...state.encounter,
+              round: {
+                ...state.encounter.round,
+                monsters,
+                activeTurnIndex: state.encounter.round.activeTurnIndex % count,
+              },
+            },
+          };
+        }),
+
       updatePartyHp: (memberId, delta) =>
         set((state) => ({
           encounter: {
@@ -113,6 +154,14 @@ export const useEncounterStore = create<EncounterStore>()(
             ...state.encounter,
             party: state.encounter.party.map((p) => (p.id === memberId ? { ...p, ...patch } : p)),
           },
+        })),
+
+      addPartyMember: (member) =>
+        set((state) => ({ encounter: { ...state.encounter, party: [...state.encounter.party, member] } })),
+
+      removePartyMember: (memberId) =>
+        set((state) => ({
+          encounter: { ...state.encounter, party: state.encounter.party.filter((p) => p.id !== memberId) },
         })),
 
       nextTurn: () =>
@@ -148,6 +197,21 @@ export const useEncounterStore = create<EncounterStore>()(
           },
         })),
     }),
-    { name: 'dm-combat-engine-storage' }
+    {
+      name: 'dm-combat-engine-storage',
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as { encounter?: Encounter } | undefined;
+        if (state?.encounter && !state.encounter.scene) {
+          state.encounter.scene = { ...emptyScene };
+        }
+        if (state?.encounter?.round?.monsters) {
+          state.encounter.round.monsters = state.encounter.round.monsters.map((m) =>
+            m.abilityScores ? m : { ...m, abilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } }
+          );
+        }
+        return state as EncounterStore;
+      },
+    }
   )
 );
