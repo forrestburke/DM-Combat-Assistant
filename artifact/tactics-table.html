@@ -199,6 +199,21 @@
   .stepper:hover.dmg{border-color:var(--blood); color:var(--blood-text);}
   .stepper:hover.heal{border-color:var(--moss); color:#a9c684;}
 
+  .ac-input{ width:34px; background:transparent; border:none; color:inherit; font-family:inherit; font-size:inherit; padding:0; text-align:left; }
+  .ac-input:focus{ outline:1px solid var(--arcane); }
+  .hp-num{ width:46px; text-align:center; padding:3px 2px; }
+
+  .action-btn{
+    display:flex; align-items:center; justify-content:center; width:32px; height:32px; flex-shrink:0;
+    border:1.5px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
+    border-radius:3px; transition:border-color .15s, color .15s, background .15s;
+  }
+  .action-btn.defeat{ border-color:rgba(255,182,39,.35); }
+  .action-btn.defeat:hover{ color:var(--amber-text); border-color:var(--amber); background:var(--amber-soft); }
+  .action-btn.defeat.active{ background:var(--line-soft); border-color:var(--parchment-faint); color:var(--parchment); }
+  .action-btn.remove{ border-color:rgba(255,77,74,.35); color:var(--blood-text); }
+  .action-btn.remove:hover{ border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); box-shadow:var(--glow-blood); }
+
   /* scene */
   .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
   .monster-add .grow{flex:1; min-width:220px;}
@@ -566,6 +581,8 @@ function parseMonster(block){
     speed:parseInt10(requireField(f,'speed',context),'Speed',context),
     abilityScores: parseAbilityScores(f.get('abilityscores'), context),
     savingThrows: f.get('savingthrows') || undefined,
+    resistances: f.get('resistances') ? parseList(f.get('resistances')) : undefined,
+    vulnerabilities: f.get('vulnerabilities') ? parseList(f.get('vulnerabilities')) : undefined,
     style: validStyles.includes(styleRaw) ? styleRaw : undefined,
     passives:parseList(f.get('passives')),
     traitDetails: traitsB ? parseTraitDetails(traitsB.lines) : undefined,
@@ -620,7 +637,7 @@ const srdMonsters = [
     attacks:[{name:'Scimitar', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d6+1 [slashing]'},{name:'Light Crossbow', type:'Ranged', formula:'1d20+3 vs AC', reachOrRange:'80/320 ft', damage:'1d8+1 [piercing]'}], style:'skirmisher', environments:['road','urban','forest','hills'] },
   { name:'Bandit Captain', baseType:'Medium Humanoid', ac:15, hpMax:65, speed:30, abilityScores:{str:15,dex:16,con:14,int:14,wis:11,cha:14}, passives:[],
     attacks:[{name:'Scimitar (x2)', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d6+3 [slashing]'},{name:'Dagger', type:'Ranged', formula:'1d20+5 vs AC', reachOrRange:'20/60 ft', damage:'1d4+3 [piercing]'}], style:'leader', environments:['road','urban','forest','hills'] },
-  { name:'Skeleton', baseType:'Medium Undead', ac:13, hpMax:13, speed:30, abilityScores:{str:10,dex:14,con:15,int:6,wis:8,cha:5}, passives:['Vulnerable to bludgeoning'],
+  { name:'Skeleton', baseType:'Medium Undead', ac:13, hpMax:13, speed:30, abilityScores:{str:10,dex:14,con:15,int:6,wis:8,cha:5}, passives:[], vulnerabilities:['bludgeoning'],
     attacks:[{name:'Shortsword', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [piercing]'},{name:'Shortbow', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'80/320 ft', damage:'1d6+2 [piercing]'}], style:'mindless', environments:['dungeon','crypt','ruins','undead'] },
   { name:'Zombie', baseType:'Medium Undead', ac:8, hpMax:22, speed:20, abilityScores:{str:13,dex:6,con:16,int:3,wis:6,cha:5}, passives:['Undead Fortitude'],
     attacks:[{name:'Slam', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d6+1 [bludgeoning]'}], style:'mindless', environments:['dungeon','crypt','ruins','undead','swamp'] },
@@ -644,7 +661,7 @@ const srdMonsters = [
     attacks:[{name:'Claws', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d8+5 [slashing]'},{name:'Beak', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'1d10+5 [piercing]'}], style:'brute', environments:['forest','mountain'] },
   { name:'Gelatinous Cube', baseType:'Large Ooze', ac:6, hpMax:84, speed:15, abilityScores:{str:14,dex:3,con:20,int:1,wis:6,cha:1}, passives:['Ooze Cube (transparent)','Engulf'],
     attacks:[{name:'Pseudopod', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'3d6 [acid]'}], style:'mindless', environments:['dungeon','cave'] },
-  { name:'Mimic', baseType:'Medium Monstrosity (Shapechanger)', ac:12, hpMax:58, speed:15, abilityScores:{str:17,dex:12,con:15,int:5,wis:13,cha:8}, passives:['Shapechanger','False Appearance','Grappler'],
+  { name:'Mimic', baseType:'Medium Monstrosity (Shapechanger)', ac:12, hpMax:58, speed:15, abilityScores:{str:17,dex:12,con:15,int:5,wis:13,cha:8}, passives:['Shapechanger','False Appearance','Grappler'], resistances:['acid'],
     attacks:[{name:'Pseudopod', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d8+3 [bludgeoning] + adhesive'},{name:'Bite', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d8+3 [piercing] + 1d8 [acid]'}], style:'ambusher', environments:['dungeon','cave','ruins'] },
   { name:'Ettin', baseType:'Large Giant', ac:12, hpMax:85, speed:40, abilityScores:{str:21,dex:8,con:17,int:6,wis:10,cha:8}, passives:['Two Heads','Wakeful'],
     attacks:[{name:'Battleaxe (x2)', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d8+5 [slashing]'}], style:'brute', environments:['hills','mountain','cave'] },
@@ -708,7 +725,8 @@ function saveCustomMonsters(list){
 /** Builds a reusable template from a fully-built monster (strips per-encounter combat state). */
 function monsterToTemplate(m){
   return { name:m.name, baseType:m.baseType, ac:m.ac, hpMax:m.hpMax, speed:m.speed, abilityScores:m.abilityScores,
-    savingThrows:m.savingThrows, passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, style:m.style||'skirmisher', environments:[] };
+    savingThrows:m.savingThrows, resistances:m.resistances, vulnerabilities:m.vulnerabilities,
+    passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, style:m.style||'skirmisher', environments:[] };
 }
 
 /* ---------- environmental hazard library ---------- */
@@ -829,7 +847,7 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
   const template = findSrdMonster(lookupName, extraTemplates);
   const name = rawName.trim() || 'Unnamed Creature';
   const base = template
-    ? {baseType:template.baseType, ac:template.ac, hpMax:template.hpMax, speed:template.speed, abilityScores:template.abilityScores, passives:template.passives, traitDetails:template.traitDetails, savingThrows:template.savingThrows, attacks:template.attacks, style:template.style}
+    ? {baseType:template.baseType, ac:template.ac, hpMax:template.hpMax, speed:template.speed, abilityScores:template.abilityScores, passives:template.passives, traitDetails:template.traitDetails, savingThrows:template.savingThrows, resistances:template.resistances, vulnerabilities:template.vulnerabilities, attacks:template.attacks, style:template.style}
     : {baseType:'Custom entry — no SRD match', ac:10, hpMax:10, speed:30, abilityScores:defaultAbilities, passives:[], attacks:[], style:'skirmisher'};
   const ac = overrides?.ac ?? base.ac;
   const hpMax = overrides?.hpMax ?? base.hpMax;
@@ -838,7 +856,8 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
   return {
     id: template ? `${template.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${idSuffix}` : `custom-${idSuffix}-${customMonsterCounter}`,
     name, baseType: base.baseType, ac, hpCurrent: hpMax, hpMax, speed, abilityScores: base.abilityScores,
-    passives: base.passives, traitDetails: base.traitDetails || passivesToTraitDetails(base.passives), savingThrows: base.savingThrows, attacks: base.attacks,
+    passives: base.passives, traitDetails: base.traitDetails || passivesToTraitDetails(base.passives), savingThrows: base.savingThrows,
+    resistances: base.resistances, vulnerabilities: base.vulnerabilities, attacks: base.attacks,
     reactionCue: template ? 'Autofilled from the local compendium — review before running.' : 'No stat block found in the local compendium — stats entered manually.',
     style: base.style, ...generatePostures(base.style), activePosture:'A', isDefeated:false,
   };
@@ -859,6 +878,8 @@ function normalizeGeneratedMonster(data, idSuffix){
     speed: Number(data.speed) || 30,
     abilityScores,
     savingThrows: data.savingThrows ? String(data.savingThrows) : undefined,
+    resistances: Array.isArray(data.resistances) && data.resistances.length ? data.resistances.map(String) : undefined,
+    vulnerabilities: Array.isArray(data.vulnerabilities) && data.vulnerabilities.length ? data.vulnerabilities.map(String) : undefined,
     style,
     passives: Array.isArray(data.passives) ? data.passives.map(String) : [],
     traitDetails: Array.isArray(data.traitDetails) ? data.traitDetails.filter(t=>t && t.name && t.description).map(t=>({name:String(t.name), description:String(t.description)})) : undefined,
@@ -1316,7 +1337,7 @@ function AbilityRow({monster}){
   );
 }
 
-function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, traitTriggers}){
+function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, traitTriggers}){
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
   const cornerColor = isActiveTurn && !monster.isDefeated ? 'var(--blood)' : 'var(--line)';
@@ -1338,9 +1359,12 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           </div>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}} onClick={e=>e.stopPropagation()}>
-          <span className="ac-badge"><Icon name="shield" size={14}/>{monster.ac}</span>
-          <button className="stepper" onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" style={monster.isDefeated ? {borderColor:'var(--parchment-faint)', color:'var(--parchment)'} : {}}><Icon name="skull" size={14}/></button>
-          <button className="stepper" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`}><Icon name="trash" size={14}/></button>
+          <span className="ac-badge">
+            <Icon name="shield" size={14}/>
+            <input className="ac-input" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`}/>
+          </span>
+          <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
+          <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
         </div>
       </div>
 
@@ -1348,13 +1372,31 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
         <button className="stepper dmg" onClick={()=>onDelta(monster.id,-1)} aria-label={`Damage ${monster.name}`}><Icon name="minus" size={13}/></button>
         <HpBar current={monster.hpCurrent} max={monster.hpMax}/>
         <button className="stepper heal" onClick={()=>onDelta(monster.id,1)} aria-label={`Heal ${monster.name}`}><Icon name="plus" size={13}/></button>
-        <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
+        <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`${monster.name} current HP`}/>
+        <span className="mono" style={{color:'var(--parchment-faint)'}}>/</span>
+        <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`${monster.name} max HP`}/>
         <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
       </div>
 
       {expanded && (
         <div className="mcard-body">
           <AbilityRow monster={monster}/>
+          {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0) && (
+            <div style={{display:'flex', flexDirection:'column', gap:4, marginBottom:10}}>
+              {monster.resistances?.length > 0 && (
+                <div className="callout" style={{marginTop:0}}>
+                  <Icon name="shield" size={15} style={{color:'var(--arcane)'}}/>
+                  <p><b style={{color:'var(--arcane-text)'}}>Resistant to </b>{monster.resistances.join(', ')}</p>
+                </div>
+              )}
+              {monster.vulnerabilities?.length > 0 && (
+                <div className="callout" style={{marginTop:0}}>
+                  <Icon name="alert" size={15} style={{color:'var(--blood)'}}/>
+                  <p><b style={{color:'var(--blood-text)'}}>Vulnerable to </b>{monster.vulnerabilities.join(', ')}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="posture-row">
             {['A','B','C'].map(key=>{
@@ -1457,6 +1499,8 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
         + '{"name":string,"baseType":string,"ac":number,"hpMax":number,"speed":number,'
         + '"abilityScores":{"str":number,"dex":number,"con":number,"int":number,"wis":number,"cha":number},'
         + '"savingThrows":string (proficient saves only, e.g. "Dex +4, Wis +3", or "" if none/unclear),'
+        + '"resistances":[string,...] (damage types it resists, or [] if none),'
+        + '"vulnerabilities":[string,...] (damage types it is vulnerable to, or [] if none),'
         + '"passives":[string,...] (short trait names only),'
         + '"traitDetails":[{"name":string,"description":string (full rules text as printed)},...],'
         + '"attacks":[{"name":string,"type":"Melee"|"Ranged"|"Save","formula":string (e.g. "1d20+5 vs AC" or "DC 12 Constitution save"),"reachOrRange":string,"damage":string},...],'
@@ -1501,17 +1545,17 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
       {mode === 'quick' && (
         <div className="monster-add-row">
-          <div style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}}>
-            <label style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
-            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
-          </div>
           <div className="grow">
-            <input list="srd-monster-names" className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name (SRD compendium + your saved monsters)…"/>
+            <input list="srd-monster-names" className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name…"/>
             <datalist id="srd-monster-names">
               {customMonsters.map(m=><option key={'c-'+m.name} value={m.name}/>)}
               {srdMonsters.map(m=><option key={m.name} value={m.name}/>)}
             </datalist>
-            <p className="hint">{name.trim()===''?'Type a name — matches autofill AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No SRD match — set stats manually below.'}</p>
+            <p className="hint">{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}}>
+            <label style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
+            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
           </div>
           <button className="add-btn" disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={16}/>Add</button>
           <button className="disclosure-toggle" style={{width:'auto', padding:'7px 4px'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide':'Manual stats'}</button>
@@ -1542,7 +1586,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
           <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first.</p>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
-            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Passives: ...\n- Reaction Cue: ...\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
+            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Reaction Cue: ...\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
           {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
           <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
             <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
@@ -1743,6 +1787,16 @@ function App(){
     })}}));
   }
   function setMonsterPosture(id, posture){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, activePosture:posture} : m)}})); }
+  function setMonsterStats(id, patch){
+    updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=>{
+      if(m.id!==id) return m;
+      const next = {...m, ...patch};
+      next.hpMax = Math.max(1, next.hpMax);
+      next.hpCurrent = Math.max(0, Math.min(next.hpMax, next.hpCurrent));
+      next.isDefeated = next.hpCurrent <= 0;
+      return {...next, activePosture: computeAutoPosture(next)};
+    })}}));
+  }
   function toggleDefeated(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:!m.isDefeated} : m)}})); }
   function updatePartyHp(id, delta){ updateActive(enc=>({...enc, party:enc.party.map(p=> p.id===id ? {...p, hpCurrent:Math.max(0,Math.min(p.hpMax,p.hpCurrent+delta))} : p)})); }
   function addPartyMember(member){ updateActive(enc=>({...enc, party:[...enc.party, member]})); }
@@ -1823,7 +1877,7 @@ function App(){
               {encounter.round.monsters.map(m=>(
                 <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
                   expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
-                  onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster}
+                  onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster} onSetStats={setMonsterStats}
                   traitTriggers={encounter.traitTriggers}/>
               ))}
             </div>
