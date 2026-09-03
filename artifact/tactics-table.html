@@ -285,6 +285,10 @@
   .attack-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:13.5px; padding:2px 0;}
   .attack-name{color:var(--parchment); font-weight:500; flex-shrink:0;}
   .attack-stats{color:var(--parchment-dim); font-size:12.5px; text-align:right;}
+  .spell-meta{font-size:11px; color:var(--parchment-faint); margin-left:auto; text-transform:none; letter-spacing:normal;}
+  .spell-row{display:flex; align-items:baseline; gap:8px; font-size:13px; padding:2px 0;}
+  .spell-freq{color:var(--parchment-dim); font-weight:600; flex-shrink:0; font-size:11.5px; white-space:nowrap;}
+  .spell-names{color:var(--parchment);}
 
   .callout{display:flex; align-items:flex-start; gap:6px; margin-top:11px;}
   .callout p{font-size:12.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
@@ -607,6 +611,22 @@ function parsePosture(block, context){
   const f = parseBullets(block.lines);
   return {trigger:requireField(f,'trigger',context), movement:requireField(f,'movement',context), action:requireField(f,'action',context), bonusAction:f.get('bonusaction'), tags:parseList(f.get('tags'))};
 }
+function parseSpellcasting(block){
+  const f = parseBullets(block.lines);
+  const ability = f.get('ability');
+  const dc = f.get('dc');
+  const lists = [];
+  for(const line of block.lines){
+    const m = line.trim().match(/^-\s*([A-Za-z][A-Za-z0-9 /_()-]*)\s*:\s*(.*)$/);
+    if(!m) continue;
+    const key = m[1].trim();
+    if(/^ability$/i.test(key) || /^dc$/i.test(key)) continue;
+    const spells = parseList(m[2]);
+    if(spells.length) lists.push({freq:key, spells});
+  }
+  if(!ability && !dc && lists.length===0) return undefined;
+  return {ability, dc, lists};
+}
 function parseMonster(block){
   const context = `monster "${block.heading}"`;
   const split = splitTrailingParen(block.heading);
@@ -616,6 +636,7 @@ function parseMonster(block){
   const sub = splitByHeading(block.lines, 4);
   const traitsB = sub.find(b=>/^traits$/i.test(b.heading));
   const attacksB = sub.find(b=>/^attacks$/i.test(b.heading));
+  const spellsB = sub.find(b=>/^spells$/i.test(b.heading));
   const pA = sub.find(b=>/^posture a:/i.test(b.heading));
   const pB = sub.find(b=>/^posture b:/i.test(b.heading));
   const pC = sub.find(b=>/^posture c:/i.test(b.heading));
@@ -634,6 +655,7 @@ function parseMonster(block){
     passives:parseList(f.get('passives')),
     traitDetails: traitsB ? parseTraitDetails(traitsB.lines) : undefined,
     attacks:parseAttacks(attacksB.lines, context),
+    spellcasting: spellsB ? parseSpellcasting(spellsB) : undefined,
     reactionCue: f.get('reactioncue') || 'Autofilled — review and adjust before running.',
     postureA: pA ? parsePosture(pA, `${context} Posture A`) : generated.postureA,
     postureB: pB ? parsePosture(pB, `${context} Posture B`) : generated.postureB,
@@ -1020,10 +1042,21 @@ const srdMonsters = [
   { name:"Young Copper Dragon", baseType:"Large Dragon", ac:17, hpMax:119, speed:40, abilityScores:{str:19,dex:12,con:17,int:16,wis:13,cha:15}, passives:[], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+7 vs AC","reachOrRange":"10 ft","damage":"2d10+4 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+7 vs AC","reachOrRange":"5 ft","damage":"2d6+4 [slashing]"}], style:"brute", environments:["mountain","cave"] },
   { name:"Young Gold Dragon", baseType:"Large Dragon", ac:18, hpMax:178, speed:40, abilityScores:{str:23,dex:14,con:21,int:16,wis:13,cha:20}, passives:["Amphibious"], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"10 ft","damage":"2d10+6 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"5 ft","damage":"2d6+6 [slashing]"}], style:"brute", environments:["mountain","cave"] },
   { name:"Young Silver Dragon", baseType:"Large Dragon", ac:18, hpMax:168, speed:40, abilityScores:{str:23,dex:10,con:21,int:14,wis:11,cha:19}, passives:[], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"10 ft","damage":"2d10+6 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"5 ft","damage":"2d6+6 [slashing]"}], style:"brute", environments:["mountain","cave"] },
-  { name:"Druid", baseType:"Medium Humanoid", ac:11, hpMax:27, speed:30, abilityScores:{str:10,dex:12,con:13,int:12,wis:15,cha:11}, passives:["Spellcaster (Wis, DC 12, 4th level)","Barkskin (self, 1/day): AC becomes 16 for 1 hour"], attacks:[{name:'Quarterstaff', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d6 [bludgeoning] (2d4+2 with Shillelagh)'},{name:'Produce Flame', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'30 ft', damage:'1d8 [fire]'},{name:'Thunderwave', type:'Save', formula:'DC 12 Con', reachOrRange:'15-ft cube', damage:'2d8 [thunder], push 10 ft; half and no push on save'}], style:'leader', environments:['forest','hills'] },
-  { name:"Dryad", baseType:"Medium Fey", ac:11, hpMax:22, speed:30, abilityScores:{str:10,dex:12,con:11,int:14,wis:15,cha:18}, passives:["Innate Spellcasting (Cha, DC 14)","Magic Resistance","Tree Stride (10 ft into one tree, emerge from another within 60 ft)","Pass without Trace (self+allies, 1/day)"], attacks:[{name:'Club', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d4 [bludgeoning]'},{name:'Fey Charm', type:'Save', formula:'DC 14 Wis', reachOrRange:'30 ft', damage:'no damage — target charmed until it succeeds a save or 24 hr pass'},{name:'Entangle', type:'Save', formula:'DC 14 Str', reachOrRange:'20-ft square', damage:'no damage — restrained until it breaks free (1/day)'}], style:'leader', environments:['forest'] },
+  { name:"Druid", baseType:"Medium Humanoid", ac:11, hpMax:27, speed:30, abilityScores:{str:10,dex:12,con:13,int:12,wis:15,cha:11}, passives:["Spellcaster (Wis, DC 12, 4th level)","Barkskin (self, 1/day): AC becomes 16 for 1 hour"], attacks:[{name:'Quarterstaff', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d6 [bludgeoning] (2d4+2 with Shillelagh)'},{name:'Produce Flame', type:'Ranged', formula:'1d20+4 vs AC', reachOrRange:'30 ft', damage:'1d8 [fire]'},{name:'Thunderwave', type:'Save', formula:'DC 12 Con', reachOrRange:'15-ft cube', damage:'2d8 [thunder], push 10 ft; half and no push on save'}], spellcasting:{ability:'Wisdom', dc:12, lists:[{freq:'Cantrips (at will)', spells:['Druidcraft','Produce Flame','Shillelagh']},{freq:'1st Level (4 slots)', spells:['Entangle','Longstrider','Speak with Animals','Thunderwave']},{freq:'2nd Level (3 slots)', spells:['Animal Messenger','Barkskin']}]}, style:'leader', environments:['forest','hills'] },
+  { name:"Dryad", baseType:"Medium Fey", ac:11, hpMax:22, speed:30, abilityScores:{str:10,dex:12,con:11,int:14,wis:15,cha:18}, passives:["Innate Spellcasting (Cha, DC 14)","Magic Resistance","Tree Stride (10 ft into one tree, emerge from another within 60 ft)","Pass without Trace (self+allies, 1/day)"], attacks:[{name:'Club', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d4 [bludgeoning]'},{name:'Fey Charm', type:'Save', formula:'DC 14 Wis', reachOrRange:'30 ft', damage:'no damage — target charmed until it succeeds a save or 24 hr pass'},{name:'Entangle', type:'Save', formula:'DC 14 Str', reachOrRange:'20-ft square', damage:'no damage — restrained until it breaks free (1/day)'}], spellcasting:{ability:'Charisma', dc:14, lists:[{freq:'At Will', spells:['Druidcraft']},{freq:'3/Day Each', spells:['Entangle','Goodberry']},{freq:'1/Day Each', spells:['Barkskin','Pass without Trace','Shillelagh']}]}, style:'leader', environments:['forest'] },
   { name:"Frog", baseType:"Tiny Beast", ac:11, hpMax:1, speed:20, abilityScores:{str:1,dex:13,con:8,int:1,wis:8,cha:3}, passives:["Amphibious","Standing Leap"], attacks:[], style:'skirmisher', environments:['swamp','forest'] },
-  { name:"Lich", baseType:"Medium Undead", ac:17, hpMax:135, speed:30, abilityScores:{str:11,dex:16,con:16,int:20,wis:14,cha:16}, resistances:['cold','lightning','necrotic'], passives:["Legendary Resistance (3/Day)","Rejuvenation (phylactery)","Spellcaster (Int, DC 20, 18th level)","Turn Resistance","3 Legendary Actions/round (Cantrip; Paralyzing Touch costs 2; Frightening Gaze costs 2; Disrupt Life costs 3)"], attacks:[{name:'Paralyzing Touch', type:'Melee', formula:'1d20+12 vs AC', reachOrRange:'5 ft', damage:'3d6 [cold] (DC 18 Con or paralyzed 1 min)'},{name:'Fireball', type:'Save', formula:'DC 20 Dex', reachOrRange:'20-ft radius', damage:'8d6 [fire]; half on save'},{name:'Finger of Death', type:'Save', formula:'DC 20 Con', reachOrRange:'60 ft', damage:'7d8+30 [necrotic]; half on save; a humanoid slain rises as its zombie servant'}], style:'leader', environments:['dungeon','ruins','undead'] },
+  { name:"Lich", baseType:"Medium Undead", ac:17, hpMax:135, speed:30, abilityScores:{str:11,dex:16,con:16,int:20,wis:14,cha:16}, resistances:['cold','lightning','necrotic'], passives:["Legendary Resistance (3/Day)","Rejuvenation (phylactery)","Spellcaster (Int, DC 20, 18th level)","Turn Resistance","3 Legendary Actions/round (Cantrip; Paralyzing Touch costs 2; Frightening Gaze costs 2; Disrupt Life costs 3)"], attacks:[{name:'Paralyzing Touch', type:'Melee', formula:'1d20+12 vs AC', reachOrRange:'5 ft', damage:'3d6 [cold] (DC 18 Con or paralyzed 1 min)'},{name:'Fireball', type:'Save', formula:'DC 20 Dex', reachOrRange:'20-ft radius', damage:'8d6 [fire]; half on save'},{name:'Finger of Death', type:'Save', formula:'DC 20 Con', reachOrRange:'60 ft', damage:'7d8+30 [necrotic]; half on save; a humanoid slain rises as its zombie servant'}], spellcasting:{ability:'Intelligence', dc:20, lists:[
+    {freq:'Cantrips (at will)', spells:['Mage Hand','Prestidigitation','Ray of Frost']},
+    {freq:'1st Level (4 slots)', spells:['Detect Magic','Magic Missile','Shield','Thunderwave']},
+    {freq:'2nd Level (3 slots)', spells:['Detect Thoughts','Invisibility','Acid Arrow','Mirror Image']},
+    {freq:'3rd Level (3 slots)', spells:['Animate Dead','Counterspell','Dispel Magic','Fireball']},
+    {freq:'4th Level (3 slots)', spells:['Blight','Dimension Door']},
+    {freq:'5th Level (3 slots)', spells:['Cloudkill','Scrying']},
+    {freq:'6th Level (1 slot)', spells:['Disintegrate','Globe of Invulnerability']},
+    {freq:'7th Level (1 slot)', spells:['Finger of Death','Plane Shift']},
+    {freq:'8th Level (1 slot)', spells:['Dominate Monster','Power Word Stun']},
+    {freq:'9th Level (1 slot)', spells:['Power Word Kill']},
+  ]}, style:'leader', environments:['dungeon','ruins','undead'] },
   { name:"Rug of Smothering", baseType:"Large Construct", ac:12, hpMax:33, speed:10, abilityScores:{str:17,dex:14,con:10,int:1,wis:3,cha:1}, passives:["Antimagic Susceptibility","Damage Transfer","False Appearance"], attacks:[{name:'Smother', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'grapple + restrain + blind; 2d6+3 [bludgeoning] per turn while grappled'}], style:'mindless', environments:['dungeon','ruins'] },
   { name:"Sea Horse", baseType:"Tiny Beast", ac:11, hpMax:1, speed:0, abilityScores:{str:1,dex:12,con:8,int:1,wis:10,cha:2}, passives:["Water Breathing"], attacks:[], style:'skirmisher', environments:['water','swamp'] },
   { name:"Shrieker", baseType:"Medium Plant", ac:5, hpMax:13, speed:0, abilityScores:{str:1,dex:1,con:10,int:1,wis:3,cha:1}, passives:["False Appearance","Shriek (alerts nearby creatures when disturbed)"], attacks:[], style:'mindless', environments:['dungeon','cave','swamp'] },
@@ -1086,7 +1119,7 @@ function saveCustomMonsters(list){
 function monsterToTemplate(m){
   return { name:m.name, baseType:m.baseType, ac:m.ac, hpMax:m.hpMax, speed:m.speed, abilityScores:m.abilityScores,
     savingThrows:m.savingThrows, resistances:m.resistances, vulnerabilities:m.vulnerabilities,
-    passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, style:m.style||'skirmisher', environments:[] };
+    passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, spellcasting:m.spellcasting, style:m.style||'skirmisher', environments:[] };
 }
 
 /* ---------- environmental hazard library ---------- */
@@ -1207,7 +1240,7 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
   const template = findSrdMonster(lookupName, extraTemplates);
   const name = rawName.trim() || 'Unnamed Creature';
   const base = template
-    ? {baseType:template.baseType, ac:template.ac, hpMax:template.hpMax, speed:template.speed, abilityScores:template.abilityScores, passives:template.passives, traitDetails:template.traitDetails, savingThrows:template.savingThrows, resistances:template.resistances, vulnerabilities:template.vulnerabilities, attacks:template.attacks, style:template.style}
+    ? {baseType:template.baseType, ac:template.ac, hpMax:template.hpMax, speed:template.speed, abilityScores:template.abilityScores, passives:template.passives, traitDetails:template.traitDetails, savingThrows:template.savingThrows, resistances:template.resistances, vulnerabilities:template.vulnerabilities, attacks:template.attacks, spellcasting:template.spellcasting, style:template.style}
     : {baseType:'Custom entry — no SRD match', ac:10, hpMax:10, speed:30, abilityScores:defaultAbilities, passives:[], attacks:[], style:'skirmisher'};
   const ac = overrides?.ac ?? base.ac;
   const hpMax = overrides?.hpMax ?? base.hpMax;
@@ -1217,7 +1250,7 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
     id: template ? `${template.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${idSuffix}` : `custom-${idSuffix}-${customMonsterCounter}`,
     name, baseType: base.baseType, ac, hpCurrent: hpMax, hpMax, speed, abilityScores: base.abilityScores,
     passives: base.passives, traitDetails: base.traitDetails || passivesToTraitDetails(base.passives), savingThrows: base.savingThrows,
-    resistances: base.resistances, vulnerabilities: base.vulnerabilities, attacks: base.attacks,
+    resistances: base.resistances, vulnerabilities: base.vulnerabilities, attacks: base.attacks, spellcasting: base.spellcasting,
     reactionCue: template ? 'Autofilled from the local compendium — review before running.' : 'No stat block found in the local compendium — stats entered manually.',
     style: base.style, ...generatePostures(base.style), activePosture:'A', isDefeated:false,
   };
@@ -1796,6 +1829,19 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
           ))}
 
+          {monster.spellcasting && (
+            <>
+              <div className="section-label"><Icon name="scroll" size={14} style={{color:'var(--parchment-faint)'}}/><span>Spells</span>
+                {(monster.spellcasting.ability || monster.spellcasting.dc) && (
+                  <span className="spell-meta mono">{[monster.spellcasting.ability, monster.spellcasting.dc?`DC ${monster.spellcasting.dc}`:null].filter(Boolean).join(' · ')}</span>
+                )}
+              </div>
+              {monster.spellcasting.lists.map(l=>(
+                <div className="spell-row" key={l.freq}><span className="spell-freq">{l.freq}</span><span className="spell-names">{l.spells.join(', ')}</span></div>
+              ))}
+            </>
+          )}
+
           <div className="callout reaction"><Icon name="zap" size={15}/><p>{monster.reactionCue}</p></div>
           {monster.passives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{monster.passives.join(' · ')}</p></div>}
 
@@ -1837,6 +1883,13 @@ const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block imag
 - Attack Name | Melee/Ranged/Save | to-hit or DC | range | damage
 
 --- everything below is optional — the app auto-generates it from Style if omitted ---
+
+#### Spells (only include this section if the creature is a spellcaster)
+- Ability: the spellcasting ability (e.g. Wisdom)
+- DC: the spell save DC
+- Cantrips (at will): comma-separated spell names
+- 1st Level (N slots): comma-separated spell names
+- (repeat one line per frequency/level the stat block lists, spell names only — no spell descriptions)
 
 - Reaction Cue: one sentence on resource/reaction usage
 
@@ -1963,7 +2016,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
             <Icon name={copied?'check':'copy'} size={14}/> {copied ? 'Copied!' : 'Copy Transcription Prompt'}
           </button>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
-            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional)\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n--- everything below is optional — auto-generated if omitted ---\n\n- Reaction Cue: ...\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
+            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional)\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n--- everything below is optional — auto-generated if omitted ---\n\n#### Spells (only for spellcasters)\n- Ability: Wisdom\n- DC: 13\n- Cantrips (at will): Spell One, Spell Two\n- 1st Level (4 slots): Spell Three, Spell Four\n\n- Reaction Cue: ...\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
           {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
           <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
             <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
