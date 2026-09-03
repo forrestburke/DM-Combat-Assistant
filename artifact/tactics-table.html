@@ -116,6 +116,9 @@
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
   .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
+  .axis-card.axis-locked{border-style:dashed;}
+  .icon-btn.lock-active{color:var(--amber);}
+  .icon-btn[disabled]{opacity:.35; cursor:not-allowed;}
   .axis-eyebrow{display:flex; align-items:center; gap:5px; margin-bottom:4px;}
   .axis-title{font-size:15px; font-weight:600; color:var(--parchment); margin:0;}
   .axis-desc{font-size:13.5px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
@@ -289,6 +292,7 @@
   .spell-row{display:flex; align-items:baseline; gap:8px; font-size:13px; padding:2px 0;}
   .spell-freq{color:var(--parchment-dim); font-weight:600; flex-shrink:0; font-size:11.5px; white-space:nowrap;}
   .spell-names{color:var(--parchment);}
+  .multiattack-badge{font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--blood-text); background:var(--blood-soft); border:1px solid rgba(178,60,55,.4); border-radius:20px; padding:2px 7px; margin-left:2px;}
 
   .callout{display:flex; align-items:flex-start; gap:6px; margin-top:11px;}
   .callout p{font-size:12.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
@@ -365,6 +369,10 @@ function Icon({name, size=18, style}) {
     case 'skull': return <svg {...c}><circle cx="12" cy="10" r="7"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M9 16 V19 H11 V21 H13 V19 H15 V16"/></svg>;
     case 'crosshair': return <svg {...c}><circle cx="12" cy="12" r="7"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>;
     case 'upload': return <svg {...c}><path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M4 17 V20 H20 V17"/></svg>;
+    case 'download': return <svg {...c}><path d="M12 3 V15"/><path d="M7 10 L12 15 L17 10"/><path d="M4 17 V20 H20 V17"/></svg>;
+    case 'lock': return <svg {...c}><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11 V7 A4 4 0 0 1 16 7 V11"/></svg>;
+    case 'unlock': return <svg {...c}><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11 V7 A4 4 0 0 1 15.5 5.3"/></svg>;
+    case 'swords-x': return <svg {...c}><path d="M12 2 L14 9 L12 22 L10 9 Z"/><path d="M7 9 H17"/></svg>;
     case 'x': return <svg {...c}><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>;
     case 'alert': return <svg {...c}><path d="M12 3 L22 20 H2 Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none"/></svg>;
     case 'skip': return <svg {...c}><path d="M6 5 L15 12 L6 19 Z" fill="currentColor" stroke="none"/><line x1="18" y1="5" x2="18" y2="19"/></svg>;
@@ -416,6 +424,7 @@ const sampleEncounter = {
     hazardOrClock:{ title:'Ritual Completion Clock', initiativeCount:20,
       triggerEffect:"At initiative count 20 (losing ties), the shaman advances the ritual by 1 stage. At Stage 3, a Blackroot Treant animates and joins the goblins." },
   },
+  axesLocked:{win:false, opt:false, hazard:false},
   traitTriggers: [
     {id:'tt-1', name:'Nimble Escape', creatureName:'Goblin Skulker', triggerCondition:'End of goblin turn, if it took the Attack or Disengage action', mechanicalEffect:'May take the Disengage or Hide action as a bonus action.', formulaOrDC:'No roll — automatic bonus action'},
     {id:'tt-2', name:'Ritual Surge', creatureName:'Blackroot Shaman', triggerCondition:'Shaman takes damage while concentrating on the ritual', mechanicalEffect:'Must succeed on a Constitution save or lose concentration; ritual clock resets to Stage 0.', formulaOrDC:'DC 10 + damage taken'},
@@ -1566,7 +1575,7 @@ function HazardBadge({value, color}){
   return <span className="axis-badge mono" style={{'--c':color}}>{text}</span>;
 }
 
-function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCustom}){
+function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCustom, locked, onToggleLock}){
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState(''); const [trigger, setTrigger] = useState('');
   const [count, setCount] = useState('20'); const [roundEnd, setRoundEnd] = useState(false);
@@ -1584,11 +1593,16 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
   }
 
   return (
-    <div className="axis-card">
+    <div className={"axis-card"+(locked?" axis-locked":"")}>
       <div className="corner corner-tl" style={{'--c':color}}/><div className="corner corner-tr" style={{'--c':color}}/><div className="corner corner-bl" style={{'--c':color}}/><div className="corner corner-br" style={{'--c':color}}/>
-      <div className="axis-eyebrow">
-        <Icon name="clock" size={14} style={{color}}/>
-        <span className="eyebrow" style={{color}}>Hazard / Clock</span>
+      <div className="axis-eyebrow" style={{justifyContent:'space-between'}}>
+        <span style={{display:'flex', alignItems:'center', gap:5}}>
+          <Icon name="clock" size={14} style={{color}}/>
+          <span className="eyebrow" style={{color}}>Hazard / Clock</span>
+        </span>
+        <button className={"icon-btn"+(locked?" lock-active":"")} onClick={onToggleLock} aria-label={locked?'Unlock Hazard / Clock':'Lock Hazard / Clock'} title={locked?"Locked — won't be overwritten. Click to unlock.":'Lock this axis so rolls/suggestions leave it alone'}>
+          <Icon name={locked?'lock':'unlock'} size={13}/>
+        </button>
       </div>
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
         <p className="axis-title">{hazard.title}</p>
@@ -1596,7 +1610,7 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
       </div>
       <p className="axis-note" style={{'--c':color, color:textColor}}>{hazard.triggerEffect}</p>
       <div style={{display:'flex', gap:6, marginTop:10, flexWrap:'wrap'}}>
-        <button className="btn" onClick={randomize} title="Pick a random environmental hazard">
+        <button className="btn" onClick={randomize} disabled={locked} title={locked?'Locked — unlock to randomize':'Pick a random environmental hazard'}>
           <Icon name="sparkles" size={13}/>Randomize
         </button>
         <button className="disclosure-toggle" style={{width:'auto', padding:'6px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowAdd(v=>!v)}>
@@ -1634,7 +1648,7 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
   );
 }
 
-function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, onRollWinCondition, onRollBattlefieldOptimizer, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
+function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, onRollWinCondition, onRollBattlefieldOptimizer, locked, onToggleLock, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
   const cells = [
     {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds, onRoll:onRollWinCondition},
     {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit, onRoll:onRollBattlefieldOptimizer},
@@ -1653,17 +1667,24 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
         </div>
       </div>
       <div className="axes-grid">
-        {cells.map(c=>(
-          <div className="axis-card" key={c.key}>
+        {cells.map(c=>{
+          const isLocked = !!locked?.[c.key];
+          return (
+          <div className={"axis-card"+(isLocked?" axis-locked":"")} key={c.key}>
             <div className="corner corner-tl" style={{'--c':c.color}}/><div className="corner corner-tr" style={{'--c':c.color}}/><div className="corner corner-bl" style={{'--c':c.color}}/><div className="corner corner-br" style={{'--c':c.color}}/>
             <div className="axis-eyebrow" style={{justifyContent:'space-between'}}>
               <span style={{display:'flex', alignItems:'center', gap:5}}>
                 {c.icon && <Icon name={c.icon} size={14} style={{color:c.color}}/>}
                 <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
               </span>
-              <button className="icon-btn" onClick={c.onRoll} aria-label={`Roll a new ${c.eyebrow}`} title={`Roll a new ${c.eyebrow} — keeps the other axes as-is`}>
-                <Icon name="sparkles" size={13}/>
-              </button>
+              <span style={{display:'flex', alignItems:'center', gap:2}}>
+                <button className={"icon-btn"+(isLocked?" lock-active":"")} onClick={()=>onToggleLock(c.key)} aria-label={isLocked?`Unlock ${c.eyebrow}`:`Lock ${c.eyebrow}`} title={isLocked?`Locked — won't be overwritten by rolls or suggestions. Click to unlock.`:`Lock this axis so rolls/suggestions leave it alone`}>
+                  <Icon name={isLocked?'lock':'unlock'} size={13}/>
+                </button>
+                <button className="icon-btn" onClick={c.onRoll} disabled={isLocked} aria-label={`Roll a new ${c.eyebrow}`} title={isLocked?'Locked — unlock to roll a new one':`Roll a new ${c.eyebrow} — keeps the other axes as-is`}>
+                  <Icon name="sparkles" size={13}/>
+                </button>
+              </span>
             </div>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
               <p className="axis-title">{c.title}</p>
@@ -1671,8 +1692,9 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
             {c.desc && <p className="axis-desc">{c.desc}</p>}
             <p className="axis-note" style={{'--c':c.color, color:c.textColor}}>{c.note}</p>
           </div>
-        ))}
-        <HazardCell hazard={axes.hazardOrClock} customHazards={customHazards} onApply={onApplyHazard} onSaveCustom={onSaveCustomHazard} onRemoveCustom={onRemoveCustomHazard}/>
+        );})}
+        <HazardCell hazard={axes.hazardOrClock} customHazards={customHazards} onApply={onApplyHazard} onSaveCustom={onSaveCustomHazard} onRemoveCustom={onRemoveCustomHazard}
+          locked={!!locked?.hazard} onToggleLock={()=>onToggleLock('hazard')}/>
       </div>
       <MapElementsStrip scene={scene}/>
       <SceneFieldsStrip scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
@@ -1829,7 +1851,10 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           </div>
           <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
 
-          <div className="section-label"><Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span></div>
+          <div className="section-label">
+            <Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span>
+            {monster.attacks.length > 1 && <span className="multiattack-badge" title="This monster can use more than one of these attacks in a turn">Multiattack</span>}
+          </div>
           {monster.attacks.map(a=>(
             <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
           ))}
@@ -2036,6 +2061,49 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
   );
 }
 
+function DataModal({mode, exportText, onImport, onClose}){
+  const [text, setText] = useState('');
+  const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+  function copy(){
+    navigator.clipboard?.writeText(exportText).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 2000); });
+  }
+  function handleImport(){
+    try{ onImport(text); onClose(); }
+    catch(e){ setError(e.message || 'Unexpected error while importing.'); }
+  }
+  return (
+    <div className="modal-veil" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-head">
+          <h2><Icon name={mode==='export'?'download':'upload'} size={17} style={{color:'var(--arcane)'}}/>{mode==='export'?'Export All Data':'Import Data'}</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
+        </div>
+        <div className="modal-body">
+          {mode==='export' ? (
+            <>
+              <p style={{fontSize:12.5, color:'var(--parchment-faint)', margin:'0 0 8px'}}>Every encounter tab, your custom monster library, and your custom hazard library, as one block of text. Copy it and save it somewhere (a text file, a note) — on another device, paste it into Import Data to restore everything.</p>
+              <textarea readOnly value={exportText} onClick={e=>e.target.select()}/>
+            </>
+          ) : (
+            <>
+              <p style={{fontSize:12.5, color:'var(--parchment-faint)', margin:'0 0 8px'}}>Paste a Tactics Table export below. This replaces your current encounters and custom libraries on this device — export first if you want to keep what's here now.</p>
+              <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Paste exported data here…"/>
+            </>
+          )}
+          {error && <div className="error-box"><Icon name="alert" size={16}/><p>{error}</p></div>}
+        </div>
+        <div className="modal-foot">
+          <button className="btn" onClick={onClose}>{mode==='export'?'Done':'Cancel'}</button>
+          {mode==='export'
+            ? <button className="btn btn-arcane" onClick={copy}><Icon name={copied?'check':'copy'} size={15}/>{copied?'Copied!':'Copy to Clipboard'}</button>
+            : <button className="btn btn-blood" disabled={!text.trim()} onClick={handleImport}>Overwrite &amp; Import</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImportModal({onClose, onImport}){
   const [text, setText] = useState(''); const [error, setError] = useState(null);
   function handleImport(){
@@ -2070,6 +2138,7 @@ function blankEncounter(name){
     axes:{ winCondition:{title:'Win Condition — not set yet', description:'Use Draft Axes from Scene, Suggest from Roster, or fill this in by hand.', moraleThresholds:'—'},
            battlefieldOptimizer:{title:'Battlefield Optimizer — not set yet', description:'', mechanicalBenefit:'—'},
            hazardOrClock:{title:'Hazard / Clock — not set yet', initiativeCount:20, triggerEffect:'—'} },
+    axesLocked:{win:false, opt:false, hazard:false},
     traitTriggers:[], round:{roundNumber:1, initiativeCount:20, activeCombatantId:null, monsters:[]},
   };
 }
@@ -2137,6 +2206,7 @@ function App(){
   const [customMonsters, setCustomMonsters] = useState(loadCustomMonsters);
   const [customHazards, setCustomHazards] = useState(loadCustomHazards);
   const [importOpen, setImportOpen] = useState(false);
+  const [dataModalMode, setDataModalMode] = useState(null); // null | 'export' | 'import'
   const [expandedIds, setExpandedIds] = useState(()=>new Set());
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -2222,28 +2292,68 @@ function App(){
     else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, initiative:n} : m)}}));
   }
   function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
-  function setAxes(axes){ updateActive(enc=>({...enc, axes})); }
-  function handleGenerateEncounter(){
-    updateActive(enc => ({...enc, axes: suggestAxes(enc.round.monsters, enc.scene)}));
+  function getLocks(enc){ return enc.axesLocked || {win:false, opt:false, hazard:false}; }
+  function setAxes(axes){
+    updateActive(enc=>{
+      const locked = getLocks(enc);
+      return {...enc, axes:{
+        winCondition: locked.win ? enc.axes.winCondition : axes.winCondition,
+        battlefieldOptimizer: locked.opt ? enc.axes.battlefieldOptimizer : axes.battlefieldOptimizer,
+        hazardOrClock: locked.hazard ? enc.axes.hazardOrClock : axes.hazardOrClock,
+      }};
+    });
   }
-  function applyHazard(hazard){ updateActive(enc=>({...enc, axes:{...enc.axes, hazardOrClock: hazard}})); }
+  function handleGenerateEncounter(){
+    updateActive(enc => {
+      const locked = getLocks(enc);
+      const drafted = suggestAxes(enc.round.monsters, enc.scene);
+      return {...enc, axes:{
+        winCondition: locked.win ? enc.axes.winCondition : drafted.winCondition,
+        battlefieldOptimizer: locked.opt ? enc.axes.battlefieldOptimizer : drafted.battlefieldOptimizer,
+        hazardOrClock: locked.hazard ? enc.axes.hazardOrClock : drafted.hazardOrClock,
+      }};
+    });
+  }
+  function applyHazard(hazard){ updateActive(enc=> getLocks(enc).hazard ? enc : ({...enc, axes:{...enc.axes, hazardOrClock: hazard}})); }
   function addCustomHazard(hazard){ setCustomHazards(list=>[...list.filter(h=>h.title.toLowerCase()!==hazard.title.toLowerCase()), hazard]); }
   function removeCustomHazard(title){ setCustomHazards(list=>list.filter(h=>h.title!==title)); }
+  function toggleAxisLock(key){ updateActive(enc=>({...enc, axesLocked:{...getLocks(enc), [key]: !getLocks(enc)[key]}})); }
+  function buildExportPayload(){
+    return JSON.stringify({tacticsTableExport:1, exportedAt:new Date().toISOString(), store, customMonsters, customHazards}, null, 2);
+  }
+  function applyImportedData(jsonText){
+    const data = JSON.parse(jsonText);
+    if(!data || typeof data !== 'object' || !data.store || !Array.isArray(data.store.encounters) || data.store.encounters.length===0){
+      throw new Error('This doesn\'t look like a Tactics Table export — expected a "store" with at least one encounter.');
+    }
+    setStore(data.store);
+    if(Array.isArray(data.customMonsters)) setCustomMonsters(data.customMonsters);
+    if(Array.isArray(data.customHazards)) setCustomHazards(data.customHazards);
+  }
   function rollCombatMenu(){
     const obj = COMBAT_OBJECTIVES[Math.floor(Math.random()*COMBAT_OBJECTIVES.length)];
     const opt = COMBAT_OPTIMIZERS[Math.floor(Math.random()*COMBAT_OPTIMIZERS.length)];
-    updateActive(enc=>({...enc, axes:{...enc.axes,
-      winCondition:{title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds},
-      battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit},
-    }}));
+    updateActive(enc=>{
+      const locked = getLocks(enc);
+      return {...enc, axes:{...enc.axes,
+        winCondition: locked.win ? enc.axes.winCondition : {title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds},
+        battlefieldOptimizer: locked.opt ? enc.axes.battlefieldOptimizer : {title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit},
+      }};
+    });
   }
   function rollWinCondition(){
-    const obj = COMBAT_OBJECTIVES[Math.floor(Math.random()*COMBAT_OBJECTIVES.length)];
-    updateActive(enc=>({...enc, axes:{...enc.axes, winCondition:{title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds}}}));
+    updateActive(enc=>{
+      if(getLocks(enc).win) return enc;
+      const obj = COMBAT_OBJECTIVES[Math.floor(Math.random()*COMBAT_OBJECTIVES.length)];
+      return {...enc, axes:{...enc.axes, winCondition:{title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds}}};
+    });
   }
   function rollBattlefieldOptimizer(){
-    const opt = COMBAT_OPTIMIZERS[Math.floor(Math.random()*COMBAT_OPTIMIZERS.length)];
-    updateActive(enc=>({...enc, axes:{...enc.axes, battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit}}}));
+    updateActive(enc=>{
+      if(getLocks(enc).opt) return enc;
+      const opt = COMBAT_OPTIMIZERS[Math.floor(Math.random()*COMBAT_OPTIMIZERS.length)];
+      return {...enc, axes:{...enc.axes, battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit}}};
+    });
   }
   function nextTurn(){
     updateActive(enc=>{
@@ -2293,6 +2403,8 @@ function App(){
             <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
               <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
+            <button className="btn" onClick={()=>setDataModalMode('export')}><Icon name="download" size={15}/>Export Data</button>
+            <button className="btn" onClick={()=>setDataModalMode('import')}><Icon name="upload" size={15}/>Import Data</button>
             <button className="btn" onClick={()=>setImportOpen(true)}><Icon name="upload" size={15}/>Import Markdown</button>
           </div>
         </div>
@@ -2301,10 +2413,12 @@ function App(){
       </div>
 
       {importOpen && <ImportModal onClose={()=>setImportOpen(false)} onImport={importEncounter}/>}
+      {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
       <div className="shell">
         <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
           onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
+          locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
           customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
         <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound}/>
         <div className="main-grid">
