@@ -201,7 +201,7 @@
   /* hp bar */
   .hp-row{display:flex; flex-direction:column; gap:6px; margin-top:7px;}
   .hp-row-sub{display:flex; align-items:center; gap:8px;}
-  .hp-track{flex:1; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
+  .hp-track{width:100%; flex-shrink:0; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
   .hp-fill{height:100%; transition:width .25s ease;}
   .hp-track::after{
     content:''; position:absolute; inset:0;
