@@ -543,8 +543,12 @@ function parseHp(raw, context){
 }
 function parseInt10(raw, field, context){
   const n = Number(raw);
-  if(!Number.isFinite(n)) throw new MarkdownParseError(`Invalid number "${raw}" for "${field}" in ${context}.`);
-  return n;
+  if(Number.isFinite(n)) return n;
+  // Tolerate a leading number followed by units/notes, e.g. "18 (half plate)" or "40 ft." —
+  // pull out the first integer rather than requiring the whole field to be numeric.
+  const m = String(raw).match(/-?\d+/);
+  if(!m) throw new MarkdownParseError(`Invalid number "${raw}" for "${field}" in ${context}.`);
+  return Number(m[0]);
 }
 function parseList(raw){ return raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : []; }
 const defaultAbilityScores = {str:10,dex:10,con:10,int:10,wis:10,cha:10};
