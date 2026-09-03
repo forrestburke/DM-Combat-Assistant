@@ -252,6 +252,7 @@
   .mcard-head:hover{ background:var(--panel-raised); }
   .mcard-head-top{display:flex; align-items:center; gap:8px;}
   .mcard-head-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding-left:24px;}
+  .mcard-senses{font-size:11.5px; color:var(--parchment-faint); margin:2px 0 0 24px;}
   .mcard-head-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
   .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0; flex:1; min-width:0;}
   .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin:0;}
@@ -1356,6 +1357,12 @@ function suggestAxes(monsters, scene){
 }
 
 /* ---------- helpers ---------- */
+const SENSE_MOVEMENT_PATTERN = /darkvision|blindsight|truesight|tremorsense|passive perception|flyer|fly \d|swim(ming)? \d|climb(ing)? \d|burrow(ing)? \d/i;
+function splitSensesFromPassives(passives){
+  const senses = [], other = [];
+  for(const p of passives) (SENSE_MOVEMENT_PATTERN.test(p) ? senses : other).push(p);
+  return {senses, other};
+}
 function clampPct(cur, max){ return max<=0 ? 0 : Math.max(0, Math.min(1, cur/max)); }
 function hpColor(pct){ if(pct<=0) return 'var(--line)'; if(pct<=0.3) return 'var(--blood)'; if(pct<=0.6) return 'var(--amber)'; return 'var(--moss)'; }
 function abilityMod(score){ const mod = Math.floor((score-10)/2); return mod>=0?`+${mod}`:`${mod}`; }
@@ -1777,6 +1784,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
     const c = t.creatureName.toLowerCase();
     return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
   });
+  const {senses, other: otherPassives} = splitSensesFromPassives(monster.passives);
   const [deltaVal, setDeltaVal] = useState('');
   function applyDelta(){
     const n = Number(deltaVal);
@@ -1809,6 +1817,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
           </div>
         </div>
+        {senses.length>0 && <p className="mcard-senses">{senses.join(' · ')}</p>}
       </div>
 
       <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
@@ -1883,7 +1892,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           )}
 
           <div className="callout reaction"><Icon name="zap" size={15}/><p>{monster.reactionCue}</p></div>
-          {monster.passives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{monster.passives.join(' · ')}</p></div>}
+          {otherPassives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{otherPassives.join(' · ')}</p></div>}
 
           {(monster.traitDetails?.length > 0 || matchedTriggers.length > 0) && (
             <div className="trait-block">
