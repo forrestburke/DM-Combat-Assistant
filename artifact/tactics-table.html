@@ -1565,7 +1565,7 @@ function AddPartyMemberForm({onAdd, onDone}){
   );
 }
 
-function PartyRow({p, onDelta, onRemove, onSetInitiative, onToggleCondition}){
+function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onToggleCondition}){
   const [deltaVal, setDeltaVal] = useState('');
   function applyDelta(){
     const n = Number(deltaVal);
@@ -1580,22 +1580,27 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onToggleCondition}){
           <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
           {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
         </div>
-        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto'}}>
           <label className="init-label" title="Initiative">
             <span>Init</span>
             <input className="init-input" type="number" value={p.initiative ?? 10} onChange={e=>onSetInitiative(p.id, e.target.value)} aria-label={`${p.name} initiative`}/>
           </label>
-          <div className="party-ac"><Icon name="shield" size={14}/>{p.ac}</div>
           <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={15}/></button>
         </div>
       </div>
       <div className="hp-row">
         <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
         <div className="hp-row-sub">
-          <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-            onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name}`}/>
-          <button className="action-btn apply" onClick={applyDelta} aria-label={`Apply HP change to ${p.name}`} title="Apply (or press Enter)"><Icon name="check" size={14}/></button>
+          <label className="init-label" title="HP adjustment — type a signed number, Enter applies it">
+            <span>HP Δ</span>
+            <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
+          </label>
           <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
+          <span className="party-ac" title="AC">
+            <Icon name="shield" size={14}/>
+            <input className="ac-input" type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
+          </span>
         </div>
       </div>
       <p className="party-priority">{p.tacticalPriority}</p>
@@ -1604,11 +1609,11 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onToggleCondition}){
   );
 }
 
-function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onToggleCondition}){
+function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onToggleCondition}){
   const [showAdd, setShowAdd] = useState(false);
   return (
     <React.Fragment>
-      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onToggleCondition={onToggleCondition}/>)}
+      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onToggleCondition={onToggleCondition}/>)}
       <div className="disclosure">
         <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
           <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
@@ -1619,12 +1624,12 @@ function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onToggl
   );
 }
 
-function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onToggleCondition}){
+function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onToggleCondition}){
   return (
     <div className="plate">
       <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
       <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
-      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onToggleCondition={onToggleCondition}/>
+      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onToggleCondition={onToggleCondition}/>
     </div>
   );
 }
@@ -1936,9 +1941,11 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <span>Init</span>
             <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
           </label>
-          <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-            onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${monster.name} (negative to damage, positive to heal)`}/>
-          <button className="action-btn apply" onClick={applyDelta} aria-label={`Apply HP change to ${monster.name}`} title="Apply (or press Enter)"><Icon name="check" size={15}/></button>
+          <label className="init-label" title="HP adjustment — type a signed number, Enter applies it">
+            <span>HP Δ</span>
+            <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
+          </label>
           <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
         </div>
@@ -2539,6 +2546,7 @@ function App(){
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, initiative:n} : p)}));
     else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, initiative:n} : m)}}));
   }
+  function setPartyAc(id, ac){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, ac} : p)})); }
   function toggleCondition(kind, id, condition){
     const flip = (list)=> (list||[]).includes(condition) ? list.filter(c=>c!==condition) : [...(list||[]), condition];
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, conditions: flip(p.conditions)} : p)}));
@@ -2677,7 +2685,7 @@ function App(){
         <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster}/>
         <div className="main-grid">
           <div className="stack">
-            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
+            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
           </div>
           <div className="stack">
             <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
