@@ -124,15 +124,27 @@
 
   /* round tracker */
   .roundbar{
-    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     background:var(--panel); border:1px solid var(--line); padding:12px 16px; margin:0 0 18px;
   }
+  .roundbar-top{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
   .roundbar-stats{display:flex; align-items:center; gap:22px;}
   .stat-label{font-size:12px; color:var(--parchment-faint); letter-spacing:.1em; text-transform:uppercase; margin:0 0 2px;}
   .stat-value{font-size:26px; font-weight:600; line-height:1; margin:0; font-variant-numeric:tabular-nums;}
   .stat-divider{width:1px; height:28px; background:var(--line);}
   .active-name{font-size:17px; font-weight:600; color:var(--blood); margin:0; font-family:'Cinzel',serif;}
-  .roundbar-actions{display:flex; gap:8px;}
+  .roundbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .init-track{ display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--line-soft); }
+  .init-chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:500; padding:5px 10px 5px 6px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); border-radius:20px;
+  }
+  .init-chip.pc{ border-color:rgba(46,230,201,.3); }
+  .init-chip.monster{ border-color:rgba(255,77,74,.3); }
+  .init-chip.active{ background:var(--blood-soft); border-color:var(--blood); color:var(--parchment); box-shadow:var(--glow-blood); }
+  .init-num{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 4px; border-radius:50%; background:var(--line); color:var(--parchment); font-size:11px; font-weight:700; }
+  .init-chip.active .init-num{ background:var(--blood); color:var(--ink); }
+  .init-input{ width:36px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px; }
 
   /* generic plate / card */
   .plate{ position:relative; background:var(--panel); border:1px solid var(--line); }
@@ -213,6 +225,9 @@
   .action-btn.defeat.active{ background:var(--line-soft); border-color:var(--parchment-faint); color:var(--parchment); }
   .action-btn.remove{ border-color:rgba(255,77,74,.35); color:var(--blood-text); }
   .action-btn.remove:hover{ border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); box-shadow:var(--glow-blood); }
+  .action-btn.apply{ width:30px; height:30px; border-color:rgba(46,230,201,.4); color:var(--arcane); }
+  .action-btn.apply:hover{ border-color:var(--arcane); background:var(--arcane-soft); }
+  .hp-delta{ width:64px; text-align:center; }
 
   /* scene */
   .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
@@ -223,8 +238,9 @@
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
   .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
 
-  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; margin-top:16px;}
-  .mcard{padding:0; transition:opacity .2s;}
+  .monster-grid{column-width:300px; column-gap:16px; margin-top:16px;}
+  @media (max-width:620px){ .monster-grid{column-width:100%;} }
+  .mcard{padding:0; transition:opacity .2s; display:inline-block; width:100%; margin-bottom:16px; break-inside:avoid; vertical-align:top;}
   .mcard.defeated{opacity:.4;}
   .mcard-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 14px; cursor:pointer;}
   .mcard-head:hover{ background:var(--panel-raised); }
@@ -341,6 +357,8 @@ function Icon({name, size=18, style}) {
     case 'reset': return <svg {...c}><path d="M4 4 V10 H10"/><path d="M20 13 A8 8 0 1 1 7 6.5"/></svg>;
     case 'clock': return <svg {...c}><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L16 14"/></svg>;
     case 'mountain': return <svg {...c}><path d="M3 20 L9 8 L13 14 L16 10 L21 20 Z"/></svg>;
+    case 'speed': return <svg {...c}><path d="M3 17 H12"/><path d="M3 12 H16"/><path d="M3 7 H10"/><path d="M18 7 L22 12 L18 17"/></svg>;
+    case 'check': return <svg {...c}><path d="M4 12 L10 18 L20 6"/></svg>;
     case 'link': return <svg {...c}><path d="M9 15 L15 9"/><path d="M11 6 L13.5 3.5 A4 4 0 0 1 19 9 L16.5 11.5"/><path d="M13 18 L10.5 20.5 A4 4 0 0 1 5 15 L7.5 12.5"/></svg>;
     case 'trash': return <svg {...c}><path d="M4 7 H20"/><path d="M8 7 V4 H16 V7"/><path d="M6 7 L7 21 H17 L18 7"/></svg>;
     case 'userplus': return <svg {...c}><circle cx="9" cy="8" r="4"/><path d="M2 21 C2 16 5 14 9 14 C13 14 16 16 16 21"/><line x1="18" y1="8" x2="18" y2="14"/><line x1="15" y1="11" x2="21" y2="11"/></svg>;
@@ -388,7 +406,7 @@ const sampleEncounter = {
     {id:'tt-2', name:'Ritual Surge', creatureName:'Blackroot Shaman', triggerCondition:'Shaman takes damage while concentrating on the ritual', mechanicalEffect:'Must succeed on a Constitution save or lose concentration; ritual clock resets to Stage 0.', formulaOrDC:'DC 10 + damage taken'},
   ],
   round: {
-    roundNumber:1, initiativeCount:20, activeTurnIndex:0,
+    roundNumber:1, initiativeCount:20, activeCombatantId:null,
     monsters: [
       { id:'mon-1', name:'Skarn', baseType:'Goblin Skulker', ac:15, hpCurrent:7, hpMax:7, speed:30,
         abilityScores:{str:8,dex:14,con:10,int:10,wis:8,cha:8}, style:'skirmisher',
@@ -612,7 +630,7 @@ function parseEncounterMarkdown(markdown){
   const monsterBlocks = splitByHeading(monstersS.lines, 3);
   if(monsterBlocks.length === 0) throw new MarkdownParseError('Monsters section has no entries.');
   const monsters = monsterBlocks.map(parseMonster);
-  const round = {roundNumber:1, initiativeCount: typeof axes.hazardOrClock.initiativeCount === 'number' ? axes.hazardOrClock.initiativeCount : 20, activeTurnIndex:0, monsters};
+  const round = {roundNumber:1, initiativeCount: typeof axes.hazardOrClock.initiativeCount === 'number' ? axes.hazardOrClock.initiativeCount : 20, activeCombatantId:null, monsters};
   return {id:slugify(name), name, scene:parseScene(sceneS), party, axes, traitTriggers, round};
 }
 function parseSingleMonsterMarkdown(monsterMarkdown){
@@ -669,6 +687,22 @@ const srdMonsters = [
     attacks:[{name:'Claw (x2)', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d6+4 [slashing]'},{name:'Bite', type:'Melee', formula:'1d20+7 vs AC', reachOrRange:'5 ft', damage:'2d6+4 [piercing]'}], style:'brute', environments:['swamp','forest','mountain','cave'] },
   { name:'Hobgoblin Captain', baseType:'Medium Humanoid (Goblinoid)', ac:17, hpMax:45, speed:30, abilityScores:{str:15,dex:14,con:14,int:12,wis:10,cha:13}, passives:['Martial Advantage'],
     attacks:[{name:'Glaive (x2)', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'10 ft', damage:'1d10+2 [slashing]'}], style:'leader', environments:['ruins','dungeon','road','hills'] },
+  { name:'Giant Centipede', baseType:'Small Beast', ac:13, hpMax:11, speed:30, abilityScores:{str:5,dex:14,con:12,int:1,wis:7,cha:3}, passives:[],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d4+2 [piercing] + 3d6 [poison] (DC 11 Con half)'}], style:'ambusher', environments:['cave','dungeon','swamp'] },
+  { name:'Giant Wasp', baseType:'Medium Beast', ac:12, hpMax:22, speed:10, abilityScores:{str:10,dex:14,con:13,int:1,wis:10,cha:3}, passives:['Flyer (fly 50 ft)'],
+    attacks:[{name:'Sting', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [piercing] + 4d6 [poison] (DC 11 Con half)'}], style:'pack', environments:['forest','swamp'] },
+  { name:'Stirge', baseType:'Tiny Beast', ac:14, hpMax:2, speed:10, abilityScores:{str:4,dex:16,con:11,int:2,wis:8,cha:6}, passives:['Flyer (fly 40 ft)'],
+    attacks:[{name:'Blood Drain', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d4+3 [piercing], then attaches for 1d4 necrotic each turn'}], style:'ambusher', environments:['swamp','cave','dungeon'] },
+  { name:'Giant Toad', baseType:'Large Beast', ac:11, hpMax:39, speed:20, abilityScores:{str:15,dex:13,con:13,int:2,wis:10,cha:3}, passives:['Swim 40 ft'],
+    attacks:[{name:'Bite', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d10+2 [piercing] + swallow on a high roll'}], style:'brute', environments:['swamp','water'] },
+  { name:'Violet Fungus', baseType:'Medium Plant', ac:5, hpMax:18, speed:5, abilityScores:{str:3,dex:1,con:10,int:1,wis:3,cha:1}, passives:['Motionless until triggered'],
+    attacks:[{name:'Tentacle (x4)', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'10 ft', damage:'1d4 [poison], target poisoned for 1 minute'}], style:'ambusher', environments:['dungeon','cave'] },
+  { name:'Harpy', baseType:'Medium Monstrosity', ac:11, hpMax:38, speed:20, abilityScores:{str:12,dex:13,con:12,int:7,wis:10,cha:13}, passives:['Flyer (fly 40 ft)', 'Luring Song'],
+    attacks:[{name:'Claws (x2)', type:'Melee', formula:'1d20+3 vs AC', reachOrRange:'5 ft', damage:'1d4+1 [slashing]'}], style:'skirmisher', environments:['hills','mountain'] },
+  { name:'Wight', baseType:'Medium Undead', ac:14, hpMax:45, speed:30, abilityScores:{str:15,dex:14,con:16,int:10,wis:13,cha:15}, passives:['Sunlight Sensitivity', 'Can create zombies from slain humanoids'],
+    attacks:[{name:'Life Drain (x2)', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'1d6+2 [necrotic]; target\'s HP max reduced by the same amount'}], style:'leader', environments:['crypt','dungeon','undead'] },
+  { name:'Giant Eagle', baseType:'Large Beast', ac:13, hpMax:26, speed:10, abilityScores:{str:16,dex:17,con:13,int:8,wis:14,cha:10}, passives:['Flyer (fly 80 ft)'],
+    attacks:[{name:'Beak', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'1d6+3 [piercing]'},{name:'Talons', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'2d6+3 [slashing]'}], style:'skirmisher', environments:['mountain','hills'] },
 ];
 
 function generatePostures(style){
@@ -982,6 +1016,13 @@ function hpColor(pct){ if(pct<=0) return 'var(--line)'; if(pct<=0.3) return 'var
 function abilityMod(score){ const mod = Math.floor((score-10)/2); return mod>=0?`+${mod}`:`${mod}`; }
 const POSTURE_META = { A:{label:'Offensive', color:'var(--blood)', soft:'var(--blood-soft)'}, B:{label:'Defensive', color:'var(--arcane)', soft:'var(--arcane-soft)'}, C:{label:'Hazard', color:'var(--amber)', soft:'var(--amber-soft)'} };
 function computeAutoPosture(m){ if(m.hpMax<=0) return m.activePosture; const pct = m.hpCurrent/m.hpMax; if(pct<=0.3) return 'B'; return m.activePosture==='B' ? 'A' : m.activePosture; }
+
+/** Combined PC + monster turn order, sorted by initiative (highest first). Defeated monsters are dropped; PCs always stay in the order. */
+function getTurnOrder(encounter){
+  const pcs = encounter.party.map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, kind:'pc' }));
+  const mons = encounter.round.monsters.filter(m=>!m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, kind:'monster' }));
+  return [...pcs, ...mons].sort((a,b)=> b.initiative - a.initiative);
+}
 const STORAGE_KEY = 'tactics-table-encounter-v2';
 
 /* ---------- components ---------- */
@@ -1019,32 +1060,47 @@ function AddPartyMemberForm({onAdd, onDone}){
   );
 }
 
-function PartyContent({party, onDelta, onAdd, onRemove}){
+function PartyRow({p, onDelta, onRemove, onSetInitiative}){
+  const [deltaVal, setDeltaVal] = useState('');
+  function applyDelta(){
+    const n = Number(deltaVal);
+    if(deltaVal.trim() !== '' && !Number.isNaN(n) && n !== 0) onDelta(p.id, n);
+    setDeltaVal('');
+  }
+  return (
+    <div className="party-row">
+      <div className="party-top">
+        <div style={{display:'flex', alignItems:'center', gap:6, minWidth:0}}>
+          <span className="party-name">{p.name}</span>
+          <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
+          {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+          <label style={{display:'flex', alignItems:'center', gap:4}} title="Initiative">
+            <Icon name="speed" size={13} style={{color:'var(--parchment-faint)'}}/>
+            <input className="init-input" type="number" value={p.initiative ?? 10} onChange={e=>onSetInitiative(p.id, e.target.value)} aria-label={`${p.name} initiative`}/>
+          </label>
+          <div className="party-ac"><Icon name="shield" size={14}/>{p.ac}</div>
+          <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={15}/></button>
+        </div>
+      </div>
+      <div className="hp-row">
+        <HpBar current={p.hpCurrent} max={p.hpMax}/>
+        <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 / +5" aria-label={`Apply HP change to ${p.name}`}/>
+        <button className="action-btn apply" onClick={applyDelta} aria-label={`Apply HP change to ${p.name}`} title="Apply (or press Enter)"><Icon name="check" size={14}/></button>
+        <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
+      </div>
+      <p className="party-priority">{p.tacticalPriority}</p>
+    </div>
+  );
+}
+
+function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative}){
   const [showAdd, setShowAdd] = useState(false);
   return (
     <React.Fragment>
-      {party.map(p=>(
-        <div className="party-row" key={p.id}>
-          <div className="party-top">
-            <div style={{display:'flex', alignItems:'center', gap:6, minWidth:0}}>
-              <span className="party-name">{p.name}</span>
-              <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
-              {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
-            </div>
-            <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
-              <div className="party-ac"><Icon name="shield" size={14}/>{p.ac}</div>
-              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={15}/></button>
-            </div>
-          </div>
-          <div className="hp-row">
-            <button className="stepper dmg" onClick={()=>onDelta(p.id,-1)} aria-label={`Damage ${p.name}`}><Icon name="minus" size={13}/></button>
-            <HpBar current={p.hpCurrent} max={p.hpMax}/>
-            <button className="stepper heal" onClick={()=>onDelta(p.id,1)} aria-label={`Heal ${p.name}`}><Icon name="plus" size={13}/></button>
-            <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
-          </div>
-          <p className="party-priority">{p.tacticalPriority}</p>
-        </div>
-      ))}
+      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative}/>)}
       <div className="disclosure">
         <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
           <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
@@ -1055,12 +1111,12 @@ function PartyContent({party, onDelta, onAdd, onRemove}){
   );
 }
 
-function PartyPanel({party, onDelta, onAdd, onRemove}){
+function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative}){
   return (
     <div className="plate">
       <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
       <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
-      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove}/>
+      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative}/>
     </div>
   );
 }
@@ -1289,21 +1345,32 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
   );
 }
 
-function RoundTracker({round, onNextTurn, onNextRound, onReset}){
-  const living = round.monsters.filter(m=>!m.isDefeated);
-  const active = living[round.activeTurnIndex % Math.max(living.length,1)];
+function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onReset}){
+  const active = order.find(c=>c.id===round.activeCombatantId) ?? order[0];
   return (
     <div className="roundbar">
-      <div className="roundbar-stats">
-        <div><p className="stat-label">Round</p><p className="stat-value mono">{round.roundNumber}</p></div>
-        <div className="stat-divider"/>
-        <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
+      <div className="roundbar-top">
+        <div className="roundbar-stats">
+          <div><p className="stat-label">Round</p><p className="stat-value mono">{round.roundNumber}</p></div>
+          <div className="stat-divider"/>
+          <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
+        </div>
+        <div className="roundbar-actions">
+          <button className="btn" onClick={onReset}><Icon name="reset" size={15}/>Reset</button>
+          <button className="btn" onClick={onPrevRound}><Icon name="chevron" size={15} style={{transform:'scaleX(-1)'}}/>Previous Round</button>
+          <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={15}/>Next Turn</button>
+          <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={15}/>Next Round</button>
+        </div>
       </div>
-      <div className="roundbar-actions">
-        <button className="btn" onClick={onReset}><Icon name="reset" size={15}/>Reset</button>
-        <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={15}/>Next Turn</button>
-        <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={15}/>Next Round</button>
-      </div>
+      {order.length > 0 && (
+        <div className="init-track">
+          {order.map(c=>(
+            <span key={c.id} className={"init-chip"+(c.id===active?.id?" active":"")+(c.kind==='pc'?" pc":" monster")}>
+              <span className="init-num mono">{c.initiative}</span>{c.name}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1345,6 +1412,12 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
     const c = t.creatureName.toLowerCase();
     return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
   });
+  const [deltaVal, setDeltaVal] = useState('');
+  function applyDelta(){
+    const n = Number(deltaVal);
+    if(deltaVal.trim() !== '' && !Number.isNaN(n) && n !== 0) onDelta(monster.id, n);
+    setDeltaVal('');
+  }
 
   return (
     <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")}>
@@ -1363,23 +1436,42 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <Icon name="shield" size={14}/>
             <input className="ac-input" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`}/>
           </span>
+          <span className="ac-badge" title="Speed">
+            <Icon name="speed" size={14}/>
+            <input className="ac-input" style={{width:36}} type="number" value={monster.speed} onChange={e=>onSetStats(monster.id, {speed: Number(e.target.value)||0})} aria-label={`${monster.name} speed`}/>
+            <span style={{color:'var(--parchment-faint)'}}>ft</span>
+          </span>
           <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
           <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
         </div>
       </div>
 
       <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
-        <button className="stepper dmg" onClick={()=>onDelta(monster.id,-1)} aria-label={`Damage ${monster.name}`}><Icon name="minus" size={13}/></button>
+        <label style={{display:'flex', alignItems:'center', gap:4}} title="Initiative">
+          <Icon name="speed" size={13} style={{color:'var(--parchment-faint)'}}/>
+          <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
+        </label>
         <HpBar current={monster.hpCurrent} max={monster.hpMax}/>
-        <button className="stepper heal" onClick={()=>onDelta(monster.id,1)} aria-label={`Heal ${monster.name}`}><Icon name="plus" size={13}/></button>
-        <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`${monster.name} current HP`}/>
-        <span className="mono" style={{color:'var(--parchment-faint)'}}>/</span>
-        <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`${monster.name} max HP`}/>
+        <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 / +5" aria-label={`Apply HP change to ${monster.name} (negative to damage, positive to heal)`}/>
+        <button className="action-btn apply" onClick={applyDelta} aria-label={`Apply HP change to ${monster.name}`} title="Apply (or press Enter)"><Icon name="check" size={15}/></button>
+        <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
         <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
       </div>
 
       {expanded && (
         <div className="mcard-body">
+          <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', margin:'10px 0'}}>
+            <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--parchment-faint)'}}>
+              Max HP
+              <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
+            </label>
+            <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--parchment-faint)'}}>
+              Current HP
+              <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
+            </label>
+            <span style={{fontSize:11, color:'var(--parchment-faint)'}}>(Use the ±HP box above for quick damage/healing; these set exact totals.)</span>
+          </div>
           <AbilityRow monster={monster}/>
           {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0) && (
             <div style={{display:'flex', flexDirection:'column', gap:4, marginBottom:10}}>
@@ -1544,31 +1636,35 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
       </div>
 
       {mode === 'quick' && (
-        <div className="monster-add-row">
-          <div className="grow">
-            <input list="srd-monster-names" className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name…"/>
+        <div style={{display:'flex', flexDirection:'column', gap:10, width:'100%'}}>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            <input list="srd-monster-names" className="text-input" style={{flex:1, minWidth:0}} value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name…"/>
             <datalist id="srd-monster-names">
               {customMonsters.map(m=><option key={'c-'+m.name} value={m.name}/>)}
               {srdMonsters.map(m=><option key={m.name} value={m.name}/>)}
             </datalist>
-            <p className="hint">{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
+            <label style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}} htmlFor="qty-input">
+              <span style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}}>Qty</span>
+              <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
+            </label>
+            <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={16}/>Add</button>
           </div>
-          <div style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}}>
-            <label style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
-            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
+          <p className="hint" style={{margin:0}}>{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
+
+          <div>
+            <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide manual stats':'Manual stats (AC / HP / Speed)'}</button>
+            {showAdvanced && (
+              <div style={{display:'flex', gap:8, marginTop:8}}>
+                <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}}/>
+                <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:70}}/>
+                <input className="text-input" value={speed} onChange={e=>setSpeed(e.target.value)} placeholder="Speed" style={{width:80}}/>
+              </div>
+            )}
           </div>
-          <button className="add-btn" disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={16}/>Add</button>
-          <button className="disclosure-toggle" style={{width:'auto', padding:'7px 4px'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide':'Manual stats'}</button>
-          {showAdvanced && (
-            <div style={{display:'flex', gap:8, width:'100%'}}>
-              <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}}/>
-              <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:70}}/>
-              <input className="text-input" value={speed} onChange={e=>setSpeed(e.target.value)} placeholder="Speed" style={{width:80}}/>
-            </div>
-          )}
+
           {customMonsters.length > 0 && (
-            <div style={{width:'100%', marginTop:4}}>
-              <p style={{fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'4px 0'}}>My Monsters</p>
+            <div>
+              <p style={{fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'0 0 6px'}}>My Monsters</p>
               <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
                 {customMonsters.map(m=>(
                   <span key={m.name} className="tag" style={{display:'inline-flex', alignItems:'center', gap:5, padding:'3px 4px 3px 9px'}}>
@@ -1663,7 +1759,7 @@ function blankEncounter(name){
     axes:{ winCondition:{title:'Win Condition — not set yet', description:'Use Draft Axes from Scene, Suggest from Roster, or fill this in by hand.', moraleThresholds:'—'},
            battlefieldOptimizer:{title:'Battlefield Optimizer — not set yet', description:'', mechanicalBenefit:'—'},
            hazardOrClock:{title:'Hazard / Clock — not set yet', initiativeCount:20, triggerEffect:'—'} },
-    traitTriggers:[], round:{roundNumber:1, initiativeCount:20, activeTurnIndex:0, monsters:[]},
+    traitTriggers:[], round:{roundNumber:1, initiativeCount:20, activeCombatantId:null, monsters:[]},
   };
 }
 function loadEncounterStore(){
@@ -1805,9 +1901,14 @@ function App(){
   function removeMonster(id){
     updateActive(enc=>{
       const monsters = enc.round.monsters.filter(m=>m.id!==id);
-      const count = Math.max(monsters.filter(m=>!m.isDefeated).length, 1);
-      return {...enc, round:{...enc.round, monsters, activeTurnIndex: enc.round.activeTurnIndex % count}};
+      const activeCombatantId = enc.round.activeCombatantId === id ? null : enc.round.activeCombatantId;
+      return {...enc, round:{...enc.round, monsters, activeCombatantId}};
     });
+  }
+  function setInitiative(kind, id, value){
+    const n = Number(value) || 0;
+    if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, initiative:n} : p)}));
+    else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, initiative:n} : m)}}));
   }
   function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
   function setAxes(axes){ updateActive(enc=>({...enc, axes})); }
@@ -1827,20 +1928,39 @@ function App(){
   }
   function nextTurn(){
     updateActive(enc=>{
-      const living = enc.round.monsters.filter(m=>!m.isDefeated);
-      const count = Math.max(living.length,1);
-      const nextIndex = (enc.round.activeTurnIndex+1)%count;
-      const next = living[nextIndex];
-      if(next) expand(next.id);
-      return {...enc, round:{...enc.round, activeTurnIndex:nextIndex}};
+      const order = getTurnOrder(enc);
+      if(order.length === 0) return enc;
+      const curIdx = order.findIndex(c=>c.id === enc.round.activeCombatantId);
+      const nextIdx = curIdx === -1 ? 0 : (curIdx + 1) % order.length;
+      const wrapped = curIdx !== -1 && nextIdx === 0;
+      const next = order[nextIdx];
+      if(next.kind === 'monster') expand(next.id);
+      return {...enc, round:{...enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
     });
   }
-  function nextRound(){ updateActive(enc=>({...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeTurnIndex:0}})); }
-  function resetRound(){ updateActive(enc=>({...enc, round:{...enc.round, roundNumber:1, activeTurnIndex:0}})); }
+  function nextRound(){
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return {...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeCombatantId: order[0]?.id ?? null}};
+    });
+  }
+  function prevRound(){
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return {...enc, round:{...enc.round, roundNumber: Math.max(1, enc.round.roundNumber-1), activeCombatantId: order[0]?.id ?? null}};
+    });
+  }
+  function resetRound(){
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return {...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}};
+    });
+  }
   function importEncounter(imported){ updateActive(enc=>({...imported, id: enc.id})); }
 
-  const living = encounter.round.monsters.filter(m=>!m.isDefeated);
-  const activeMonster = living[encounter.round.activeTurnIndex % Math.max(living.length,1)];
+  const turnOrder = getTurnOrder(encounter);
+  const activeCombatant = turnOrder.find(c=>c.id === encounter.round.activeCombatantId) ?? turnOrder[0];
+  const activeMonster = activeCombatant?.kind === 'monster' ? encounter.round.monsters.find(m=>m.id===activeCombatant.id) : undefined;
 
   return (
     <React.Fragment>
@@ -1866,10 +1986,10 @@ function App(){
       <div className="shell">
         <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
           onRollCombatMenu={rollCombatMenu} customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
-        <RoundTracker round={encounter.round} onNextTurn={nextTurn} onNextRound={nextRound} onReset={resetRound}/>
+        <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound}/>
         <div className="main-grid">
           <div className="stack">
-            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember}/>
+            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)}/>
           </div>
           <div className="stack">
             <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
