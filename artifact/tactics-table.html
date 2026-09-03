@@ -15,19 +15,21 @@
     --parchment:#ded1b3;
     --parchment-dim:#93876c;
     --parchment-faint:#5f5744;
-    --blood:#b23c37;
-    --blood-soft:rgba(178,60,55,.15);
-    --blood-text:#e0837e;
-    --amber:#c9974b;
-    --amber-soft:rgba(201,151,75,.15);
-    --amber-text:#e0c088;
-    --arcane:#4fa89a;
-    --arcane-soft:rgba(79,168,154,.15);
-    --arcane-text:#7fc3b8;
-    --moss:#7f9c53;
-    --moss-soft:rgba(127,156,83,.18);
+    --blood:#ff4d4a;
+    --blood-soft:rgba(255,77,74,.18);
+    --blood-text:#ff8f8c;
+    --amber:#ffb627;
+    --amber-soft:rgba(255,182,39,.18);
+    --amber-text:#ffd166;
+    --arcane:#2ee6c9;
+    --arcane-soft:rgba(46,230,201,.16);
+    --arcane-text:#7ff5e3;
+    --moss:#8fe85a;
+    --moss-soft:rgba(143,232,90,.2);
     --grain: rgba(255,255,255,.012);
     --veil: rgba(6,5,3,.78);
+    --glow-blood: 0 0 16px rgba(255,77,74,.35);
+    --glow-arcane: 0 0 16px rgba(46,230,201,.3);
   }
   :root[data-theme="light"]{
     --ink:#f1ead9;
@@ -38,19 +40,21 @@
     --parchment:#2c2415;
     --parchment-dim:#5c5236;
     --parchment-faint:#8a7d5c;
-    --blood:#9c2f2b;
-    --blood-soft:rgba(156,47,43,.12);
-    --blood-text:#7a2621;
-    --amber:#8a6624;
-    --amber-soft:rgba(138,102,36,.12);
-    --amber-text:#6e5119;
-    --arcane:#2c7c6f;
-    --arcane-soft:rgba(44,124,111,.12);
-    --arcane-text:#215f55;
-    --moss:#5d7a3a;
-    --moss-soft:rgba(93,122,58,.14);
+    --blood:#d81e1e;
+    --blood-soft:rgba(216,30,30,.14);
+    --blood-text:#a11616;
+    --amber:#c47f00;
+    --amber-soft:rgba(196,127,0,.14);
+    --amber-text:#8f5c00;
+    --arcane:#0d9488;
+    --arcane-soft:rgba(13,148,136,.14);
+    --arcane-text:#0a6b62;
+    --moss:#4d8a1f;
+    --moss-soft:rgba(77,138,31,.16);
     --grain: rgba(0,0,0,.02);
     --veil: rgba(30,24,10,.5);
+    --glow-blood: 0 0 14px rgba(216,30,30,.22);
+    --glow-arcane: 0 0 14px rgba(13,148,136,.2);
   }
 
   *{box-sizing:border-box;}
@@ -63,7 +67,7 @@
   }
   h1,h2,h3,.display{ font-family:'Cinzel', Georgia, serif; text-wrap:balance; }
   .mono{font-family:'IBM Plex Mono', ui-monospace, monospace;}
-  .eyebrow{ font-size:10.5px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; }
+  .eyebrow{ font-size:12.5px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; }
   ::selection{ background:var(--blood-soft); color:var(--parchment); }
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-track{background:var(--panel);}
@@ -83,14 +87,14 @@
   }
   .topbar-inner{max-width:1360px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
   .brand{display:flex; align-items:center; gap:12px;}
-  .brand h1{font-size:19px; font-weight:600; letter-spacing:.02em; margin:0; color:var(--parchment);}
-  .brand p{margin:2px 0 0; font-size:12px; color:var(--parchment-dim);}
+  .brand h1{font-size:21px; font-weight:600; letter-spacing:.02em; margin:0; color:var(--parchment);}
+  .brand p{margin:2px 0 0; font-size:14px; color:var(--parchment-dim);}
   .topbar-actions{display:flex; align-items:center; gap:8px;}
 
   .btn{
     display:inline-flex; align-items:center; gap:6px;
     border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
-    padding:7px 12px; font-size:11.5px; font-weight:500; letter-spacing:.02em;
+    padding:7px 12px; font-size:13.5px; font-weight:500; letter-spacing:.02em;
     border-radius:2px; transition:border-color .15s, color .15s, background .15s;
   }
   .btn:hover{color:var(--parchment); border-color:var(--parchment-faint);}
@@ -108,15 +112,15 @@
   /* axes strip — top of page */
   .axes-strip{ margin:18px 0; }
   .axes-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
-  .axes-head h2{font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
+  .axes-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
   .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
   .axis-eyebrow{display:flex; align-items:center; gap:5px; margin-bottom:4px;}
-  .axis-title{font-size:13px; font-weight:600; color:var(--parchment); margin:0;}
-  .axis-desc{font-size:11.5px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
-  .axis-note{font-size:11px; margin-top:6px; line-height:1.5; font-style:italic; padding-left:8px; border-left:2px solid var(--c, var(--line));}
-  .axis-badge{font-size:10px; padding:2px 8px; border:1px solid var(--c, var(--line)); color:var(--c, var(--parchment-dim)); flex-shrink:0;}
+  .axis-title{font-size:15px; font-weight:600; color:var(--parchment); margin:0;}
+  .axis-desc{font-size:13.5px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
+  .axis-note{font-size:13px; margin-top:6px; line-height:1.5; font-style:italic; padding-left:8px; border-left:2px solid var(--c, var(--line));}
+  .axis-badge{font-size:12px; padding:2px 8px; border:1px solid var(--c, var(--line)); color:var(--c, var(--parchment-dim)); flex-shrink:0;}
 
   /* round tracker */
   .roundbar{
@@ -124,16 +128,16 @@
     background:var(--panel); border:1px solid var(--line); padding:12px 16px; margin:0 0 18px;
   }
   .roundbar-stats{display:flex; align-items:center; gap:22px;}
-  .stat-label{font-size:10px; color:var(--parchment-faint); letter-spacing:.1em; text-transform:uppercase; margin:0 0 2px;}
-  .stat-value{font-size:24px; font-weight:600; line-height:1; margin:0; font-variant-numeric:tabular-nums;}
+  .stat-label{font-size:12px; color:var(--parchment-faint); letter-spacing:.1em; text-transform:uppercase; margin:0 0 2px;}
+  .stat-value{font-size:26px; font-weight:600; line-height:1; margin:0; font-variant-numeric:tabular-nums;}
   .stat-divider{width:1px; height:28px; background:var(--line);}
-  .active-name{font-size:15px; font-weight:600; color:var(--blood); margin:0; font-family:'Cinzel',serif;}
+  .active-name{font-size:17px; font-weight:600; color:var(--blood); margin:0; font-family:'Cinzel',serif;}
   .roundbar-actions{display:flex; gap:8px;}
 
   /* generic plate / card */
   .plate{ position:relative; background:var(--panel); border:1px solid var(--line); }
   .plate-head{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--line-soft); }
-  .plate-head h2{font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment);}
+  .plate-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment);}
   .corner{position:absolute; width:9px; height:9px; pointer-events:none;}
   .corner-tl{top:-1px; left:-1px; border-top:1.5px solid var(--c, var(--line)); border-left:1.5px solid var(--c, var(--line));}
   .corner-tr{top:-1px; right:-1px; border-top:1.5px solid var(--c, var(--line)); border-right:1.5px solid var(--c, var(--line));}
@@ -146,10 +150,10 @@
   .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft);}
   .party-row:last-child{border-bottom:none;}
   .party-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .party-name{font-weight:600; color:var(--parchment); font-size:13px;}
-  .party-role{font-size:10.5px; color:var(--parchment-faint); margin-left:6px;}
-  .party-ac{display:flex; align-items:center; gap:4px; font-size:11px; color:var(--parchment-dim); flex-shrink:0;}
-  .party-priority{font-size:11px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
+  .party-name{font-weight:600; color:var(--parchment); font-size:15px;}
+  .party-role{font-size:12.5px; color:var(--parchment-faint); margin-left:6px;}
+  .party-ac{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
+  .party-priority{font-size:13px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
   .link-icon{color:var(--parchment-faint); flex-shrink:0; display:inline-flex;}
   .link-icon:hover{color:var(--arcane);}
   .icon-btn{color:var(--parchment-faint); background:none; border:none; padding:2px; display:inline-flex;}
@@ -158,21 +162,21 @@
   .disclosure{ border-top:1px solid var(--line-soft); }
   .disclosure-toggle{
     width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
-    padding:9px; font-size:11px; color:var(--parchment-dim); background:none; border:none;
+    padding:9px; font-size:13px; color:var(--parchment-dim); background:none; border:none;
   }
   .disclosure-toggle:hover{ color:var(--parchment); }
   .disclosure-body{ padding:0 14px 12px; display:flex; flex-direction:column; gap:6px; }
 
   .field{padding:9px 14px;}
-  .field label{display:block; font-size:9.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:4px;}
+  .field label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:4px;}
   .text-input{
     width:100%; background:var(--ink); border:1px solid var(--line); color:var(--parchment);
-    font-size:11.5px; padding:6px 8px; font-family:inherit;
+    font-size:13.5px; padding:6px 8px; font-family:inherit;
   }
   .text-input::placeholder{color:var(--parchment-faint);}
   .add-btn{
     display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--arcane); background:var(--arcane-soft);
-    color:var(--arcane); font-size:11px; font-weight:600; padding:7px; transition:background .15s;
+    color:var(--arcane); font-size:13px; font-weight:600; padding:7px; transition:background .15s;
   }
   .add-btn:hover{background:rgba(79,168,154,.24);}
   .add-btn[disabled]{opacity:.35; cursor:not-allowed;}
@@ -186,7 +190,7 @@
     background:repeating-linear-gradient(90deg, rgba(0,0,0,.3) 0 1px, transparent 1px 8%);
     pointer-events:none;
   }
-  .hp-text{font-size:10.5px; color:var(--parchment-dim); width:52px; text-align:right; flex-shrink:0;}
+  .hp-text{font-size:12.5px; color:var(--parchment-dim); width:52px; text-align:right; flex-shrink:0;}
   .stepper{
     display:flex; align-items:center; justify-content:center; width:20px; height:20px;
     border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); flex-shrink:0;
@@ -198,7 +202,7 @@
   /* scene */
   .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
   .monster-add .grow{flex:1; min-width:220px;}
-  .monster-add .hint{font-size:10px; color:var(--parchment-faint); margin-top:4px;}
+  .monster-add .hint{font-size:12px; color:var(--parchment-faint); margin-top:4px;}
   .monster-add .qty{width:52px; text-align:center;}
   .monster-add .add-btn{border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); padding:7px 14px;}
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
@@ -209,75 +213,75 @@
   .mcard.defeated{opacity:.4;}
   .mcard-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 14px; cursor:pointer;}
   .mcard-head:hover{ background:var(--panel-raised); }
-  .mcard-name{font-size:15px; font-weight:600; color:var(--parchment); margin:0;}
-  .mcard-type{font-size:10.5px; color:var(--parchment-faint); margin-top:1px;}
+  .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0;}
+  .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin-top:1px;}
   .mcard-body{padding:0 14px 13px;}
-  .ac-badge{display:flex; align-items:center; gap:4px; font-size:11px; color:var(--parchment-dim); flex-shrink:0;}
+  .ac-badge{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
   .mcard-collapsed-meta{ display:flex; align-items:center; gap:10px; padding:0 14px 12px; }
-  .posture-chip{ font-size:9.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; }
+  .posture-chip{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; }
   .chevron{ color:var(--parchment-faint); transition:transform .15s; flex-shrink:0; }
   .chevron.open{ transform:rotate(90deg); }
 
   .abl-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; margin:10px 0; background:var(--line-soft);}
   .abl-cell{ background:var(--panel); text-align:center; padding:5px 2px; }
-  .abl-cell .k{font-size:8.5px; font-weight:700; color:var(--parchment-faint);}
-  .abl-cell .v{font-size:10.5px; color:var(--parchment); }
+  .abl-cell .k{font-size:10.5px; font-weight:700; color:var(--parchment-faint);}
+  .abl-cell .v{font-size:12.5px; color:var(--parchment); }
   .abl-cell .v span{color:var(--parchment-faint);}
 
   .posture-row{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:4px;}
-  .posture-btn{ border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); font-size:10px; font-weight:600; letter-spacing:.03em; padding:6px 4px; text-align:center; }
+  .posture-btn{ border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); font-size:12px; font-weight:600; letter-spacing:.03em; padding:6px 4px; text-align:center; }
   .posture-btn.active{border-color:var(--c); background:var(--c-soft); color:var(--c);}
   .posture-detail{border:1px solid var(--c); background:var(--c-soft); padding:10px 12px; margin-top:5px;}
-  .posture-detail p{font-size:11px; line-height:1.55; color:var(--parchment); margin:5px 0 0;}
+  .posture-detail p{font-size:13px; line-height:1.55; color:var(--parchment); margin:5px 0 0;}
   .posture-detail p:first-child{margin-top:0;}
   .posture-detail b{color:var(--parchment-dim); font-weight:600;}
   .tag-row{display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;}
-  .tag{font-size:9px; border:1px solid var(--line); color:var(--parchment-dim); padding:1.5px 7px; border-radius:20px;}
+  .tag{font-size:11px; border:1px solid var(--line); color:var(--parchment-dim); padding:1.5px 7px; border-radius:20px;}
 
   .section-label{display:flex; align-items:center; gap:5px; margin:13px 0 6px;}
-  .section-label span{font-size:9.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint);}
-  .attack-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:11.5px; padding:2px 0;}
+  .section-label span{font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint);}
+  .attack-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:13.5px; padding:2px 0;}
   .attack-name{color:var(--parchment); font-weight:500; flex-shrink:0;}
-  .attack-stats{color:var(--parchment-dim); font-size:10.5px; text-align:right;}
+  .attack-stats{color:var(--parchment-dim); font-size:12.5px; text-align:right;}
 
   .callout{display:flex; align-items:flex-start; gap:6px; margin-top:11px;}
-  .callout p{font-size:10.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
+  .callout p{font-size:12.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
   .callout.reaction svg{color:var(--amber); margin-top:1px; flex-shrink:0;}
   .callout.passive svg{color:var(--parchment-faint); margin-top:1px; flex-shrink:0;}
 
   .trait-block{ border:1px solid var(--line); background:var(--ink); padding:10px 12px; margin-top:11px; }
-  .trait-block .lbl{font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); display:block; margin-bottom:6px;}
-  .trait-block p{font-size:11px; line-height:1.5; color:var(--parchment-dim); margin:6px 0 0;}
+  .trait-block .lbl{font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); display:block; margin-bottom:6px;}
+  .trait-block p{font-size:13px; line-height:1.5; color:var(--parchment-dim); margin:6px 0 0;}
   .trait-block p:first-of-type{margin-top:0;}
   .trait-block b{color:var(--parchment); font-weight:600;}
-  .trigger-dc{font-size:10px; color:var(--amber-text); margin-top:3px; display:block;}
+  .trigger-dc{font-size:12px; color:var(--amber-text); margin-top:3px; display:block;}
 
   /* modal */
   .modal-veil{position:fixed; inset:0; background:var(--veil); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
   .modal{width:100%; max-width:640px; background:var(--panel); border:1px solid var(--line); box-shadow:0 24px 60px -20px rgba(0,0,0,.5); max-height:90vh; overflow-y:auto;}
   .modal-head{display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; background:var(--panel);}
-  .modal-head h2{font-size:13px; font-weight:600; letter-spacing:.05em; margin:0; display:flex; align-items:center; gap:7px; color:var(--parchment);}
+  .modal-head h2{font-size:15px; font-weight:600; letter-spacing:.05em; margin:0; display:flex; align-items:center; gap:7px; color:var(--parchment);}
   .modal-close{color:var(--parchment-faint);}
   .modal-close:hover{color:var(--parchment);}
   .modal-body{padding:14px 16px;}
   textarea{
     width:100%; height:200px; resize:vertical; background:var(--ink); border:1px solid var(--line);
-    color:var(--parchment); font-size:11px; padding:10px; font-family:'IBM Plex Mono', monospace; line-height:1.5;
+    color:var(--parchment); font-size:13px; padding:10px; font-family:'IBM Plex Mono', monospace; line-height:1.5;
   }
   textarea::placeholder{color:var(--parchment-faint);}
   .error-box{display:flex; align-items:flex-start; gap:7px; border:1px solid rgba(178,60,55,.45); background:var(--blood-soft); padding:9px 11px; margin-top:11px;}
   .error-box svg{color:var(--blood); margin-top:1px; flex-shrink:0;}
-  .error-box p{font-size:11px; line-height:1.5; color:var(--blood-text); margin:0;}
+  .error-box p{font-size:13px; line-height:1.5; color:var(--blood-text); margin:0;}
   .modal-foot{display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--line-soft); position:sticky; bottom:0; background:var(--panel);}
 
   .upload-drop{
     border:1.5px dashed var(--line); background:var(--ink); padding:20px; text-align:center; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--parchment-dim); font-size:11.5px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--parchment-dim); font-size:13.5px;
   }
   .upload-drop:hover{ border-color:var(--arcane); color:var(--parchment); }
   .upload-drop.busy{ opacity:.6; cursor:wait; }
   .tab-row{display:flex; gap:4px; margin-bottom:10px;}
-  .tab-btn{ flex:1; padding:7px; font-size:11px; font-weight:600; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+  .tab-btn{ flex:1; padding:7px; font-size:13px; font-weight:600; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); display:inline-flex; align-items:center; justify-content:center; gap:5px; }
   .tab-btn.active{ border-color:var(--arcane); background:var(--arcane-soft); color:var(--arcane); }
 
   .main-grid{display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start;}
@@ -301,7 +305,7 @@ function useTheme(){
 }
 
 /* ---------- icons ---------- */
-function Icon({name, size=15, style}) {
+function Icon({name, size=18, style}) {
   const c = {width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor",
     strokeWidth:1.75, strokeLinecap:"round", strokeLinejoin:"round", style};
   switch(name){
@@ -707,6 +711,80 @@ function monsterToTemplate(m){
     savingThrows:m.savingThrows, passives:m.passives, traitDetails:m.traitDetails, attacks:m.attacks, style:m.style||'skirmisher', environments:[] };
 }
 
+/* ---------- environmental hazard library ---------- */
+const ENV_HAZARDS = [
+  { title:'Collapsing Ceiling', initiativeCount:20, triggerEffect:'Unstable stonework showers debris in a 10-ft-radius. Each creature there makes a DC 13 Dexterity save, taking 2d6 bludgeoning damage on a failure.' },
+  { title:'Rising Water', initiativeCount:'Round End', triggerEffect:'The water level rises another foot. Anyone without a swim speed who ends their turn fully submerged must hold their breath or start suffocating.' },
+  { title:'Toxic Fumes', initiativeCount:20, triggerEffect:'A cloud of gas spreads 10 ft further. Creatures inside must succeed on a DC 13 Constitution save or be poisoned until the start of their next turn.' },
+  { title:'Crumbling Floor', initiativeCount:'Round End', triggerEffect:'Roll to pick a random occupied 10-ft square; it collapses. Anyone standing there falls to the level below unless they succeed on a DC 13 Dexterity save to grab the edge.' },
+  { title:'Encroaching Fire', initiativeCount:20, triggerEffect:'Flames spread to an adjacent unburned square. Anyone who starts their turn adjacent to fire takes 1d6 fire damage.' },
+  { title:'Falling Debris', initiativeCount:20, triggerEffect:'Rocks or icicles rain down in a 10-ft-radius. Each creature there makes a DC 13 Dexterity save, taking 2d6 bludgeoning damage on a failure.' },
+  { title:'Failing Light', initiativeCount:'Round End', triggerEffect:'The light source dims one step (bright → dim → darkness). Once it reaches darkness, ranged attacks beyond 30 ft have disadvantage.' },
+  { title:'Bitter Cold', initiativeCount:20, triggerEffect:'Exposed creatures without cold resistance must succeed on a DC 12 Constitution save or gain one level of exhaustion.' },
+  { title:'Swarming Vermin', initiativeCount:'Round End', triggerEffect:'A cloud of stinging insects or rats floods a 15-ft cube. Creatures that start their turn inside take 1d4 poison damage.' },
+  { title:'Structural Collapse Countdown', initiativeCount:20, triggerEffect:'The countdown ticks down by one. At 0, the structure gives way — the area becomes rubble-filled difficult terrain, or worse.' },
+  { title:'Sucking Mud', initiativeCount:'Round End', triggerEffect:'The mire deepens. A creature that ends its turn in the hazard area must succeed on a DC 12 Strength save or become restrained until it succeeds on a future attempt to escape.' },
+  { title:'Arcane Backlash', initiativeCount:20, triggerEffect:'Residual magic discharges in a 15-ft-radius. Each creature there makes a DC 13 Constitution save, taking 2d6 force damage on a failure.' },
+  // Below: adapted from Tabletop University's "Combat Axis Menu" Sides (lethal terrain) and Dessert (chaos) tables.
+  { title:'No-Go Zone', initiativeCount:'Round End', triggerEffect:"One area of the battlefield is an obvious, telegraphed death sentence — a chasm, open sky, a live vent. Being forced or knocked into it is likely fatal. Use sparingly and make sure everyone can see it coming." },
+  { title:'Vat of Corrosion', initiativeCount:'Round End', triggerEffect:"A pit of acid, molten metal, or worse sits in the open. Falling in deals immediate heavy damage, but there's a narrow window to climb out before a second dose finishes the job." },
+  { title:"You're on a Ledge", initiativeCount:'Round End', triggerEffect:'The fight has more than one drop-off, and one of them is much worse than the others. Being shoved off means picking which fall you take.' },
+  { title:'Unstable Footing', initiativeCount:'Round End', triggerEffect:"The ground here (thin ice, a glass floor, quicksand) is failing in stages, getting more dangerous over time, and only some creatures can safely stand on it." },
+  { title:'Unmarked Stash', initiativeCount:'Round End', triggerEffect:"A cache of unlabeled potions or scrolls is in reach. Whoever grabs one is gambling — it could just as easily be a healing draught or a damage-dealing trap." },
+  { title:'Bring It Down', initiativeCount:'Round End', triggerEffect:'A support structure — a mine shaft brace, an engine, a load-bearing pillar — can be destroyed to collapse part of the battlefield. High risk, high reward, and it favors whoever sets it off deliberately.' },
+  { title:'Unlabeled Levers', initiativeCount:'Round End', triggerEffect:'A bank of levers controls traps or barriers, but nothing is marked. Pulling one is a coin flip between helping your side and hurting it.' },
+  { title:'Caged and Furious', initiativeCount:'Round End', triggerEffect:'Something caged nearby — creatures, an automaton — can be sprung loose. Once free, it attacks whoever is nearest, friend or foe, in no particular order.' },
+  { title:'Mystery Device', initiativeCount:'Round End', triggerEffect:'An unidentified but clearly powerful device sits on the field. Activating it does something big — the effect is up to you, and it may not be safe.' },
+  { title:'Malfunction Cascade', initiativeCount:20, triggerEffect:'Whatever was activated starts to fail. Make a Bring It Down-style collapse imminent — this is the last warning before it goes.' },
+  // Below: classic trap-style hazards (concealed pit, net, elemental trap, poison darts,
+  // rolling hazard, warded glyph, sealed barrier) in our own words.
+  { title:'Concealed Pit', initiativeCount:'Round End', triggerEffect:'A section of floor hides a pit trap. Anyone who fails to notice it falls in and takes falling damage — a high passive Perception spots it from a few feet away.' },
+  { title:'Snare Net', initiativeCount:'Round End', triggerEffect:'A net trap springs on the next creature to cross its trigger point. Escaping takes an Athletics check, or the net can be cut free with a slashing weapon or burned away.' },
+  { title:'Elemental Trap Statue', initiativeCount:20, triggerEffect:'A statue or sconce discharges an elemental blast down a corridor or area when triggered, hitting everyone caught in the line.' },
+  { title:'Poison Dart Trap', initiativeCount:20, triggerEffect:'Concealed darts fire from the walls at whoever trips the trigger, dealing poison damage and risking a lingering condition on a failed save.' },
+  { title:'Rolling Hazard', initiativeCount:'Round End', triggerEffect:'Something massive — a boulder, a cart, a runaway engine — barrels through the battlefield on its own schedule, damaging anyone caught in its path.' },
+  { title:'Warded Glyph', initiativeCount:'Round End', triggerEffect:'A hidden magical glyph triggers when disturbed, unleashing a stored spell effect or an explosive burst on whoever set it off.' },
+  { title:'Sealed Barrier', initiativeCount:'Round End', triggerEffect:'A portcullis, wall, or magical barrier slams down, splitting the battlefield and separating combatants until someone forces, unlocks, or teleports past it.' },
+  // Below: magical/dynamic hazards (wild magic, anti-magic, cursed objects, shifting
+  // terrain, vertical shifts, interactive props) in our own words.
+  { title:'Wild Magic Zone', initiativeCount:'Round End', triggerEffect:"Magic behaves unpredictably here. Any spell cast in the area has a chance to produce a random surge effect alongside (or instead of) its normal result." },
+  { title:'Anti-Magic Field', initiativeCount:'Round End', triggerEffect:'All magic is suppressed in this area — spellcasting fails and existing magical effects, including on gear, stop working while inside.' },
+  { title:'Tempting Cursed Object', initiativeCount:'Round End', triggerEffect:'An item nearby grants real power to whoever claims it, but carries a lingering downside that only reveals itself after it has been used.' },
+  { title:'Shifting Terrain', initiativeCount:20, triggerEffect:'The ground rearranges itself. Pick or roll a new patch of difficult or dangerous terrain each time this triggers.' },
+  { title:'Vertical Shift', initiativeCount:'Round End', triggerEffect:"A platform, lift, or section of floor rises or falls, changing who suddenly has the high ground and who's exposed." },
+  { title:'Interactive Prop', initiativeCount:'Round End', triggerEffect:"A chandelier, loose scaffold, or unstable bridge can be brought down deliberately by anyone willing to spend an action on it, hitting whoever's below or standing on it." },
+];
+const CUSTOM_HAZARDS_KEY = 'tactics-table-custom-hazards-v1';
+
+/* Adapted from Tabletop University's "Combat Axis Menu" — Proteins (Objectives) and
+   Appetizers (Optimizers) tables, in our own words, mapped onto Win Condition / Battlefield Optimizer. */
+const COMBAT_OBJECTIVES = [
+  { title: 'Wipe Out the Enemy', description: 'Defeat everyone hostile on the field — the straightforward option.', moraleThresholds: "Pair this with an actual morale/retreat threshold so it doesn't just become a slog to zero HP." },
+  { title: 'Take Down the Boss', description: 'One specific enemy is the real target; everything else is just in the way.', moraleThresholds: 'The fight ends the moment the boss falls — minions may scatter or fight on without them.' },
+  { title: 'Escort the VIP', description: 'An ally needs to survive and keep moving; the enemies want them dead, captured, or turned back.', moraleThresholds: "The win condition is the VIP reaching safety, not killing every attacker." },
+  { title: 'Rescue the Hostage', description: 'A captive needs freeing before anything else matters — a classic for a reason.', moraleThresholds: 'Once the hostage is secured, remaining enemies may just be trying to stop the escape.' },
+  { title: 'Hold the Line', description: 'Enemies are pouring in through multiple entrances; sealing them off ends the fight.', moraleThresholds: 'The fight is won by closing/holding the entrances, not by killing every attacker that comes through.' },
+  { title: 'Break Contact', description: "The goal is reaching an exit or triggering an escape — not clearing the room.", moraleThresholds: 'The fight ends the instant the party crosses the threshold or trigger point, even mid-combat.' },
+  { title: 'Stop the Ritual', description: 'A countdown or puzzle is running alongside the fight; disrupting it is the actual win condition.', moraleThresholds: 'Killing every enemy is optional — stopping the ritual in time is what matters.' },
+  { title: 'Secure the Prize', description: 'One specific object is what everyone is actually fighting over.', moraleThresholds: 'Whoever holds the object when the dust settles effectively wins, regardless of body count.' },
+];
+const COMBAT_OPTIMIZERS = [
+  { title: 'Free the Allies', description: 'Captured or caged allies can be freed mid-fight, turning the numbers around.', mechanicalBenefit: 'Freeing them adds combatants to the party\'s side or removes a hostage complication.' },
+  { title: 'Take the High Ground', description: 'Elevated terrain and vantage points are on the table.', mechanicalBenefit: 'Ranged and melee attacks from height gain advantage; attacking uphill gives disadvantage.' },
+  { title: 'Raid the Stash', description: 'A cache of ammo, potions, or scrolls sits in reach for whoever claims it first.', mechanicalBenefit: 'Reaching the stash grants a one-time resource — extra ammunition, a healing item, or a scroll.' },
+  { title: 'Split the Battlefield', description: 'Two zones are separated by a barrier with several small entrances either side can open or seal.', mechanicalBenefit: 'Controlling the divider controls who can reinforce whom — a real chokepoint fight.' },
+  { title: 'Fight from Below', description: 'Enemies hold the floor above, with trapdoors or murder-holes into the party\'s space.', mechanicalBenefit: 'Attacks from above get cover/elevation advantage; the party needs to find a way up or force enemies down.' },
+  { title: 'Control the Levers', description: "A set of levers controls traps or barriers around the room.", mechanicalBenefit: 'Whoever holds the levers can trigger or disable hazards for either side — a tug-of-war over control.' },
+  { title: 'Grab the Big Gun', description: 'One overpowered weapon or device sits on the field, up for grabs by either side.', mechanicalBenefit: 'Wielding it grants a significantly stronger attack option than anything else on the field.' },
+  { title: 'Claim the Boon', description: 'A font, altar, or charge grants a one-time advantage to whoever reaches it first.', mechanicalBenefit: 'Reaching it grants advantage on attacks (or a similar boost) for a limited time — pairs well with High Ground.' },
+];
+function loadCustomHazards(){
+  try{ const raw = localStorage.getItem(CUSTOM_HAZARDS_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
+}
+function saveCustomHazards(list){
+  try{ localStorage.setItem(CUSTOM_HAZARDS_KEY, JSON.stringify(list)); }catch(e){}
+}
+
 let customMonsterCounter = 0;
 const defaultAbilities = {str:10,dex:10,con:10,int:10,wis:10,cha:10};
 
@@ -840,22 +918,6 @@ function suggestMapElements(scene){
   if(timeNote) elements.push(timeNote);
   return [...new Set(elements)];
 }
-function generateEncounterRoster(scene){
-  const tags = detectTags(scene);
-  const fallbackTags = ['forest','ruins','road'];
-  const pool = tags.length > 0 ? srdMonsters.filter(m=>m.environments.some(e=>tags.includes(e))) : [];
-  const candidates = pool.length > 0 ? pool : srdMonsters.filter(m=>m.environments.some(e=>fallbackTags.includes(e)));
-  const anchors = candidates.filter(m=>m.style==='brute'||m.style==='leader').sort((a,b)=>b.hpMax-a.hpMax);
-  const swarms = candidates.filter(m=>['skirmisher','pack','mindless','ambusher'].includes(m.style));
-  const suffix = Date.now();
-  const roster = [];
-  const anchor = anchors[0];
-  if(anchor) roster.push(buildMonsterFromName(anchor.name, `${suffix}-anchor`));
-  const swarmPick = swarms.length > 0 ? swarms[Math.floor(Math.random()*swarms.length)] : candidates[0];
-  if(swarmPick){ const count = anchor ? 2 : 3; for(let i=0;i<count;i++) roster.push(buildMonsterFromName(`${swarmPick.name} ${i+1}`, `${suffix}-swarm-${i}`)); }
-  if(roster.length === 0){ roster.push(buildMonsterFromName('Goblin 1', `${suffix}-fb-0`)); roster.push(buildMonsterFromName('Goblin 2', `${suffix}-fb-1`)); }
-  return roster;
-}
 
 /* ---------- axes suggester ---------- */
 const AXES_PRESETS = {
@@ -931,7 +993,7 @@ function AddPartyMemberForm({onAdd, onDone}){
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
       <input className="text-input" value={link} onChange={e=>setLink(e.target.value)} placeholder="D&D Beyond link (optional)"/>
-      <button className="add-btn" disabled={!name.trim()} onClick={submit}><Icon name="userplus" size={13}/>Add PC</button>
+      <button className="add-btn" disabled={!name.trim()} onClick={submit}><Icon name="userplus" size={16}/>Add PC</button>
     </div>
   );
 }
@@ -946,17 +1008,17 @@ function PartyContent({party, onDelta, onAdd, onRemove}){
             <div style={{display:'flex', alignItems:'center', gap:6, minWidth:0}}>
               <span className="party-name">{p.name}</span>
               <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
-              {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={11}/></a>}
+              {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
             </div>
             <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
-              <div className="party-ac"><Icon name="shield" size={11}/>{p.ac}</div>
-              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={12}/></button>
+              <div className="party-ac"><Icon name="shield" size={14}/>{p.ac}</div>
+              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`}><Icon name="trash" size={15}/></button>
             </div>
           </div>
           <div className="hp-row">
-            <button className="stepper dmg" onClick={()=>onDelta(p.id,-1)} aria-label={`Damage ${p.name}`}><Icon name="minus" size={10}/></button>
+            <button className="stepper dmg" onClick={()=>onDelta(p.id,-1)} aria-label={`Damage ${p.name}`}><Icon name="minus" size={13}/></button>
             <HpBar current={p.hpCurrent} max={p.hpMax}/>
-            <button className="stepper heal" onClick={()=>onDelta(p.id,1)} aria-label={`Heal ${p.name}`}><Icon name="plus" size={10}/></button>
+            <button className="stepper heal" onClick={()=>onDelta(p.id,1)} aria-label={`Heal ${p.name}`}><Icon name="plus" size={13}/></button>
             <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
           </div>
           <p className="party-priority">{p.tacticalPriority}</p>
@@ -964,7 +1026,7 @@ function PartyContent({party, onDelta, onAdd, onRemove}){
       ))}
       <div className="disclosure">
         <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
-          <Icon name="userplus" size={12}/> {showAdd ? 'Cancel' : 'Add PC'}
+          <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
         </button>
         {showAdd && <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>}
       </div>
@@ -972,45 +1034,107 @@ function PartyContent({party, onDelta, onAdd, onRemove}){
   );
 }
 
-function SceneContent({scene, onChange, onGenerate}){
+function PartyPanel({party, onDelta, onAdd, onRemove}){
+  return (
+    <div className="plate">
+      <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
+      <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
+      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove}/>
+    </div>
+  );
+}
+
+function SceneFieldsStrip({scene, onChange, onGenerate}){
   const fields = [
     ['environment','Environment','e.g. flooded cellar, mountain pass, city rooftops'],
     ['terrain','Terrain','e.g. difficult terrain, chokepoints, cover'],
     ['combatSituation','Combat Situation','e.g. ambush, escort, defend the door'],
     ['timeOfDay','Time of Day','e.g. dusk, midnight, high noon'],
   ];
-  return (
-    <React.Fragment>
-      {fields.map(([key,label,placeholder])=>(
-        <div className="field" key={key}>
-          <label>{label}</label>
-          <input className="text-input" value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
-        </div>
-      ))}
-      <div style={{padding:'0 14px 14px'}}>
-        <button className="add-btn" style={{borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate}>
-          <Icon name="sparkles" size={13}/>Generate Encounter
-        </button>
-        <p style={{fontSize:10, color:'var(--parchment-faint)', marginTop:6}}>Adds a matched roster from the SRD compendium and drafts the axes above from it.</p>
-      </div>
-    </React.Fragment>
-  );
-}
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [pasteErr, setPasteErr] = useState(null);
+  const [sampleApi, setSampleApi] = useState(null);
 
-function PrepPanel({scene, onSceneChange, onGenerate, party, onPartyDelta, onPartyAdd, onPartyRemove}){
-  const [tab, setTab] = useState('scene');
+  useEffect(()=>{
+    (async ()=>{
+      try{
+        if(!window.claude || typeof window.claude.use !== 'function') return;
+        const s = await window.claude.use('sample');
+        if(s) setSampleApi(s);
+      }catch(e){}
+    })();
+  }, []);
+
+  async function fillFromDescription(){
+    if(!pasteText.trim()) return;
+    setBusy(true); setPasteErr(null);
+    if(sampleApi){
+      try{
+        const prompt = 'Split this D&D scene description into a JSON object with exactly these string keys: '
+          + '"environment" (the place/setting), "terrain" (physical features — cover, elevation, difficult terrain), '
+          + '"combatSituation" (why a fight is happening — ambush, escort, defend, etc.), "timeOfDay" (time of day/lighting, or "" if not mentioned). '
+          + 'Use short phrases, not full sentences. Reply with ONLY the JSON object.\n\nDescription:\n' + pasteText;
+        const data = await sampleApi.json(prompt, {modelTier:'quick'});
+        onChange({
+          environment: String(data.environment ?? ''),
+          terrain: String(data.terrain ?? ''),
+          combatSituation: String(data.combatSituation ?? ''),
+          timeOfDay: String(data.timeOfDay ?? ''),
+        });
+        setPasteText(''); setShowPaste(false); setBusy(false);
+        return;
+      }catch(e){ /* fall through to the local heuristic below */ }
+    }
+    // No sample capability (or it failed) in this view — fall back to a local heuristic:
+    // the raw text still feeds map-element/axis suggestions regardless of which field
+    // it lands in, so put it all in Combat Situation and pull a time-of-day guess out of it.
+    const lower = pasteText.toLowerCase();
+    const timeHit = Object.keys(TIME_NOTES).find(k=>lower.includes(k));
+    onChange({ combatSituation: pasteText.trim(), ...(timeHit ? {timeOfDay: timeHit} : {}) });
+    setPasteText(''); setShowPaste(false); setBusy(false);
+  }
+
   return (
-    <div className="plate">
-      <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
-      <div style={{padding:'10px 14px 0'}}>
-        <div className="tab-row" style={{marginBottom:0}}>
-          <button className={"tab-btn"+(tab==='scene'?' active':'')} onClick={()=>setTab('scene')}><Icon name="scroll" size={11}/> Scene</button>
-          <button className={"tab-btn"+(tab==='party'?' active':'')} onClick={()=>setTab('party')}><Icon name="party" size={11}/> Party</button>
+    <div className="axis-card" style={{marginTop:12}}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
+        <div className="axis-eyebrow" style={{marginBottom:0}}>
+          <Icon name="scroll" size={14} style={{color:'var(--amber)'}}/>
+          <span className="eyebrow" style={{color:'var(--amber)'}}>Scene Notes</span>
         </div>
+        <button className="disclosure-toggle" style={{width:'auto', padding:'5px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowPaste(v=>!v)}>
+          <Icon name="clip" size={13}/> {showPaste ? 'Cancel' : 'Paste a Description Instead'}
+        </button>
       </div>
-      {tab==='scene'
-        ? <SceneContent scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
-        : <PartyContent party={party} onDelta={onPartyDelta} onAdd={onPartyAdd} onRemove={onPartyRemove}/>}
+
+      {showPaste && (
+        <div style={{marginTop:10, display:'flex', flexDirection:'column', gap:8}}>
+          <textarea className="text-input" style={{height:90, fontFamily:'inherit', fontSize:13.5}}
+            placeholder="Paste or type a free-form description of the scene — e.g. &quot;Goblins ambush the party at dusk in an old-growth forest, using root snarls and a creek for cover.&quot;"
+            value={pasteText} onChange={e=>setPasteText(e.target.value)}/>
+          {pasteErr && <div className="error-box"><Icon name="alert" size={13}/><p>{pasteErr}</p></div>}
+          <p style={{fontSize:11.5, color:'var(--parchment-faint)'}}>
+            {sampleApi ? 'This page will ask Claude to split it into the fields below.' : "This view can't ask Claude to split it automatically, so it'll go straight into Combat Situation (which still feeds the map/axis suggestions) — pull out Environment/Terrain by hand if you want them separate."}
+          </p>
+          <button className="add-btn" disabled={!pasteText.trim() || busy} onClick={fillFromDescription}>
+            <Icon name="sparkles" size={14}/>{busy ? 'Filling…' : 'Fill Fields'}
+          </button>
+        </div>
+      )}
+
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px,1fr))', gap:10, marginTop:10}}>
+        {fields.map(([key,label,placeholder])=>(
+          <div key={key}>
+            <label style={{display:'block', fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', marginBottom:4}}>{label}</label>
+            <input className="text-input" value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+          </div>
+        ))}
+      </div>
+      <button className="add-btn" style={{marginTop:12, borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate}>
+        <Icon name="sparkles" size={16}/>Draft Axes from Scene
+      </button>
+      <p style={{fontSize:12, color:'var(--parchment-faint)', marginTop:6}}>Drafts the axes above from this scene text and whatever's currently in the fight — doesn't add monsters itself.</p>
     </div>
   );
 }
@@ -1020,55 +1144,126 @@ function MapElementsStrip({scene}){
   return (
     <div className="axis-card" style={{marginTop:12}}>
       <div className="axis-eyebrow">
-        <Icon name="map" size={11} style={{color:'var(--arcane)'}}/>
+        <Icon name="map" size={14} style={{color:'var(--arcane)'}}/>
         <span className="eyebrow" style={{color:'var(--arcane)'}}>Recommended Map Elements</span>
       </div>
       <ul style={{margin:'6px 0 0', paddingLeft:0, listStyle:'none', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', columnGap:20}}>
-        {elements.map(el=><li key={el} style={{fontSize:11, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:6, marginTop:3}}><span style={{color:'var(--parchment-faint)'}}>–</span><span>{el}</span></li>)}
+        {elements.map(el=><li key={el} style={{fontSize:13, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:6, marginTop:3}}><span style={{color:'var(--parchment-faint)'}}>–</span><span>{el}</span></li>)}
       </ul>
     </div>
   );
 }
 
-const AXES_COLLAPSE_KEY = 'tactics-table-axes-collapsed';
-function AxesStrip({axes, monsters, scene, onSuggest}){
-  const [open, setOpen] = useState(()=>{ try{ return localStorage.getItem(AXES_COLLAPSE_KEY) !== '1'; }catch(e){ return true; } });
-  useEffect(()=>{ try{ localStorage.setItem(AXES_COLLAPSE_KEY, open ? '0' : '1'); }catch(e){} }, [open]);
+function HazardBadge({value, color}){
+  const text = typeof value === 'number' ? `Count ${value}` : String(value);
+  return <span className="axis-badge mono" style={{'--c':color}}>{text}</span>;
+}
+
+function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCustom}){
+  const [showAdd, setShowAdd] = useState(false);
+  const [title, setTitle] = useState(''); const [trigger, setTrigger] = useState('');
+  const [count, setCount] = useState('20'); const [roundEnd, setRoundEnd] = useState(false);
+  const color = 'var(--amber)'; const textColor = 'var(--amber-text)';
+
+  function randomize(){
+    const pool = [...ENV_HAZARDS, ...customHazards];
+    onApply(pool[Math.floor(Math.random()*pool.length)]);
+  }
+  function saveNew(){
+    if(!title.trim() || !trigger.trim()) return;
+    const hz = {title:title.trim(), initiativeCount: roundEnd ? 'Round End' : (Number(count)||20), triggerEffect:trigger.trim()};
+    onSaveCustom(hz); onApply(hz);
+    setTitle(''); setTrigger(''); setCount('20'); setRoundEnd(false); setShowAdd(false);
+  }
+
+  return (
+    <div className="axis-card">
+      <div className="corner corner-tl" style={{'--c':color}}/><div className="corner corner-tr" style={{'--c':color}}/><div className="corner corner-bl" style={{'--c':color}}/><div className="corner corner-br" style={{'--c':color}}/>
+      <div className="axis-eyebrow">
+        <Icon name="clock" size={14} style={{color}}/>
+        <span className="eyebrow" style={{color}}>Hazard / Clock</span>
+      </div>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
+        <p className="axis-title">{hazard.title}</p>
+        <HazardBadge value={hazard.initiativeCount} color={color}/>
+      </div>
+      <p className="axis-note" style={{'--c':color, color:textColor}}>{hazard.triggerEffect}</p>
+      <div style={{display:'flex', gap:6, marginTop:10, flexWrap:'wrap'}}>
+        <button className="btn" onClick={randomize} title="Pick a random environmental hazard">
+          <Icon name="sparkles" size={13}/>Randomize
+        </button>
+        <button className="disclosure-toggle" style={{width:'auto', padding:'6px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowAdd(v=>!v)}>
+          {showAdd ? 'Cancel' : '+ Add Hazard'}
+        </button>
+      </div>
+      {showAdd && (
+        <div style={{marginTop:8, display:'flex', flexDirection:'column', gap:6}}>
+          <input className="text-input" placeholder="Hazard name" value={title} onChange={e=>setTitle(e.target.value)}/>
+          <textarea className="text-input" style={{height:70, fontFamily:'inherit', fontSize:13.5}} placeholder="What happens when it triggers…" value={trigger} onChange={e=>setTrigger(e.target.value)}/>
+          <div style={{display:'flex', gap:10, alignItems:'center', flexWrap:'wrap'}}>
+            <label style={{fontSize:13, display:'flex', gap:5, alignItems:'center', color:'var(--parchment-dim)'}}>
+              <input type="checkbox" checked={roundEnd} onChange={e=>setRoundEnd(e.target.checked)}/>
+              Round End (not count-based)
+            </label>
+            {!roundEnd && <input className="text-input" style={{width:70}} value={count} onChange={e=>setCount(e.target.value)} placeholder="Count"/>}
+          </div>
+          <button className="add-btn" disabled={!title.trim()||!trigger.trim()} onClick={saveNew}>Save &amp; Apply</button>
+        </div>
+      )}
+      {customHazards.length > 0 && (
+        <div style={{marginTop:10}}>
+          <p style={{fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'0 0 5px'}}>My Hazards</p>
+          <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
+            {customHazards.map(h=>(
+              <span key={h.title} className="tag" style={{display:'inline-flex', alignItems:'center', gap:5, padding:'3px 4px 3px 9px', cursor:'pointer'}} onClick={()=>onApply(h)} title="Click to apply">
+                {h.title}
+                <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onRemoveCustom(h.title);}} aria-label={`Remove ${h.title} from My Hazards`}><Icon name="x" size={11}/></button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
   const cells = [
     {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds},
     {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit},
-    {key:'haz', eyebrow:'Hazard / Clock', color:'var(--amber)', textColor:'var(--amber-text)', icon:'clock', title:axes.hazardOrClock.title, desc:null, note:axes.hazardOrClock.triggerEffect, badge:axes.hazardOrClock.initiativeCount},
   ];
   return (
     <div className="axes-strip">
-      <div className="axes-head" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
-        <h2><Icon name="chevron" size={12} className={"chevron"+(open?" open":"")}/><Icon name="compass" size={14} style={{color:'var(--amber)'}}/>Encounter Axes</h2>
-        <button className="btn" disabled={monsters.length===0} onClick={ev=>{ev.stopPropagation(); onSuggest(suggestAxes(monsters, scene));}} title="Redraft axes from the current monster roster">
-          <Icon name="sparkles" size={11}/>Suggest from Roster
-        </button>
+      <div className="axes-head">
+        <h2><Icon name="compass" size={17} style={{color:'var(--amber)'}}/>Encounter Axes</h2>
+        <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+          <button className="btn" onClick={onRollCombatMenu} title="Roll a fresh Win Condition + Battlefield Optimizer (Tabletop University's Combat Axis Menu)">
+            <Icon name="sparkles" size={14}/>Roll Combat Menu
+          </button>
+          <button className="btn" disabled={monsters.length===0} onClick={()=>onSuggest(suggestAxes(monsters, scene))} title="Redraft axes from the current monster roster">
+            <Icon name="sparkles" size={14}/>Suggest from Roster
+          </button>
+        </div>
       </div>
-      {open && (
-        <React.Fragment>
-          <div className="axes-grid">
-            {cells.map(c=>(
-              <div className="axis-card" key={c.key}>
-                <div className="corner corner-tl" style={{'--c':c.color}}/><div className="corner corner-tr" style={{'--c':c.color}}/><div className="corner corner-bl" style={{'--c':c.color}}/><div className="corner corner-br" style={{'--c':c.color}}/>
-                <div className="axis-eyebrow">
-                  {c.icon && <Icon name={c.icon} size={11} style={{color:c.color}}/>}
-                  <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
-                </div>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
-                  <p className="axis-title">{c.title}</p>
-                  {c.badge !== undefined && <span className="axis-badge mono" style={{'--c':c.color}}>Count {c.badge}</span>}
-                </div>
-                {c.desc && <p className="axis-desc">{c.desc}</p>}
-                <p className="axis-note" style={{'--c':c.color, color:c.textColor}}>{c.note}</p>
-              </div>
-            ))}
+      <div className="axes-grid">
+        {cells.map(c=>(
+          <div className="axis-card" key={c.key}>
+            <div className="corner corner-tl" style={{'--c':c.color}}/><div className="corner corner-tr" style={{'--c':c.color}}/><div className="corner corner-bl" style={{'--c':c.color}}/><div className="corner corner-br" style={{'--c':c.color}}/>
+            <div className="axis-eyebrow">
+              {c.icon && <Icon name={c.icon} size={14} style={{color:c.color}}/>}
+              <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
+            </div>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
+              <p className="axis-title">{c.title}</p>
+            </div>
+            {c.desc && <p className="axis-desc">{c.desc}</p>}
+            <p className="axis-note" style={{'--c':c.color, color:c.textColor}}>{c.note}</p>
           </div>
-          <MapElementsStrip scene={scene}/>
-        </React.Fragment>
-      )}
+        ))}
+        <HazardCell hazard={axes.hazardOrClock} customHazards={customHazards} onApply={onApplyHazard} onSaveCustom={onSaveCustomHazard} onRemoveCustom={onRemoveCustomHazard}/>
+      </div>
+      <MapElementsStrip scene={scene}/>
+      <SceneFieldsStrip scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
     </div>
   );
 }
@@ -1084,9 +1279,9 @@ function RoundTracker({round, onNextTurn, onNextRound, onReset}){
         <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
       </div>
       <div className="roundbar-actions">
-        <button className="btn" onClick={onReset}><Icon name="reset" size={12}/>Reset</button>
-        <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={12}/>Next Turn</button>
-        <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={12}/>Next Round</button>
+        <button className="btn" onClick={onReset}><Icon name="reset" size={15}/>Reset</button>
+        <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={15}/>Next Turn</button>
+        <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={15}/>Next Round</button>
       </div>
     </div>
   );
@@ -1116,7 +1311,7 @@ function AbilityRow({monster}){
           </div>
         ))}
       </div>
-      {monster.savingThrows && <p style={{fontSize:10, color:'var(--parchment-faint)', margin:'0 0 8px'}}><b>Proficient saves: </b>{monster.savingThrows}</p>}
+      {monster.savingThrows && <p style={{fontSize:12, color:'var(--parchment-faint)', margin:'0 0 8px'}}><b>Proficient saves: </b>{monster.savingThrows}</p>}
     </div>
   );
 }
@@ -1136,23 +1331,23 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
       <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
       <div className="mcard-head" onClick={onToggleExpand}>
         <div style={{minWidth:0, display:'flex', alignItems:'center', gap:8}}>
-          <Icon name="chevron" size={13} className={"chevron" + (expanded ? " open" : "")}/>
+          <Icon name="chevron" size={16} className={"chevron" + (expanded ? " open" : "")}/>
           <div style={{minWidth:0}}>
             <p className="mcard-name">{monster.name}</p>
             <p className="mcard-type">{monster.baseType}</p>
           </div>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}} onClick={e=>e.stopPropagation()}>
-          <span className="ac-badge"><Icon name="shield" size={11}/>{monster.ac}</span>
-          <button className="stepper" onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" style={monster.isDefeated ? {borderColor:'var(--parchment-faint)', color:'var(--parchment)'} : {}}><Icon name="skull" size={11}/></button>
-          <button className="stepper" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`}><Icon name="trash" size={11}/></button>
+          <span className="ac-badge"><Icon name="shield" size={14}/>{monster.ac}</span>
+          <button className="stepper" onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" style={monster.isDefeated ? {borderColor:'var(--parchment-faint)', color:'var(--parchment)'} : {}}><Icon name="skull" size={14}/></button>
+          <button className="stepper" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`}><Icon name="trash" size={14}/></button>
         </div>
       </div>
 
       <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
-        <button className="stepper dmg" onClick={()=>onDelta(monster.id,-1)} aria-label={`Damage ${monster.name}`}><Icon name="minus" size={10}/></button>
+        <button className="stepper dmg" onClick={()=>onDelta(monster.id,-1)} aria-label={`Damage ${monster.name}`}><Icon name="minus" size={13}/></button>
         <HpBar current={monster.hpCurrent} max={monster.hpMax}/>
-        <button className="stepper heal" onClick={()=>onDelta(monster.id,1)} aria-label={`Heal ${monster.name}`}><Icon name="plus" size={10}/></button>
+        <button className="stepper heal" onClick={()=>onDelta(monster.id,1)} aria-label={`Heal ${monster.name}`}><Icon name="plus" size={13}/></button>
         <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
         <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
       </div>
@@ -1169,13 +1364,13 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           </div>
           <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
 
-          <div className="section-label"><Icon name="blade" size={11} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span></div>
+          <div className="section-label"><Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span></div>
           {monster.attacks.map(a=>(
             <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
           ))}
 
-          <div className="callout reaction"><Icon name="zap" size={12}/><p>{monster.reactionCue}</p></div>
-          {monster.passives.length>0 && <div className="callout passive"><Icon name="crosshair" size={12}/><p>{monster.passives.join(' · ')}</p></div>}
+          <div className="callout reaction"><Icon name="zap" size={15}/><p>{monster.reactionCue}</p></div>
+          {monster.passives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{monster.passives.join(' · ')}</p></div>}
 
           {(monster.traitDetails?.length > 0 || matchedTriggers.length > 0) && (
             <div className="trait-block">
@@ -1293,19 +1488,23 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
   return (
     <div className="plate">
       <div className="plate-head" style={{cursor:'pointer'}} onClick={()=>setCollapsed(v=>!v)}>
-        <Icon name="chevron" size={12} className={"chevron"+(!collapsed?" open":"")}/>
-        <Icon name="swords" size={14} style={{color:'var(--blood)'}}/>
+        <Icon name="chevron" size={15} className={"chevron"+(!collapsed?" open":"")}/>
+        <Icon name="swords" size={17} style={{color:'var(--blood)'}}/>
         <h2 style={{flex:1}}>Add Monster</h2>
       </div>
       {!collapsed && <div style={{padding:'12px 14px'}}>
       <div className="tab-row">
         <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')}>Quick Add</button>
         <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')}>Paste Stat Block</button>
-        <button className={"tab-btn"+(mode==='image'?' active':'')} onClick={()=>setMode('image')}><Icon name="photo" size={11}/> Upload Image</button>
+        <button className={"tab-btn"+(mode==='image'?' active':'')} onClick={()=>setMode('image')}><Icon name="photo" size={14}/> Upload Image</button>
       </div>
 
       {mode === 'quick' && (
         <div className="monster-add-row">
+          <div style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}}>
+            <label style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
+            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
+          </div>
           <div className="grow">
             <input list="srd-monster-names" className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Monster name (SRD compendium + your saved monsters)…"/>
             <datalist id="srd-monster-names">
@@ -1314,11 +1513,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
             </datalist>
             <p className="hint">{name.trim()===''?'Type a name — matches autofill AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No SRD match — set stats manually below.'}</p>
           </div>
-          <div style={{display:'flex', alignItems:'center', gap:5}}>
-            <label style={{fontSize:9.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}} htmlFor="qty-input">Qty</label>
-            <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
-          </div>
-          <button className="add-btn" disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={13}/>Add</button>
+          <button className="add-btn" disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={16}/>Add</button>
           <button className="disclosure-toggle" style={{width:'auto', padding:'7px 4px'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide':'Manual stats'}</button>
           {showAdvanced && (
             <div style={{display:'flex', gap:8, width:'100%'}}>
@@ -1329,12 +1524,12 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
           )}
           {customMonsters.length > 0 && (
             <div style={{width:'100%', marginTop:4}}>
-              <p style={{fontSize:9.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'4px 0'}}>My Monsters</p>
+              <p style={{fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', margin:'4px 0'}}>My Monsters</p>
               <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
                 {customMonsters.map(m=>(
                   <span key={m.name} className="tag" style={{display:'inline-flex', alignItems:'center', gap:5, padding:'3px 4px 3px 9px'}}>
                     {m.name}
-                    <button className="icon-btn" style={{padding:0}} onClick={()=>onRemoveCustom(m.name)} aria-label={`Remove ${m.name} from My Monsters`}><Icon name="x" size={10}/></button>
+                    <button className="icon-btn" style={{padding:0}} onClick={()=>onRemoveCustom(m.name)} aria-label={`Remove ${m.name} from My Monsters`}><Icon name="x" size={13}/></button>
                   </span>
                 ))}
               </div>
@@ -1345,30 +1540,30 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
       {mode === 'paste' && (
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:10, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first.</p>
+          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first.</p>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
             placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Passives: ...\n- Reaction Cue: ...\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
-          {pasteError && <div className="error-box"><Icon name="alert" size={13}/><p>{pasteError}</p></div>}
-          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:10.5, color:'var(--parchment-dim)'}}>
+          {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
             <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
             Save to My Monsters (reuse this one in other encounters)
           </label>
-          <button className="add-btn" disabled={!pasteText.trim()} onClick={handlePasteAdd}><Icon name="clip" size={13}/>Parse &amp; Add</button>
+          <button className="add-btn" disabled={!pasteText.trim()} onClick={handlePasteAdd}><Icon name="clip" size={16}/>Parse &amp; Add</button>
         </div>
       )}
 
       {mode === 'image' && (
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:10, color:'var(--parchment-faint)'}}>Upload a photo or screenshot of a stat block — this page asks Claude (your account, your consent) to transcribe it directly into a monster entry.</p>
+          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Upload a photo or screenshot of a stat block — this page asks Claude (your account, your consent) to transcribe it directly into a monster entry.</p>
           <div className={"upload-drop"+(busy?' busy':'')} onClick={()=>!busy && fileInputRef.current?.click()}>
-            <Icon name="photo" size={20}/>
+            <Icon name="photo" size={24}/>
             <span>{busy ? 'Reading the image… this can take up to a minute.' : 'Click to choose an image'}</span>
           </div>
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden
             onChange={e=>{ const f = e.target.files?.[0]; if(f) handleImageFile(f); e.target.value=''; }}/>
           {diag !== 'ready' && (
             <div className="error-box">
-              <Icon name="alert" size={13}/>
+              <Icon name="alert" size={16}/>
               <p>{
                 {checking:'Checking whether this view can transcribe images… try picking a file in a moment.',
                  'no-claude':"This artifact host doesn't expose the capability this page needs for image transcription. Use Paste Stat Block instead — you can still ask me to read an image and hand you the paste-ready text.",
@@ -1378,8 +1573,8 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
               }</p>
             </div>
           )}
-          {imgError && <div className="error-box"><Icon name="alert" size={13}/><p>{imgError}</p></div>}
-          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:10.5, color:'var(--parchment-dim)'}}>
+          {imgError && <div className="error-box"><Icon name="alert" size={16}/><p>{imgError}</p></div>}
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
             <input type="checkbox" checked={saveOnImage} onChange={e=>setSaveOnImage(e.target.checked)}/>
             Save to My Monsters (reuse this one in other encounters)
           </label>
@@ -1400,12 +1595,12 @@ function ImportModal({onClose, onImport}){
     <div className="modal-veil" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-head">
-          <h2><Icon name="upload" size={14} style={{color:'var(--arcane)'}}/>Import Encounter Markdown</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={15}/></button>
+          <h2><Icon name="upload" size={17} style={{color:'var(--arcane)'}}/>Import Encounter Markdown</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
         </div>
         <div className="modal-body">
           <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the encounter markdown here…"/>
-          {error && <div className="error-box"><Icon name="alert" size={13}/><p>{error}</p></div>}
+          {error && <div className="error-box"><Icon name="alert" size={16}/><p>{error}</p></div>}
         </div>
         <div className="modal-foot">
           <button className="btn" onClick={onClose}>Cancel</button>
@@ -1421,7 +1616,7 @@ function blankEncounter(name){
   return {
     id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name,
     scene:{environment:'', terrain:'', combatSituation:'', timeOfDay:''}, party:[],
-    axes:{ winCondition:{title:'Win Condition — not set yet', description:'Use Generate Encounter, Suggest from Roster, or fill this in by hand.', moraleThresholds:'—'},
+    axes:{ winCondition:{title:'Win Condition — not set yet', description:'Use Draft Axes from Scene, Suggest from Roster, or fill this in by hand.', moraleThresholds:'—'},
            battlefieldOptimizer:{title:'Battlefield Optimizer — not set yet', description:'', mechanicalBenefit:'—'},
            hazardOrClock:{title:'Hazard / Clock — not set yet', initiativeCount:20, triggerEffect:'—'} },
     traitTriggers:[], round:{roundNumber:1, initiativeCount:20, activeTurnIndex:0, monsters:[]},
@@ -1463,23 +1658,23 @@ function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDe
                 onClick={ev=>ev.stopPropagation()}
                 onBlur={()=>onRenameCommit(e.id)}
                 onKeyDown={ev=>{ if(ev.key==='Enter') onRenameCommit(e.id); if(ev.key==='Escape') onRenameCommit(e.id, true); }}
-                style={{background:'var(--ink)', border:'1px solid var(--arcane)', color:'var(--parchment)', fontSize:11.5, padding:'2px 5px', width:130}}/>
+                style={{background:'var(--ink)', border:'1px solid var(--arcane)', color:'var(--parchment)', fontSize:13.5, padding:'2px 5px', width:130}}/>
             ) : (
-              <span className="mono" style={{fontSize:11.5, fontWeight: isActive?600:500, color: isActive?'var(--parchment)':'var(--parchment-dim)'}}>{e.name}</span>
+              <span className="mono" style={{fontSize:13.5, fontWeight: isActive?600:500, color: isActive?'var(--parchment)':'var(--parchment-dim)'}}>{e.name}</span>
             )}
             {!isRenaming && (
               <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDuplicate(e.id);}} aria-label={`Duplicate ${e.name}`} title="Duplicate this encounter">
-                <Icon name="copy" size={11}/>
+                <Icon name="copy" size={14}/>
               </button>
             )}
             {!isRenaming && encounters.length>1 && (
-              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`}><Icon name="x" size={11}/></button>
+              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`}><Icon name="x" size={14}/></button>
             )}
           </div>
         );
       })}
       <button className="icon-btn" style={{border:'1px dashed var(--line)', padding:'6px 9px', flexShrink:0}} onClick={onAdd} aria-label="New encounter" title="New encounter">
-        <Icon name="plus" size={13}/>
+        <Icon name="plus" size={16}/>
       </button>
     </div>
   );
@@ -1489,6 +1684,7 @@ function App(){
   const [theme, toggleTheme] = useTheme();
   const [store, setStore] = useState(loadEncounterStore);
   const [customMonsters, setCustomMonsters] = useState(loadCustomMonsters);
+  const [customHazards, setCustomHazards] = useState(loadCustomHazards);
   const [importOpen, setImportOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState(()=>new Set());
   const [renamingId, setRenamingId] = useState(null);
@@ -1499,12 +1695,14 @@ function App(){
 
   useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
   useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
+  useEffect(()=>{ saveCustomHazards(customHazards); }, [customHazards]);
 
   const encounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
   function updateActive(fn){ setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===s.activeId ? fn(e) : e)})); }
 
   function addEncounterTab(){
     const enc = blankEncounter(`Encounter ${store.encounters.length+1}`);
+    enc.party = JSON.parse(JSON.stringify(encounter.party));
     setStore(s=>({encounters:[...s.encounters, enc], activeId: enc.id}));
     setRenamingId(enc.id); setRenameValue(enc.name);
   }
@@ -1560,11 +1758,18 @@ function App(){
   function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
   function setAxes(axes){ updateActive(enc=>({...enc, axes})); }
   function handleGenerateEncounter(){
-    const roster = generateEncounterRoster(encounter.scene);
-    updateActive(enc=>{
-      const monsters = [...enc.round.monsters, ...roster];
-      return {...enc, round:{...enc.round, monsters}, axes: suggestAxes(monsters, enc.scene)};
-    });
+    updateActive(enc => ({...enc, axes: suggestAxes(enc.round.monsters, enc.scene)}));
+  }
+  function applyHazard(hazard){ updateActive(enc=>({...enc, axes:{...enc.axes, hazardOrClock: hazard}})); }
+  function addCustomHazard(hazard){ setCustomHazards(list=>[...list.filter(h=>h.title.toLowerCase()!==hazard.title.toLowerCase()), hazard]); }
+  function removeCustomHazard(title){ setCustomHazards(list=>list.filter(h=>h.title!==title)); }
+  function rollCombatMenu(){
+    const obj = COMBAT_OBJECTIVES[Math.floor(Math.random()*COMBAT_OBJECTIVES.length)];
+    const opt = COMBAT_OPTIMIZERS[Math.floor(Math.random()*COMBAT_OPTIMIZERS.length)];
+    updateActive(enc=>({...enc, axes:{...enc.axes,
+      winCondition:{title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds},
+      battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit},
+    }}));
   }
   function nextTurn(){
     updateActive(enc=>{
@@ -1588,14 +1793,14 @@ function App(){
       <div className="topbar">
         <div className="topbar-inner">
           <div className="brand">
-            <Icon name="blade" size={22} style={{color:'var(--blood)'}}/>
+            <Icon name="blade" size={26} style={{color:'var(--blood)'}}/>
             <div><h1>Tactics Table</h1><p>{encounter.name}</p></div>
           </div>
           <div className="topbar-actions">
             <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
-              <Icon name={theme==='dark' ? 'sun' : 'moon'} size={14}/>
+              <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
-            <button className="btn" onClick={()=>setImportOpen(true)}><Icon name="upload" size={12}/>Import Markdown</button>
+            <button className="btn" onClick={()=>setImportOpen(true)}><Icon name="upload" size={15}/>Import Markdown</button>
           </div>
         </div>
         <EncounterTabs encounters={store.encounters} activeId={store.activeId} onSelect={selectEncounterTab} onAdd={addEncounterTab} onDuplicate={duplicateEncounterTab} onDelete={deleteEncounterTab}
@@ -1605,12 +1810,12 @@ function App(){
       {importOpen && <ImportModal onClose={()=>setImportOpen(false)} onImport={importEncounter}/>}
 
       <div className="shell">
-        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}/>
+        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
+          onRollCombatMenu={rollCombatMenu} customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
         <RoundTracker round={encounter.round} onNextTurn={nextTurn} onNextRound={nextRound} onReset={resetRound}/>
         <div className="main-grid">
           <div className="stack">
-            <PrepPanel scene={encounter.scene} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
-              party={encounter.party} onPartyDelta={updatePartyHp} onPartyAdd={addPartyMember} onPartyRemove={removePartyMember}/>
+            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember}/>
           </div>
           <div className="stack">
             <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
