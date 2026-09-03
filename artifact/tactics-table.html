@@ -246,9 +246,9 @@
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
   .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
 
-  .monster-grid{column-width:300px; column-gap:16px; margin-top:16px;}
-  @media (max-width:620px){ .monster-grid{column-width:100%;} }
-  .mcard{padding:0; transition:opacity .2s; display:inline-block; width:100%; margin-bottom:16px; break-inside:avoid; vertical-align:top;}
+  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; margin-top:16px; align-items:start;}
+  @media (max-width:620px){ .monster-grid{grid-template-columns:1fr;} }
+  .mcard{padding:0; transition:opacity .2s;}
   .mcard.defeated{opacity:.4;}
   .mcard-head{display:flex; flex-direction:column; gap:6px; padding:11px 14px; cursor:pointer;}
   .mcard-head:hover{ background:var(--panel-raised); }
