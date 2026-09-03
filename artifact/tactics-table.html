@@ -1039,35 +1039,6 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
   };
 }
 
-function normalizeGeneratedMonster(data, idSuffix){
-  const abilityScores = {...defaultAbilities, ...(data.abilityScores || {})};
-  const style = validStyles.includes(data.style) ? data.style : 'skirmisher';
-  const postures = generatePostures(style);
-  const clean = (p)=> p && p.trigger && p.movement && p.action ? {trigger:String(p.trigger), movement:String(p.movement), action:String(p.action), bonusAction: p.bonusAction ? String(p.bonusAction) : undefined, tags: Array.isArray(p.tags) ? p.tags.map(String) : []} : null;
-  const hpMax = Number(data.hpMax) || 10;
-  return {
-    id: `img-${idSuffix}`,
-    name: String(data.name || 'Unnamed Creature'),
-    baseType: String(data.baseType || 'Unknown'),
-    ac: Number(data.ac) || 10,
-    hpCurrent: hpMax, hpMax,
-    speed: Number(data.speed) || 30,
-    abilityScores,
-    savingThrows: data.savingThrows ? String(data.savingThrows) : undefined,
-    resistances: Array.isArray(data.resistances) && data.resistances.length ? data.resistances.map(String) : undefined,
-    vulnerabilities: Array.isArray(data.vulnerabilities) && data.vulnerabilities.length ? data.vulnerabilities.map(String) : undefined,
-    style,
-    passives: Array.isArray(data.passives) ? data.passives.map(String) : [],
-    traitDetails: Array.isArray(data.traitDetails) ? data.traitDetails.filter(t=>t && t.name && t.description).map(t=>({name:String(t.name), description:String(t.description)})) : undefined,
-    attacks: Array.isArray(data.attacks) ? data.attacks.filter(a=>a && a.name).map(a=>({name:String(a.name), type:['Melee','Ranged','Save'].includes(a.type)?a.type:'Melee', formula:String(a.formula||''), reachOrRange:String(a.reachOrRange||''), damage:String(a.damage||'')})) : [],
-    reactionCue: String(data.reactionCue || 'Transcribed from an uploaded image — review before running.'),
-    postureA: clean(data.postureA) || postures.postureA,
-    postureB: clean(data.postureB) || postures.postureB,
-    postureC: clean(data.postureC) || postures.postureC,
-    activePosture: 'A', isDefeated: false,
-  };
-}
-
 /* ---------- scene suggestions ---------- */
 const TAG_KEYWORDS = {
   forest:['forest','wood','woods','tree','jungle','grove','hollow'], cave:['cave','cavern','underground','tunnel','grotto'],
@@ -1667,19 +1638,58 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
   );
 }
 
+const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block image into the exact markdown format below. Use official rules text where you can read it; if something is illegible or not shown in the image, infer a sensible tactical option consistent with the monster's abilities rather than leaving it blank. Output ONLY the filled-in block, no extra commentary.
+
+### Name (Base Type)
+- AC:
+- HP: current/max
+- Speed:
+- Ability Scores: STR #, DEX #, CON #, INT #, WIS #, CHA #
+- Resistances: (optional, comma-separated — omit line if none)
+- Vulnerabilities: (optional, comma-separated — omit line if none)
+- Passives: (comma-separated short names)
+- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional — whichever best fits how it fights)
+
+#### Traits
+- Trait Name: full rules text
+
+#### Attacks
+- Attack Name | Melee/Ranged/Save | to-hit or DC | range | damage
+
+--- everything below is optional — the app auto-generates it from Style if omitted ---
+
+- Reaction Cue: one sentence on resource/reaction usage
+
+#### Posture A: Offensive
+- Trigger:
+- Movement:
+- Action:
+- Bonus Action:
+- Tags: comma, separated
+
+#### Posture B: Defensive
+- Trigger:
+- Movement:
+- Action:
+- Bonus Action:
+- Tags: comma, separated
+
+#### Posture C: Axis Interaction
+- Trigger:
+- Movement:
+- Action:
+- Bonus Action:
+- Tags: comma, separated`;
+
 function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
   const [collapsed, setCollapsed] = useState(false);
   const [name, setName] = useState(''); const [count, setCount] = useState('1');
   const [ac, setAc] = useState(''); const [hp, setHp] = useState(''); const [speed, setSpeed] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [mode, setMode] = useState('quick'); // quick | paste | image
+  const [mode, setMode] = useState('quick'); // quick | paste
   const [pasteText, setPasteText] = useState(''); const [pasteError, setPasteError] = useState(null);
-  const [saveOnPaste, setSaveOnPaste] = useState(true); const [saveOnImage, setSaveOnImage] = useState(true);
-  const [sampleApi, setSampleApi] = useState(null); const [imagesOk, setImagesOk] = useState(false);
-  const [busy, setBusy] = useState(false); const [imgError, setImgError] = useState(null);
-  const [diag, setDiag] = useState('checking'); // checking | no-claude | no-sample | no-images | ready | error
-  const [diagDetail, setDiagDetail] = useState('');
-  const fileInputRef = useRef(null);
+  const [saveOnPaste, setSaveOnPaste] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   const match = findSrdMonster(name, customMonsters);
 
@@ -1687,19 +1697,9 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
     if(match){ setAc(String(match.ac)); setHp(String(match.hpMax)); setSpeed(String(match.speed)); }
   }, [match?.name]);
 
-  useEffect(()=>{
-    (async ()=>{
-      try{
-        if(!window.claude || typeof window.claude.use !== 'function'){ setDiag('no-claude'); return; }
-        const s = await window.claude.use('sample');
-        if(!s){ setDiag('no-sample'); return; }
-        setSampleApi(s);
-        const limits = await s.limits();
-        if(limits && limits.images){ setImagesOk(true); setDiag('ready'); }
-        else { setDiag('no-images'); setDiagDetail(JSON.stringify(limits)); }
-      }catch(e){ setDiag('error'); setDiagDetail((e && (e.code || e.message)) ? `${e.code||''} ${e.message||''}`.trim() : String(e)); }
-    })();
-  }, []);
+  function copyPrompt(){
+    navigator.clipboard?.writeText(TRANSCRIBE_PROMPT).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 2000); });
+  }
 
   function handleQuickAdd(){
     if(!name.trim()) return;
@@ -1720,49 +1720,6 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
     catch(e){ setPasteError(e instanceof MarkdownParseError ? e.message : 'Unexpected error while parsing the stat block.'); }
   }
 
-  async function handleImageFile(file){
-    if(!file) return;
-    if(!sampleApi){
-      setImgError("This view can't ask Claude to read images right now (see the note above) — use Paste Stat Block instead, or drop the image in the chat and ask Claude to hand you the paste-ready text.");
-      return;
-    }
-    setBusy(true); setImgError(null);
-    try{
-      const prompt = 'You are transcribing a Dungeons & Dragons 5e monster stat block from an image into strict JSON for a DM reference tool. '
-        + 'Read the image and reply with ONLY a JSON object (no markdown fences, no commentary) in this exact shape:\n'
-        + '{"name":string,"baseType":string,"ac":number,"hpMax":number,"speed":number,'
-        + '"abilityScores":{"str":number,"dex":number,"con":number,"int":number,"wis":number,"cha":number},'
-        + '"savingThrows":string (proficient saves only, e.g. "Dex +4, Wis +3", or "" if none/unclear),'
-        + '"resistances":[string,...] (damage types it resists, or [] if none),'
-        + '"vulnerabilities":[string,...] (damage types it is vulnerable to, or [] if none),'
-        + '"passives":[string,...] (short trait names only),'
-        + '"traitDetails":[{"name":string,"description":string (full rules text as printed)},...],'
-        + '"attacks":[{"name":string,"type":"Melee"|"Ranged"|"Save","formula":string (e.g. "1d20+5 vs AC" or "DC 12 Constitution save"),"reachOrRange":string,"damage":string},...],'
-        + '"reactionCue":string (one sentence on resource/reaction usage),'
-        + '"style":"brute"|"skirmisher"|"pack"|"mindless"|"ambusher"|"leader" (whichever best fits how it fights),'
-        + '"postureA":{"trigger":string,"movement":string,"action":string,"bonusAction":string,"tags":[string,...]},'
-        + '"postureB":{...same shape...},'
-        + '"postureC":{...same shape...}}\n'
-        + 'postureA is its offensive tactic, postureB is what it does when hurt/losing, postureC is a situational tactic tied to terrain, allies, or an objective. '
-        + 'Base the postures on this specific creature\'s actual traits and how a tactically-minded DM would play it — not generic filler. '
-        + "If a field isn't legible in the image, make a reasonable inference consistent with the rest of the stat block.";
-      const data = await sampleJson(sampleApi, prompt, {images: file, modelTier: 'default'});
-      const monster = normalizeGeneratedMonster(data, Date.now());
-      onAdd(monster);
-      if(saveOnImage) onSaveCustom(monsterToTemplate(monster));
-      setMode('quick');
-    }catch(e){
-      const msg = {
-        not_granted: "You declined to let this page ask Claude — image transcription won't work this session.",
-        images_unavailable: 'Image upload is not available in this view.',
-        image_rejected: 'That image was rejected (wrong type, too large, or undecodable). Try a clearer photo or screenshot.',
-        rate_limited: 'Too many requests right now — wait a moment and try again.',
-        invalid_json: "Claude's reply couldn't be read as the expected shape. Try again, or use Paste/Quick add instead.",
-      }[e?.code] || (e?.message || 'Something went wrong reading that image.');
-      setImgError(msg);
-    }finally{ setBusy(false); }
-  }
-
   return (
     <div className="plate">
       <div className="plate-head" style={{cursor:'pointer'}} onClick={()=>setCollapsed(v=>!v)}>
@@ -1774,7 +1731,6 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
       <div className="tab-row">
         <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')}>Quick Add</button>
         <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')}>Paste Stat Block</button>
-        <button className={"tab-btn"+(mode==='image'?' active':'')} onClick={()=>setMode('image')}><Icon name="photo" size={14}/> Upload Image</button>
       </div>
 
       {mode === 'quick' && (
@@ -1822,7 +1778,10 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
       {mode === 'paste' && (
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first. Only the top section (a normal stat block) is required; Reaction Cue and the three Postures are optional tactical notes — leave them out and they'll be auto-generated from the monster's style.</p>
+          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — take a photo or screenshot of one, then hand it and the prompt below to any AI chat you have access to, and paste back what it gives you. Only the top section (a normal stat block) is required; Reaction Cue and the three Postures are optional tactical notes — leave them out and they'll be auto-generated from the monster's style.</p>
+          <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)', alignSelf:'flex-start'}} onClick={copyPrompt}>
+            <Icon name={copied?'check':'copy'} size={14}/> {copied ? 'Copied!' : 'Copy Transcription Prompt'}
+          </button>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
             placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional)\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n--- everything below is optional — auto-generated if omitted ---\n\n- Reaction Cue: ...\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
           {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
@@ -1834,34 +1793,6 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
         </div>
       )}
 
-      {mode === 'image' && (
-        <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Upload a photo or screenshot of a stat block — this page asks Claude (your account, your consent) to transcribe it directly into a monster entry.</p>
-          <div className={"upload-drop"+(busy?' busy':'')} onClick={()=>!busy && fileInputRef.current?.click()}>
-            <Icon name="photo" size={24}/>
-            <span>{busy ? 'Reading the image… this can take up to a minute.' : 'Click to choose an image'}</span>
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden
-            onChange={e=>{ const f = e.target.files?.[0]; if(f) handleImageFile(f); e.target.value=''; }}/>
-          {diag !== 'ready' && (
-            <div className="error-box">
-              <Icon name="alert" size={16}/>
-              <p>{
-                {checking:'Checking whether this view can transcribe images… try picking a file in a moment.',
-                 'no-claude':"This artifact host doesn't expose the capability this page needs for image transcription. Use Paste Stat Block instead — you can still ask me to read an image and hand you the paste-ready text.",
-                 'no-sample':'Image transcription is not granted in this view.',
-                 'no-images':'This account/view supports asking Claude but not sending images to it. Use Paste Stat Block instead.',
-                 error:`Something went wrong checking availability (${diagDetail}). You can still try picking a file.`}[diag]
-              }</p>
-            </div>
-          )}
-          {imgError && <div className="error-box"><Icon name="alert" size={16}/><p>{imgError}</p></div>}
-          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
-            <input type="checkbox" checked={saveOnImage} onChange={e=>setSaveOnImage(e.target.checked)}/>
-            Save to My Monsters (reuse this one in other encounters)
-          </label>
-        </div>
-      )}
       </div>}
     </div>
   );
