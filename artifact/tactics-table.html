@@ -1634,10 +1634,10 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
   );
 }
 
-function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
+function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, onRollWinCondition, onRollBattlefieldOptimizer, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
   const cells = [
-    {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds},
-    {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit},
+    {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds, onRoll:onRollWinCondition},
+    {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit, onRoll:onRollBattlefieldOptimizer},
   ];
   return (
     <div className="axes-strip">
@@ -1656,9 +1656,14 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
         {cells.map(c=>(
           <div className="axis-card" key={c.key}>
             <div className="corner corner-tl" style={{'--c':c.color}}/><div className="corner corner-tr" style={{'--c':c.color}}/><div className="corner corner-bl" style={{'--c':c.color}}/><div className="corner corner-br" style={{'--c':c.color}}/>
-            <div className="axis-eyebrow">
-              {c.icon && <Icon name={c.icon} size={14} style={{color:c.color}}/>}
-              <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
+            <div className="axis-eyebrow" style={{justifyContent:'space-between'}}>
+              <span style={{display:'flex', alignItems:'center', gap:5}}>
+                {c.icon && <Icon name={c.icon} size={14} style={{color:c.color}}/>}
+                <span className="eyebrow" style={{color:c.color}}>{c.eyebrow}</span>
+              </span>
+              <button className="icon-btn" onClick={c.onRoll} aria-label={`Roll a new ${c.eyebrow}`} title={`Roll a new ${c.eyebrow} — keeps the other axes as-is`}>
+                <Icon name="sparkles" size={13}/>
+              </button>
             </div>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
               <p className="axis-title">{c.title}</p>
@@ -2232,6 +2237,14 @@ function App(){
       battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit},
     }}));
   }
+  function rollWinCondition(){
+    const obj = COMBAT_OBJECTIVES[Math.floor(Math.random()*COMBAT_OBJECTIVES.length)];
+    updateActive(enc=>({...enc, axes:{...enc.axes, winCondition:{title:obj.title, description:obj.description, moraleThresholds:obj.moraleThresholds}}}));
+  }
+  function rollBattlefieldOptimizer(){
+    const opt = COMBAT_OPTIMIZERS[Math.floor(Math.random()*COMBAT_OPTIMIZERS.length)];
+    updateActive(enc=>({...enc, axes:{...enc.axes, battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit}}}));
+  }
   function nextTurn(){
     updateActive(enc=>{
       const order = getTurnOrder(enc);
@@ -2291,7 +2304,8 @@ function App(){
 
       <div className="shell">
         <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
-          onRollCombatMenu={rollCombatMenu} customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
+          onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
+          customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
         <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound}/>
         <div className="main-grid">
           <div className="stack">
