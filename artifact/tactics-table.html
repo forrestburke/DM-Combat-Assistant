@@ -280,6 +280,9 @@
   .posture-btn{ border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); font-size:12px; font-weight:600; letter-spacing:.03em; padding:6px 4px; text-align:center; }
   .posture-btn.active{border-color:var(--c); background:var(--c-soft); color:var(--c);}
   .posture-detail{border:1px solid var(--c); background:var(--c-soft); padding:10px 12px; margin-top:5px;}
+  .axis-live-context{border:1px dashed var(--amber); background:var(--amber-soft); padding:8px 12px; margin-top:6px;}
+  .axis-live-context p{font-size:12.5px; color:var(--amber-text); margin:2px 0;}
+  .axis-live-context b{color:var(--amber-text);}
   .posture-detail p{font-size:13px; line-height:1.55; color:var(--parchment); margin:5px 0 0;}
   .posture-detail p:first-child{margin-top:0;}
   .posture-detail b{color:var(--parchment-dim); font-weight:600;}
@@ -1776,7 +1779,7 @@ function AbilityRow({monster}){
   );
 }
 
-function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, traitTriggers}){
+function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, traitTriggers, axes}){
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
   const cornerColor = isActiveTurn && !monster.isDefeated ? 'var(--blood)' : 'var(--line)';
@@ -1869,6 +1872,12 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             })}
           </div>
           <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
+          {monster.activePosture==='C' && axes && (
+            <div className="axis-live-context">
+              <p><b>Right now — Win Condition:</b> {axes.winCondition?.title}</p>
+              <p><b>Right now — Hazard/Clock:</b> {axes.hazardOrClock?.title} <span className="mono">(count {axes.hazardOrClock?.initiativeCount})</span> — {axes.hazardOrClock?.triggerEffect}</p>
+            </div>
+          )}
 
           <div className="section-label">
             <Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span>
@@ -2459,7 +2468,7 @@ function App(){
                 <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
                   expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
                   onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster} onSetStats={setMonsterStats}
-                  traitTriggers={encounter.traitTriggers}/>
+                  traitTriggers={encounter.traitTriggers} axes={encounter.axes}/>
               ))}
             </div>
           </div>
