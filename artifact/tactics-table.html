@@ -290,6 +290,11 @@
   .posture-detail b{color:var(--parchment-dim); font-weight:600;}
   .tag-row{display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;}
   .tag{font-size:11px; border:1px solid var(--line); color:var(--parchment-dim); padding:1.5px 7px; border-radius:20px;}
+  .condition-row{display:flex; flex-wrap:wrap; gap:5px; align-items:center; position:relative; margin-top:6px;}
+  .condition-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);}
+  .condition-chip.active{border-color:var(--amber); background:var(--amber-soft); color:var(--amber-text);}
+  .condition-chip.add{color:var(--parchment-faint); border-style:dashed;}
+  .condition-picker{display:flex; flex-wrap:wrap; gap:5px; position:absolute; top:100%; left:0; margin-top:4px; padding:8px; background:var(--panel); border:1px solid var(--line); z-index:5; width:max-content; max-width:260px;}
   .my-monsters-list{display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow-y:auto; padding-right:2px;}
 
   .section-label{display:flex; align-items:center; gap:5px; margin:13px 0 6px;}
@@ -1187,6 +1192,42 @@ const ENV_HAZARDS = [
   { title:'Shifting Terrain', initiativeCount:20, triggerEffect:'The ground rearranges itself. Pick or roll a new patch of difficult or dangerous terrain each time this triggers.' },
   { title:'Vertical Shift', initiativeCount:'Round End', triggerEffect:"A platform, lift, or section of floor rises or falls, changing who suddenly has the high ground and who's exposed." },
   { title:'Interactive Prop', initiativeCount:'Round End', triggerEffect:"A chandelier, loose scaffold, or unstable bridge can be brought down deliberately by anyone willing to spend an action on it, hitting whoever's below or standing on it." },
+  // Below: additional original hazards, written to round out the library.
+  { title:'Flash Flood', initiativeCount:'Round End', triggerEffect:'Water surges through the area without warning. Each creature there makes a DC 13 Strength save or is knocked prone and swept 10 ft toward the nearest drop or hazard.' },
+  { title:'Spreading Webbing', initiativeCount:20, triggerEffect:'Sticky webbing grows to cover an adjacent 10-ft square. Anyone entering or starting their turn there must succeed on a DC 12 Strength save or be restrained.' },
+  { title:'Static Discharge', initiativeCount:20, triggerEffect:'Built-up energy arcs to the nearest metal-bearing creature. It takes 2d6 lightning damage and can\'t take reactions until the start of its next turn.' },
+  { title:'Sinking Ground', initiativeCount:'Round End', triggerEffect:'The surface here is slowly swallowing anyone on it. A creature already sunk in must succeed on a DC 13 Strength save or sink one step deeper, eventually risking suffocation.' },
+  { title:'Caustic Spore Cloud', initiativeCount:20, triggerEffect:'A fungal growth releases a burst of spores in a 10-ft radius. Creatures there must succeed on a DC 12 Constitution save or be blinded until the end of their next turn.' },
+  { title:'Closing Walls', initiativeCount:'Round End', triggerEffect:'The room shrinks by 5 ft on one side. Anyone who ends their turn against the moving wall takes 2d6 bludgeoning damage and is pushed with it.' },
+  { title:'Thorned Overgrowth', initiativeCount:'Round End', triggerEffect:'Vines and thorns spread across another 10-ft square, becoming difficult terrain. A creature that moves through it without care takes 1d4 piercing damage.' },
+  { title:'Blinding Squall', initiativeCount:'Round End', triggerEffect:'Sand, snow, or ash whips up further. Ranged attacks beyond 30 ft now have disadvantage, and tracking a creature that leaves sight is much harder.' },
+  { title:'Aftershock', initiativeCount:20, triggerEffect:'The ground shudders. Every creature standing must succeed on a DC 12 Dexterity save or fall prone; unsecured objects and debris may fall as well.' },
+  { title:'Black Ice', initiativeCount:'Round End', triggerEffect:'A patch of the floor freezes over, becoming difficult terrain. Any creature that enters it or starts its turn there must succeed on a DC 12 Dexterity save or fall prone.' },
+  { title:'Vent Eruption', initiativeCount:20, triggerEffect:'A geyser or steam vent blasts a 10-ft column. Creatures caught in it take 2d6 fire or bludgeoning damage and are pushed 10 ft away from it.' },
+  { title:'Swinging Blade', initiativeCount:20, triggerEffect:'A pendulum trap sweeps back across its arc. Creatures in its path make a DC 13 Dexterity save, taking 2d8 slashing damage on a failure.' },
+  { title:'Pressure Plate Alarm', initiativeCount:'Round End', triggerEffect:'Stepping on an unmarked plate alerts nearby reinforcements or seals a nearby exit — the trap itself does no damage, but it changes what happens next.' },
+  { title:'Overloading Rune', initiativeCount:20, triggerEffect:'A magical rune nearby is building toward failure. Each time this triggers, the eventual burst grows larger — better to disable it early than let it cook.' },
+  { title:'Corrupted Ley Line', initiativeCount:'Round End', triggerEffect:'Spellcasting standing on the corrupted ground has a chance to misfire, dealing damage to the caster instead of or alongside its intended effect.' },
+  { title:'Restless Spirits', initiativeCount:'Round End', triggerEffect:'Whispers and cold spots unsettle the area. A creature that ends its turn there must succeed on a DC 12 Wisdom save or have disadvantage on its next attack roll.' },
+  { title:'Rockslide Warning', initiativeCount:20, triggerEffect:'Loose rock begins to slide. Anyone below the slope makes a DC 13 Dexterity save, taking 2d6 bludgeoning damage and being buried in debris (restrained) on a failure.' },
+  { title:'Burning Oil Slick', initiativeCount:'Round End', triggerEffect:'A spilled, ignitable liquid spreads to an adjacent square. Any creature that ends its turn in an ignited square takes 1d6 fire damage.' },
+  { title:'Live Wire Grate', initiativeCount:20, triggerEffect:'A metal grate or railing is charged. Any creature touching it takes 1d8 lightning damage and can be pushed back 5 ft.' },
+  { title:'Fouled Water Source', initiativeCount:'Round End', triggerEffect:'Anyone who drinks from or is fully submerged in the tainted water must succeed on a DC 12 Constitution save or be poisoned for 1 minute.' },
+  { title:'Disturbed Nest', initiativeCount:20, triggerEffect:'A den of hostile animals or vermin, unaffiliated with either side, boils out and attacks whoever is nearest — friend or foe.' },
+  { title:'Failing Bridge', initiativeCount:'Round End', triggerEffect:'A rope bridge or catwalk loses another support. Anyone on it must succeed on a DC 13 Dexterity save or fall to the level below.' },
+  { title:'Runaway Platform', initiativeCount:20, triggerEffect:'A cart, lift, or vehicle on the field starts moving on its own, forcing anyone aboard to deal with it or be carried somewhere they don\'t want to go.' },
+  { title:'Sound-Triggered Ward', initiativeCount:'Round End', triggerEffect:'Loud noise (a shout, a spell, a crash) in the area sets off a ward. The louder the disturbance, the worse the ward\'s response.' },
+  { title:'Light-Sensitive Ward', initiativeCount:'Round End', triggerEffect:'A ward keyed to bright light activates if any is introduced to a previously dark area — useful to know before someone lights a torch.' },
+  { title:'Disorienting Field', initiativeCount:'Round End', triggerEffect:'Gravity or direction briefly scrambles in the area. A creature that moves through it must succeed on a DC 12 Constitution save or have its speed halved until its next turn.' },
+  { title:'Temporal Flicker', initiativeCount:20, triggerEffect:'Time skips oddly in the area. A random creature there acts again immediately, or loses its next turn — DM\'s call on which, framed however fits the scene.' },
+  { title:'False Reflections', initiativeCount:'Round End', triggerEffect:'Illusory duplicates of a creature in the area appear. Attacks against it have disadvantage until an observer succeeds on a DC 13 Intelligence check to pick out the real one.' },
+  { title:'Draining Sigil', initiativeCount:20, triggerEffect:'A sigil on the ground pulls at anyone standing on it. That creature must succeed on a DC 12 Constitution save or have disadvantage on its next saving throw.' },
+  { title:'Loose Prisoner', initiativeCount:'Round End', triggerEffect:'Someone locked up nearby breaks free. Depending on who they are, they may join either side, flee, or start causing trouble of their own.' },
+  { title:'Overhead Hazard', initiativeCount:20, triggerEffect:'Something heavy and precarious above (a chandelier, a stalactite, a support beam) shifts further. It\'s one trigger away from coming down on whoever is below it.' },
+  { title:'Spore-Laced Fog', initiativeCount:'Round End', triggerEffect:'A low fog thick with something unnatural creeps across another 10-ft square, obscuring vision and carrying whatever effect the fog is tied to.' },
+  { title:'Broken Ward Line', initiativeCount:'Round End', triggerEffect:'A protective boundary that had been holding something back weakens further. Once it fully fails, whatever it was containing gets free.' },
+  { title:'Splitting Ice', initiativeCount:20, triggerEffect:'Cracks race further across a frozen surface. Anyone standing on the ice must succeed on a DC 13 Dexterity save or fall through into the freezing water below.' },
+  { title:'Backfiring Machine', initiativeCount:20, triggerEffect:'A piece of arcane or mechanical equipment nearby malfunctions, venting damage or a status effect in a burst around itself before someone shuts it down.' },
 ];
 const CUSTOM_HAZARDS_KEY = 'tactics-table-custom-hazards-v1';
 
@@ -1201,6 +1242,14 @@ const COMBAT_OBJECTIVES = [
   { title: 'Break Contact', description: "The goal is reaching an exit or triggering an escape — not clearing the room.", moraleThresholds: 'The fight ends the instant the party crosses the threshold or trigger point, even mid-combat.' },
   { title: 'Stop the Ritual', description: 'A countdown or puzzle is running alongside the fight; disrupting it is the actual win condition.', moraleThresholds: 'Killing every enemy is optional — stopping the ritual in time is what matters.' },
   { title: 'Secure the Prize', description: 'One specific object is what everyone is actually fighting over.', moraleThresholds: 'Whoever holds the object when the dust settles effectively wins, regardless of body count.' },
+  { title: 'Turn the Tide', description: 'The party starts on the back foot — outnumbered or ambushed — and the win condition is stabilizing, not steamrolling.', moraleThresholds: 'Track the moment the fight flips in the party\'s favor; enemy morale should break once it does.' },
+  { title: 'Buy Time', description: 'Nobody actually needs to win the fight itself — they need it to last (or end) by a certain point while something else finishes.', moraleThresholds: 'Victory is measured in rounds survived or stalled, not in bodies on the floor.' },
+  { title: 'Draw Them Out', description: 'The real threat is hidden or hanging back; the fight is about forcing it into the open.', moraleThresholds: 'Visible enemies may just be bait — the encounter isn\'t over until the real target shows itself.' },
+  { title: 'Protect the Caster', description: 'An ally is mid-ritual or mid-spell and needs cover while they finish; interrupting them is the failure state, not a party death.', moraleThresholds: 'Enemies focus on reaching or disrupting the caster over trading blows with the party directly.' },
+  { title: 'Clear the Path', description: 'The fight exists to remove what\'s blocking a route forward — killing everyone is optional if the way opens some other way.', moraleThresholds: 'The moment the path is clear, remaining enemies may no longer have a reason to keep fighting.' },
+  { title: 'Take Them Alive', description: 'At least one enemy needs to survive and be captured — lethal force works against the actual goal here.', moraleThresholds: 'Killing the target is a failure state even if every other enemy is defeated.' },
+  { title: 'Deny the Objective', description: 'The enemy is trying to reach, activate, or destroy something — the party\'s job is only to stop that, not to wipe them out.', moraleThresholds: 'The fight ends the instant the objective is safely denied, even with enemies still standing.' },
+  { title: 'Champion\'s Duel', description: 'The fight is framed as single combat or a formal challenge, with the rest of both sides expected to hold back and watch.', moraleThresholds: 'Interference from either side may be seen as dishonorable — or it may be exactly what a treacherous enemy planned.' },
 ];
 const COMBAT_OPTIMIZERS = [
   { title: 'Free the Allies', description: 'Captured or caged allies can be freed mid-fight, turning the numbers around.', mechanicalBenefit: 'Freeing them adds combatants to the party\'s side or removes a hostage complication.' },
@@ -1211,6 +1260,14 @@ const COMBAT_OPTIMIZERS = [
   { title: 'Control the Levers', description: "A set of levers controls traps or barriers around the room.", mechanicalBenefit: 'Whoever holds the levers can trigger or disable hazards for either side — a tug-of-war over control.' },
   { title: 'Grab the Big Gun', description: 'One overpowered weapon or device sits on the field, up for grabs by either side.', mechanicalBenefit: 'Wielding it grants a significantly stronger attack option than anything else on the field.' },
   { title: 'Claim the Boon', description: 'A font, altar, or charge grants a one-time advantage to whoever reaches it first.', mechanicalBenefit: 'Reaching it grants advantage on attacks (or a similar boost) for a limited time — pairs well with High Ground.' },
+  { title: 'Sniper\'s Perch', description: 'A ledge, tower, or window gives a clean, distant line on most of the battlefield.', mechanicalBenefit: 'Attacks from the perch ignore half cover on the ground floor, but reaching or holding it under fire is its own challenge.' },
+  { title: 'Healing Font', description: 'A shrine, spring, or magical pool can mend wounds for whoever controls it.', mechanicalBenefit: 'A creature that spends an action there regains hit points once per short rest\'s worth of uses — a real incentive to fight over it.' },
+  { title: 'Bottleneck the Charge', description: 'A narrow doorway, bridge, or hallway limits how many creatures can engage at once.', mechanicalBenefit: 'Only one or two combatants can fight through the gap at a time — holding it turns numbers into a non-factor.' },
+  { title: 'Mounts on the Field', description: 'Beasts, vehicles, or other rideable options are available to either side.', mechanicalBenefit: 'A mounted combatant gets extra speed and reach advantages, but becomes a bigger, easier target while riding.' },
+  { title: 'Glare and Shadow', description: 'A strong light source creates sharp contrast — blinding glare on one side, deep shadow on the other.', mechanicalBenefit: 'Creatures fighting into the glare have disadvantage on attacks; creatures in the shadow gain an edge on Stealth.' },
+  { title: 'Consecrated Ground', description: 'The area is warded against a specific creature type — undead, fiends, aberrations.', mechanicalBenefit: 'Affected creatures have disadvantage on attacks (or a similar penalty) while inside the warded area.' },
+  { title: 'Volatile Cache', description: 'Explosive or flammable barrels, kegs, or tanks are scattered around the field.', mechanicalBenefit: 'Igniting one deals a burst of damage in an area — useful for either side willing to risk being caught in it too.' },
+  { title: 'Panic the Crowd', description: 'Bystanders, animals, or a startled crowd are present and can be spooked into causing chaos.', mechanicalBenefit: 'Triggering a stampede or panic creates difficult terrain and forces saves to avoid being swept along with it.' },
 ];
 function loadCustomHazards(){
   try{ const raw = localStorage.getItem(CUSTOM_HAZARDS_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
@@ -1370,6 +1427,30 @@ function splitSensesFromPassives(passives){
   for(const p of passives) (SENSE_MOVEMENT_PATTERN.test(p) ? senses : other).push(p);
   return {senses, other};
 }
+const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
+function ConditionRow({conditions, onToggle}){
+  const active = conditions || [];
+  const [adding, setAdding] = useState(false);
+  return (
+    <div className="condition-row">
+      {active.map(c=>(
+        <button key={c} className="condition-chip active" onClick={()=>onToggle(c)} title="Click to remove">
+          {c}<Icon name="x" size={10}/>
+        </button>
+      ))}
+      <button className="condition-chip add" onClick={()=>setAdding(v=>!v)} title="Add a condition">
+        <Icon name="plus" size={11}/>{active.length===0 ? 'Condition' : ''}
+      </button>
+      {adding && (
+        <div className="condition-picker">
+          {CONDITIONS.filter(c=>!active.includes(c)).map(c=>(
+            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }}>{c}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 function clampPct(cur, max){ return max<=0 ? 0 : Math.max(0, Math.min(1, cur/max)); }
 function hpColor(pct){ if(pct<=0) return 'var(--line)'; if(pct<=0.3) return 'var(--blood)'; if(pct<=0.6) return 'var(--amber)'; return 'var(--moss)'; }
 function abilityMod(score){ const mod = Math.floor((score-10)/2); return mod>=0?`+${mod}`:`${mod}`; }
@@ -1419,7 +1500,7 @@ function AddPartyMemberForm({onAdd, onDone}){
   );
 }
 
-function PartyRow({p, onDelta, onRemove, onSetInitiative}){
+function PartyRow({p, onDelta, onRemove, onSetInitiative, onToggleCondition}){
   const [deltaVal, setDeltaVal] = useState('');
   function applyDelta(){
     const n = Number(deltaVal);
@@ -1453,15 +1534,16 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative}){
         </div>
       </div>
       <p className="party-priority">{p.tacticalPriority}</p>
+      <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
     </div>
   );
 }
 
-function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative}){
+function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onToggleCondition}){
   const [showAdd, setShowAdd] = useState(false);
   return (
     <React.Fragment>
-      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative}/>)}
+      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onToggleCondition={onToggleCondition}/>)}
       <div className="disclosure">
         <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
           <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
@@ -1472,12 +1554,12 @@ function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative}){
   );
 }
 
-function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative}){
+function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onToggleCondition}){
   return (
     <div className="plate">
       <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
       <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
-      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative}/>
+      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onToggleCondition={onToggleCondition}/>
     </div>
   );
 }
@@ -1736,7 +1818,7 @@ function AbilityRow({monster}){
   );
 }
 
-function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, traitTriggers, axes}){
+function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, traitTriggers, axes, onToggleCondition}){
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
   const cornerColor = isActiveTurn && !monster.isDefeated ? 'var(--blood)' : 'var(--line)';
@@ -1795,6 +1877,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
         </div>
+        <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
       </div>
 
       {expanded && (
@@ -2391,6 +2474,11 @@ function App(){
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, initiative:n} : p)}));
     else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, initiative:n} : m)}}));
   }
+  function toggleCondition(kind, id, condition){
+    const flip = (list)=> (list||[]).includes(condition) ? list.filter(c=>c!==condition) : [...(list||[]), condition];
+    if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, conditions: flip(p.conditions)} : p)}));
+    else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, conditions: flip(m.conditions)} : m)}}));
+  }
   function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
   function getLocks(enc){ return enc.axesLocked || {win:false, opt:false, hazard:false}; }
   function setAxes(axes){
@@ -2524,7 +2612,7 @@ function App(){
         <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster}/>
         <div className="main-grid">
           <div className="stack">
-            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)}/>
+            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
           </div>
           <div className="stack">
             <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
@@ -2533,7 +2621,7 @@ function App(){
                 <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
                   expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
                   onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster} onSetStats={setMonsterStats}
-                  traitTriggers={encounter.traitTriggers} axes={encounter.axes}/>
+                  traitTriggers={encounter.traitTriggers} axes={encounter.axes} onToggleCondition={(id,c)=>toggleCondition('monster', id, c)}/>
               ))}
             </div>
           </div>
