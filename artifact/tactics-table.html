@@ -450,6 +450,25 @@ const sampleEncounter = {
 
 /* ---------- markdown parser ---------- */
 class MarkdownParseError extends Error {}
+// Some artifact-viewer runtimes expose the `sample` capability's base function
+// (and `.limits()`) but not the `.json()` helper — call the base function and
+// parse JSON out of its text ourselves so both cases work, mirroring the
+// tolerant parsing `.json()` itself would have done.
+function extractJsonFromText(text){
+  try{ return JSON.parse(text); }catch{}
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if(fence){ try{ return JSON.parse(fence[1]); }catch{} }
+  const start = text.search(/[[{]/);
+  const end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
+  if(start !== -1 && end > start){ try{ return JSON.parse(text.slice(start, end+1)); }catch{} }
+  const err = new Error("Claude's reply couldn't be read as JSON.");
+  err.code = 'invalid_json'; err.text = text;
+  throw err;
+}
+async function sampleJson(sampleFn, input, options){
+  const result = await sampleFn(input, options);
+  return extractJsonFromText(result.text);
+}
 function slugify(name){ return (name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')) || 'item'; }
 function toLines(md){ return md.replace(/\r\n/g,'\n').split('\n'); }
 function splitByHeading(lines, level){
@@ -1276,7 +1295,7 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
           + '"environment" (the place/setting), "terrain" (physical features — cover, elevation, difficult terrain), '
           + '"combatSituation" (why a fight is happening — ambush, escort, defend, etc.), "timeOfDay" (time of day/lighting, or "" if not mentioned). '
           + 'Use short phrases, not full sentences. Reply with ONLY the JSON object.\n\nDescription:\n' + pasteText;
-        const data = await sampleApi.json(prompt, {modelTier:'quick'});
+        const data = await sampleJson(sampleApi, prompt, {modelTier:'quick'});
         onChange({
           environment: String(data.environment ?? ''),
           terrain: String(data.terrain ?? ''),
@@ -1727,7 +1746,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
         + 'postureA is its offensive tactic, postureB is what it does when hurt/losing, postureC is a situational tactic tied to terrain, allies, or an objective. '
         + 'Base the postures on this specific creature\'s actual traits and how a tactically-minded DM would play it — not generic filler. '
         + "If a field isn't legible in the image, make a reasonable inference consistent with the rest of the stat block.";
-      const data = await sampleApi.json(prompt, {images: file, modelTier: 'default'});
+      const data = await sampleJson(sampleApi, prompt, {images: file, modelTier: 'default'});
       const monster = normalizeGeneratedMonster(data, Date.now());
       onAdd(monster);
       if(saveOnImage) onSaveCustom(monsterToTemplate(monster));
