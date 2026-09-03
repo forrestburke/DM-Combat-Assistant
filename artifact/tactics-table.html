@@ -590,10 +590,9 @@ function parseMonster(block){
   const pB = sub.find(b=>/^posture b:/i.test(b.heading));
   const pC = sub.find(b=>/^posture c:/i.test(b.heading));
   if(!attacksB) throw new MarkdownParseError(`Missing "#### Attacks" section in ${context}.`);
-  if(!pA) throw new MarkdownParseError(`Missing "#### Posture A:" section in ${context}.`);
-  if(!pB) throw new MarkdownParseError(`Missing "#### Posture B:" section in ${context}.`);
-  if(!pC) throw new MarkdownParseError(`Missing "#### Posture C:" section in ${context}.`);
   const styleRaw = f.get('style')?.toLowerCase();
+  const style = validStyles.includes(styleRaw) ? styleRaw : 'skirmisher';
+  const generated = generatePostures(style);
   return {id:slugify(split.name), name:split.name, baseType:split.inner,
     ac:parseInt10(requireField(f,'ac',context),'AC',context), hpCurrent:hp.current, hpMax:hp.max,
     speed:parseInt10(requireField(f,'speed',context),'Speed',context),
@@ -604,8 +603,11 @@ function parseMonster(block){
     style: validStyles.includes(styleRaw) ? styleRaw : undefined,
     passives:parseList(f.get('passives')),
     traitDetails: traitsB ? parseTraitDetails(traitsB.lines) : undefined,
-    attacks:parseAttacks(attacksB.lines, context), reactionCue:requireField(f,'reactioncue',context),
-    postureA:parsePosture(pA, `${context} Posture A`), postureB:parsePosture(pB, `${context} Posture B`), postureC:parsePosture(pC, `${context} Posture C`),
+    attacks:parseAttacks(attacksB.lines, context),
+    reactionCue: f.get('reactioncue') || 'Autofilled — review and adjust before running.',
+    postureA: pA ? parsePosture(pA, `${context} Posture A`) : generated.postureA,
+    postureB: pB ? parsePosture(pB, `${context} Posture B`) : generated.postureB,
+    postureC: pC ? parsePosture(pC, `${context} Posture C`) : generated.postureC,
     activePosture:'A', isDefeated:false};
 }
 function parseEncounterMarkdown(markdown){
@@ -1680,9 +1682,9 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
       {mode === 'paste' && (
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first.</p>
+          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — ask Claude to transcribe one from a screenshot into this shape first. Only the top section (a normal stat block) is required; Reaction Cue and the three Postures are optional tactical notes — leave them out and they'll be auto-generated from the monster's style.</p>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
-            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Reaction Cue: ...\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
+            placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional)\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n--- everything below is optional — auto-generated if omitted ---\n\n- Reaction Cue: ...\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
           {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
           <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
             <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
