@@ -144,6 +144,8 @@
   }
   .init-chip.pc{ border-color:rgba(46,230,201,.3); }
   .init-chip.monster{ border-color:rgba(255,77,74,.3); }
+  .init-chip-remove{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; margin-left:-1px; padding:0; border:none; background:none; color:var(--parchment-faint); border-radius:50%; flex-shrink:0; }
+  .init-chip-remove:hover{ background:var(--blood-soft); color:var(--blood-text); }
   .init-chip.active{ background:var(--blood-soft); border-color:var(--blood); color:var(--parchment); box-shadow:var(--glow-blood); }
   .init-num{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 4px; border-radius:50%; background:var(--line); color:var(--parchment); font-size:11px; font-weight:700; }
   .init-chip.active .init-num{ background:var(--blood); color:var(--ink); }
@@ -1670,7 +1672,7 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
   );
 }
 
-function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onReset}){
+function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onReset, onRemoveMonster}){
   const active = order.find(c=>c.id===round.activeCombatantId) ?? order[0];
   return (
     <div className="roundbar">
@@ -1692,6 +1694,11 @@ function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onRes
           {order.map(c=>(
             <span key={c.id} className={"init-chip"+(c.id===active?.id?" active":"")+(c.kind==='pc'?" pc":" monster")}>
               <span className="init-num mono">{c.initiative}</span>{c.name}
+              {c.kind==='monster' && (
+                <button className="init-chip-remove" onClick={()=>onRemoveMonster(c.id)} aria-label={`Remove ${c.name} from combat`} title="Remove from combat">
+                  <Icon name="x" size={11}/>
+                </button>
+              )}
             </span>
           ))}
         </div>
@@ -1874,7 +1881,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
   );
 }
 
-const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block image into the exact markdown format below. Use official rules text where you can read it; if something is illegible or not shown in the image, infer a sensible tactical option consistent with the monster's abilities rather than leaving it blank. Output ONLY the filled-in block, no extra commentary.
+const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block image into the exact markdown format below. Use official rules text where you can read it; if something is illegible or not shown in the image, infer a sensible tactical option consistent with the monster's abilities rather than leaving it blank. Output ONLY the filled-in block, no extra commentary. Output the result inside a markdown code block.
 
 FORMATTING RULES — do not deviate from these, even if it feels more natural to:
 1. Every bullet point starts with a literal hyphen "-". Never use "*", "•", or any other bullet character.
@@ -2160,6 +2167,98 @@ function loadEncounterStore(){
   return { encounters:[sampleEncounter], activeId: sampleEncounter.id };
 }
 
+function HowToUseSection(){
+  const [open, setOpen] = useState(false);
+  const sections = [
+    {
+      title: 'Encounters & Tabs',
+      body: [
+        'Each tab across the top is a separate encounter with its own party, monsters, axes, and round tracker. Add a new one with the "+" tab, duplicate or delete a tab from its own controls, and double-click a tab name to rename it.',
+        'Your party (PCs) carries over automatically when you create a new encounter tab, so you don\'t have to re-enter them each fight.',
+      ],
+    },
+    {
+      title: 'Encounter Axes (Win Condition / Battlefield Optimizer / Hazard-Clock)',
+      body: [
+        '"Roll Combat Menu" rolls a fresh Win Condition and Battlefield Optimizer together. "Suggest from Roster" drafts both from whatever monsters are currently in the fight. Each axis card also has its own small sparkle button to roll just that one axis on its own.',
+        'Click the lock icon on any axis card (including Hazard/Clock) to protect it — a locked axis is skipped by every roll/suggest action, so you can keep an axis you like while re-rolling the others.',
+        'Hazard/Clock has its own "Randomize" button, or add a fully custom one with "+ Add Hazard".',
+      ],
+    },
+    {
+      title: 'Scene Notes & Recommended Map Elements',
+      body: [
+        'Type Environment, Terrain, Combat Situation, and Time of Day directly — these feed both the Recommended Map Elements list and the "Draft Axes from Scene" button, which drafts the axes above from your scene text and current roster without adding any monsters itself.',
+        'Both this section and Recommended Map Elements collapse with the chevron in their header if you want to save space.',
+      ],
+    },
+    {
+      title: 'Party & Round Tracker',
+      body: [
+        '"Add PC" adds a party member with AC/HP/role. The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Next Round" jumps straight to a new round, "Previous Round" steps back one, and "Reset" returns to round 1.',
+        'Each combatant has a typeable HP delta box — type a negative number to damage, a positive number to heal, no "+" needed, then press Enter or the checkmark.',
+      ],
+    },
+    {
+      title: 'Adding Monsters',
+      body: [
+        'Quick Add: type a name — it autocompletes against the local SRD compendium and anything you\'ve saved to My Monsters, autofilling AC/HP/Speed/attacks/posture. Qty adds multiples at once. "Manual stats" lets you override AC/HP/Speed on the spot.',
+        'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
+        '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
+      ],
+    },
+    {
+      title: 'Monster Cards',
+      body: [
+        'AC, Speed, and Initiative are editable directly in the card header. A "Multiattack" badge appears automatically whenever a monster has more than one listed attack. Senses and movement modes (Darkvision, Flyer, etc.) show right under the name; other passive traits sit in a callout further down when expanded.',
+        'Expand a card to see its full stat block: abilities, resistances/vulnerabilities, the three Postures (click A/B/C to switch which one is active), Attacks, Spells (if it\'s a spellcaster), traits, and any matching Trait Trigger. On Posture C specifically, a "Right now" box shows the encounter\'s current Win Condition and Hazard/Clock live — it updates automatically whenever those axes change.',
+        'The skull button toggles defeated (fades the card); the trash button removes it from the fight entirely.',
+      ],
+    },
+    {
+      title: 'My Monsters Library',
+      body: [
+        'Every monster you save (from Paste Stat Block, or Quick Add\'s custom entries) lives here across all encounters. Click the header to expand it — past 8 saved monsters a filter box appears, and the list scrolls instead of growing forever.',
+      ],
+    },
+    {
+      title: 'Export / Import Data',
+      body: [
+        'Export Data shows every encounter tab plus your My Monsters and custom hazard libraries as one block of text, with a Copy to Clipboard button — save that somewhere (a note, a text file). Import Data pastes it back in, overwriting what\'s currently on this device.',
+        'This is the only way to move your data between devices or browsers, since everything is stored locally in this browser and nothing syncs automatically — including if multiple people use this same page, each person\'s saved data is private to their own browser.',
+        '"Import Markdown" is a separate, older feature for loading one full encounter from raw markdown text — most people won\'t need it if they\'re using the fields and forms above.',
+      ],
+    },
+    {
+      title: 'Theme',
+      body: [
+        'The sun/moon icon in the top-right switches between light and dark parchment themes.',
+      ],
+    },
+  ];
+  return (
+    <div className="axis-card" style={{marginTop:12}}>
+      <div className="axis-eyebrow" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
+        <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
+        <Icon name="scroll" size={14} style={{color:'var(--moss, var(--arcane))'}}/>
+        <span className="eyebrow">How to Use This Page</span>
+      </div>
+      {open && (
+        <div style={{marginTop:10, display:'flex', flexDirection:'column', gap:14}}>
+          {sections.map(s=>(
+            <div key={s.title}>
+              <p style={{fontSize:13, fontWeight:700, color:'var(--parchment)', margin:'0 0 4px'}}>{s.title}</p>
+              {s.body.map((p,i)=>(
+                <p key={i} style={{fontSize:12.5, color:'var(--parchment-dim)', lineHeight:1.5, margin:'0 0 5px'}}>{p}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
   return (
     <div style={{display:'flex', alignItems:'center', gap:6, overflowX:'auto', padding:'10px 20px 0', maxWidth:1360, margin:'0 auto'}}>
@@ -2417,11 +2516,12 @@ function App(){
       {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
       <div className="shell">
+        <HowToUseSection/>
         <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
           onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
           locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
           customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
-        <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound}/>
+        <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster}/>
         <div className="main-grid">
           <div className="stack">
             <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)}/>
