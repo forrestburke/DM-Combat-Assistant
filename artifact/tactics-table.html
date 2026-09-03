@@ -242,14 +242,23 @@
   @media (max-width:620px){ .monster-grid{column-width:100%;} }
   .mcard{padding:0; transition:opacity .2s; display:inline-block; width:100%; margin-bottom:16px; break-inside:avoid; vertical-align:top;}
   .mcard.defeated{opacity:.4;}
-  .mcard-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 14px; cursor:pointer;}
+  .mcard-head{display:flex; flex-direction:column; gap:6px; padding:11px 14px; cursor:pointer;}
   .mcard-head:hover{ background:var(--panel-raised); }
-  .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0;}
-  .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin-top:1px;}
+  .mcard-head-top{display:flex; align-items:center; gap:8px;}
+  .mcard-head-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding-left:24px;}
+  .mcard-head-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0; flex:1; min-width:0;}
+  .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin:0;}
   .mcard-body{padding:0 14px 13px;}
   .ac-badge{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
-  .mcard-collapsed-meta{ display:flex; align-items:center; gap:10px; padding:0 14px 12px; }
-  .posture-chip{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; }
+  .mcard-collapsed-meta{ display:flex; align-items:center; gap:10px; padding:0 14px 12px; flex-wrap:wrap; }
+  .posture-chip{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; white-space:nowrap; }
+  .init-label{display:flex; align-items:center; gap:5px; flex-shrink:0;}
+  .init-label span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
+  .hp-exact-row{display:flex; align-items:center; gap:7px; margin:10px 0; flex-wrap:wrap;}
+  .hp-exact-label{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
+  .hp-exact-sep{color:var(--parchment-faint);}
+  .hp-exact-hint{font-size:11px; color:var(--parchment-faint);}
   .chevron{ color:var(--parchment-faint); transition:transform .15s; flex-shrink:0; }
   .chevron.open{ transform:rotate(90deg); }
 
@@ -1009,6 +1018,15 @@ const srdMonsters = [
   { name:"Young Copper Dragon", baseType:"Large Dragon", ac:17, hpMax:119, speed:40, abilityScores:{str:19,dex:12,con:17,int:16,wis:13,cha:15}, passives:[], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+7 vs AC","reachOrRange":"10 ft","damage":"2d10+4 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+7 vs AC","reachOrRange":"5 ft","damage":"2d6+4 [slashing]"}], style:"brute", environments:["mountain","cave"] },
   { name:"Young Gold Dragon", baseType:"Large Dragon", ac:18, hpMax:178, speed:40, abilityScores:{str:23,dex:14,con:21,int:16,wis:13,cha:20}, passives:["Amphibious"], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"10 ft","damage":"2d10+6 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"5 ft","damage":"2d6+6 [slashing]"}], style:"brute", environments:["mountain","cave"] },
   { name:"Young Silver Dragon", baseType:"Large Dragon", ac:18, hpMax:168, speed:40, abilityScores:{str:23,dex:10,con:21,int:14,wis:11,cha:19}, passives:[], attacks:[{"name":"Bite","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"10 ft","damage":"2d10+6 [piercing]"},{"name":"Claw","type":"Melee","formula":"1d20+10 vs AC","reachOrRange":"5 ft","damage":"2d6+6 [slashing]"}], style:"brute", environments:["mountain","cave"] },
+  { name:"Druid", baseType:"Medium Humanoid", ac:11, hpMax:27, speed:30, abilityScores:{str:10,dex:12,con:13,int:12,wis:15,cha:11}, passives:["Spellcaster"], attacks:[{name:'Quarterstaff', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d6 [bludgeoning]'}], style:'leader', environments:['forest','hills'] },
+  { name:"Dryad", baseType:"Medium Fey", ac:11, hpMax:22, speed:30, abilityScores:{str:10,dex:12,con:11,int:14,wis:15,cha:18}, passives:["Innate Spellcasting","Magic Resistance","Tree Stride","Charm (melee touch)"], attacks:[{name:'Club', type:'Melee', formula:'1d20+2 vs AC', reachOrRange:'5 ft', damage:'1d4 [bludgeoning]'}], style:'leader', environments:['forest'] },
+  { name:"Frog", baseType:"Tiny Beast", ac:11, hpMax:1, speed:20, abilityScores:{str:1,dex:13,con:8,int:1,wis:8,cha:3}, passives:["Amphibious","Standing Leap"], attacks:[], style:'skirmisher', environments:['swamp','forest'] },
+  { name:"Lich", baseType:"Medium Undead", ac:17, hpMax:135, speed:30, abilityScores:{str:11,dex:16,con:16,int:20,wis:14,cha:16}, resistances:['cold','lightning','necrotic'], passives:["Legendary Resistance (3/Day)","Rejuvenation (phylactery)","Spellcaster","Turn Resistance","Legendary Actions"], attacks:[{name:'Paralyzing Touch', type:'Melee', formula:'1d20+12 vs AC', reachOrRange:'5 ft', damage:'3d6 [cold] (DC 18 Con or paralyzed 1 min)'}], style:'leader', environments:['dungeon','ruins','undead'] },
+  { name:"Rug of Smothering", baseType:"Large Construct", ac:12, hpMax:33, speed:10, abilityScores:{str:17,dex:14,con:10,int:1,wis:3,cha:1}, passives:["Antimagic Susceptibility","Damage Transfer","False Appearance"], attacks:[{name:'Smother', type:'Melee', formula:'1d20+5 vs AC', reachOrRange:'5 ft', damage:'grapple + restrain + blind; 2d6+3 [bludgeoning] per turn while grappled'}], style:'mindless', environments:['dungeon','ruins'] },
+  { name:"Sea Horse", baseType:"Tiny Beast", ac:11, hpMax:1, speed:0, abilityScores:{str:1,dex:12,con:8,int:1,wis:10,cha:2}, passives:["Water Breathing"], attacks:[], style:'skirmisher', environments:['water','swamp'] },
+  { name:"Shrieker", baseType:"Medium Plant", ac:5, hpMax:13, speed:0, abilityScores:{str:1,dex:1,con:10,int:1,wis:3,cha:1}, passives:["False Appearance","Shriek (alerts nearby creatures when disturbed)"], attacks:[], style:'mindless', environments:['dungeon','cave','swamp'] },
+  { name:"Specter", baseType:"Medium Undead", ac:12, hpMax:22, speed:0, abilityScores:{str:1,dex:14,con:11,int:10,wis:10,cha:11}, resistances:['acid','cold','fire','lightning','thunder','nonmagical weapons'], passives:["Incorporeal Movement","Sunlight Sensitivity"], attacks:[{name:'Life Drain', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'3d6 [necrotic] (DC 10 Con or max HP reduced)'}], style:'ambusher', environments:['crypt','dungeon','ruins','undead'] },
+  { name:"Will-o'-Wisp", baseType:"Tiny Undead", ac:19, hpMax:22, speed:0, abilityScores:{str:1,dex:28,con:10,int:13,wis:14,cha:11}, resistances:['acid','cold','fire','necrotic','thunder','nonmagical weapons'], passives:["Consume Life","Ephemeral","Incorporeal Movement","Invisibility (until it attacks)","Variable Illumination"], attacks:[{name:'Shock', type:'Melee', formula:'1d20+4 vs AC', reachOrRange:'5 ft', damage:'2d8 [lightning]'}], style:'ambusher', environments:['swamp','forest'] },
 ];
 
 function generatePostures(style){
@@ -1701,31 +1719,31 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
       <div className="corner corner-tl" style={{'--c':cornerColor}}/><div className="corner corner-tr" style={{'--c':cornerColor}}/>
       <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
       <div className="mcard-head" onClick={onToggleExpand}>
-        <div style={{minWidth:0, display:'flex', alignItems:'center', gap:8}}>
+        <div className="mcard-head-top">
           <Icon name="chevron" size={16} className={"chevron" + (expanded ? " open" : "")}/>
-          <div style={{minWidth:0}}>
-            <p className="mcard-name">{monster.name}</p>
-            <p className="mcard-type">{monster.baseType}</p>
-          </div>
+          <p className="mcard-name">{monster.name}</p>
         </div>
-        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}} onClick={e=>e.stopPropagation()}>
-          <span className="ac-badge">
-            <Icon name="shield" size={14}/>
-            <input className="ac-input" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`}/>
-          </span>
-          <span className="ac-badge" title="Speed">
-            <Icon name="speed" size={14}/>
-            <input className="ac-input" style={{width:36}} type="number" value={monster.speed} onChange={e=>onSetStats(monster.id, {speed: Number(e.target.value)||0})} aria-label={`${monster.name} speed`}/>
-            <span style={{color:'var(--parchment-faint)'}}>ft</span>
-          </span>
-          <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
-          <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
+        <div className="mcard-head-bottom">
+          <p className="mcard-type">{monster.baseType}</p>
+          <div className="mcard-head-actions" onClick={e=>e.stopPropagation()}>
+            <span className="ac-badge">
+              <Icon name="shield" size={14}/>
+              <input className="ac-input" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`}/>
+            </span>
+            <span className="ac-badge" title="Speed">
+              <Icon name="speed" size={14}/>
+              <input className="ac-input" style={{width:36}} type="number" value={monster.speed} onChange={e=>onSetStats(monster.id, {speed: Number(e.target.value)||0})} aria-label={`${monster.name} speed`}/>
+              <span style={{color:'var(--parchment-faint)'}}>ft</span>
+            </span>
+            <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
+            <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
+          </div>
         </div>
       </div>
 
       <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
-        <label style={{display:'flex', alignItems:'center', gap:4}} title="Initiative">
-          <Icon name="speed" size={13} style={{color:'var(--parchment-faint)'}}/>
+        <label className="init-label" title="Initiative">
+          <span>Init</span>
           <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
         </label>
         <HpBar current={monster.hpCurrent} max={monster.hpMax}/>
@@ -1738,16 +1756,12 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
 
       {expanded && (
         <div className="mcard-body">
-          <div style={{display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', margin:'10px 0'}}>
-            <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--parchment-faint)'}}>
-              Max HP
-              <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
-            </label>
-            <label style={{display:'flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--parchment-faint)'}}>
-              Current HP
-              <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
-            </label>
-            <span style={{fontSize:11, color:'var(--parchment-faint)'}}>(Use the ±HP box above for quick damage/healing; these set exact totals.)</span>
+          <div className="hp-exact-row">
+            <span className="hp-exact-label">HP</span>
+            <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
+            <span className="hp-exact-sep">/</span>
+            <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
+            <span className="hp-exact-hint">exact totals — use ±HP above for quick damage/healing</span>
           </div>
           <AbilityRow monster={monster}/>
           {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0) && (
