@@ -1488,50 +1488,6 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
     ['timeOfDay','Time of Day','e.g. dusk, midnight, high noon'],
   ];
   const [open, setOpen] = useState(true);
-  const [showPaste, setShowPaste] = useState(false);
-  const [pasteText, setPasteText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [pasteErr, setPasteErr] = useState(null);
-  const [sampleApi, setSampleApi] = useState(null);
-
-  useEffect(()=>{
-    (async ()=>{
-      try{
-        if(!window.claude || typeof window.claude.use !== 'function') return;
-        const s = await window.claude.use('sample');
-        if(s) setSampleApi(s);
-      }catch(e){}
-    })();
-  }, []);
-
-  async function fillFromDescription(){
-    if(!pasteText.trim()) return;
-    setBusy(true); setPasteErr(null);
-    if(sampleApi){
-      try{
-        const prompt = 'Split this D&D scene description into a JSON object with exactly these string keys: '
-          + '"environment" (the place/setting), "terrain" (physical features — cover, elevation, difficult terrain), '
-          + '"combatSituation" (why a fight is happening — ambush, escort, defend, etc.), "timeOfDay" (time of day/lighting, or "" if not mentioned). '
-          + 'Use short phrases, not full sentences. Reply with ONLY the JSON object.\n\nDescription:\n' + pasteText;
-        const data = await sampleJson(sampleApi, prompt, {modelTier:'quick'});
-        onChange({
-          environment: String(data.environment ?? ''),
-          terrain: String(data.terrain ?? ''),
-          combatSituation: String(data.combatSituation ?? ''),
-          timeOfDay: String(data.timeOfDay ?? ''),
-        });
-        setPasteText(''); setShowPaste(false); setBusy(false);
-        return;
-      }catch(e){ /* fall through to the local heuristic below */ }
-    }
-    // No sample capability (or it failed) in this view — fall back to a local heuristic:
-    // the raw text still feeds map-element/axis suggestions regardless of which field
-    // it lands in, so put it all in Combat Situation and pull a time-of-day guess out of it.
-    const lower = pasteText.toLowerCase();
-    const timeHit = Object.keys(TIME_NOTES).find(k=>lower.includes(k));
-    onChange({ combatSituation: pasteText.trim(), ...(timeHit ? {timeOfDay: timeHit} : {}) });
-    setPasteText(''); setShowPaste(false); setBusy(false);
-  }
 
   return (
     <div className="axis-card" style={{marginTop:12}}>
@@ -1541,33 +1497,15 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
           <Icon name="scroll" size={14} style={{color:'var(--amber)'}}/>
           <span className="eyebrow" style={{color:'var(--amber)'}}>Scene Notes</span>
         </div>
-        {open && <button className="disclosure-toggle" style={{width:'auto', padding:'5px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowPaste(v=>!v)}>
-          <Icon name="clip" size={13}/> {showPaste ? 'Cancel' : 'Paste a Description Instead'}
-        </button>}
       </div>
-
-      {open && showPaste && (
-        <div style={{marginTop:10, display:'flex', flexDirection:'column', gap:8}}>
-          <textarea className="text-input" style={{height:90, fontFamily:'inherit', fontSize:13.5}}
-            placeholder="Paste or type a free-form description of the scene — e.g. &quot;Goblins ambush the party at dusk in an old-growth forest, using root snarls and a creek for cover.&quot;"
-            value={pasteText} onChange={e=>setPasteText(e.target.value)}/>
-          {pasteErr && <div className="error-box"><Icon name="alert" size={13}/><p>{pasteErr}</p></div>}
-          <p style={{fontSize:11.5, color:'var(--parchment-faint)'}}>
-            {sampleApi ? 'This page will ask Claude to split it into the fields below.' : "This view can't ask Claude to split it automatically, so it'll go straight into Combat Situation (which still feeds the map/axis suggestions) — pull out Environment/Terrain by hand if you want them separate."}
-          </p>
-          <button className="add-btn" disabled={!pasteText.trim() || busy} onClick={fillFromDescription}>
-            <Icon name="sparkles" size={14}/>{busy ? 'Filling…' : 'Fill Fields'}
-          </button>
-        </div>
-      )}
 
       {open && (
         <>
-          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px,1fr))', gap:10, marginTop:10}}>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:10, marginTop:10}}>
             {fields.map(([key,label,placeholder])=>(
               <div key={key}>
                 <label style={{display:'block', fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', marginBottom:4}}>{label}</label>
-                <input className="text-input" value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+                <textarea className="text-input" style={{minHeight:64, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
               </div>
             ))}
           </div>
