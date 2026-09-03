@@ -150,6 +150,8 @@
   .init-num{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 4px; border-radius:50%; background:var(--line); color:var(--parchment); font-size:11px; font-weight:700; }
   .init-chip.active .init-num{ background:var(--blood); color:var(--ink); }
   .init-input{ width:36px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px; }
+  .init-label.wide{ flex:1 1 auto; min-width:110px; }
+  .init-label.wide span{ white-space:nowrap; }
 
   /* generic plate / card */
   .plate{ position:relative; background:var(--panel); border:1px solid var(--line); }
@@ -203,7 +205,11 @@
   /* hp bar */
   .hp-row{display:flex; flex-direction:column; gap:6px; margin-top:7px;}
   .hp-row-sub{display:flex; align-items:center; gap:8px;}
-  .hp-track{width:100%; flex-shrink:0; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
+  .hp-bar-wrap{display:flex; align-items:center; gap:6px; width:100%;}
+  .hp-end-label{font-size:11px; font-weight:700; flex-shrink:0; min-width:18px; color:var(--parchment-dim);}
+  .hp-end-label.left{text-align:right;}
+  .hp-end-label.right{text-align:left; color:var(--parchment-faint);}
+  .hp-track{flex:1; min-width:0; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
   .hp-fill{height:100%; transition:width .25s ease;}
   .hp-track::after{
     content:''; position:absolute; inset:0;
@@ -220,6 +226,7 @@
   .stepper:hover.heal{border-color:var(--moss); color:#a9c684;}
 
   .ac-input{ width:34px; background:transparent; border:none; color:inherit; font-family:inherit; font-size:inherit; padding:0; text-align:left; }
+  .ac-input.wide{ width:42px; font-size:14px; font-weight:600; }
   .ac-input:focus{ outline:1px solid var(--arcane); }
   .hp-num{ width:46px; text-align:center; padding:3px 2px; }
 
@@ -236,6 +243,7 @@
   .action-btn.apply{ width:30px; height:30px; border-color:rgba(46,230,201,.4); color:var(--arcane); }
   .action-btn.apply:hover{ border-color:var(--arcane); background:var(--arcane-soft); }
   .hp-delta{ width:64px; text-align:center; }
+  .hp-delta.wide{ width:100%; }
 
   /* scene */
   .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
@@ -1509,7 +1517,7 @@ function ConditionRow({conditions, onToggle}){
       {adding && (
         <div className="condition-picker">
           {CONDITIONS.filter(c=>!active.includes(c)).map(c=>(
-            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }}>{c}</button>
+            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }} title={`Apply ${c}`}>{c}</button>
           ))}
         </div>
       )}
@@ -1533,7 +1541,13 @@ const STORAGE_KEY = 'tactics-table-encounter-v2';
 /* ---------- components ---------- */
 function HpBar({current, max, height=6}){
   const pct = clampPct(current, max);
-  return <div className="hp-track" style={{height}}><div className="hp-fill" style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>;
+  return (
+    <div className="hp-bar-wrap" title={`${current} / ${max} HP`}>
+      <span className="hp-end-label left mono">{current}</span>
+      <div className="hp-track" style={{height}}><div className="hp-fill" style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>
+      <span className="hp-end-label right mono">{max}</span>
+    </div>
+  );
 }
 
 const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
@@ -1560,7 +1574,7 @@ function AddPartyMemberForm({onAdd, onDone}){
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
       <input className="text-input" value={link} onChange={e=>setLink(e.target.value)} placeholder="D&D Beyond link (optional)"/>
-      <button className="add-btn" disabled={!name.trim()} onClick={submit}><Icon name="userplus" size={16}/>Add PC</button>
+      <button className="add-btn" disabled={!name.trim()} onClick={submit} title="Add this character to the party"><Icon name="userplus" size={16}/>Add PC</button>
     </div>
   );
 }
@@ -1591,15 +1605,14 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onToggleCondi
       <div className="hp-row">
         <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
         <div className="hp-row-sub">
-          <label className="init-label" title="HP adjustment — type a signed number, Enter applies it">
-            <span>HP Δ</span>
-            <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+          <label className="init-label wide" title="Damage or heal this character — type a negative number to damage, a positive number to heal, then press Enter to apply">
+            <span>HP Adjust</span>
+            <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
           </label>
-          <span className="hp-text mono">{p.hpCurrent}/{p.hpMax}</span>
-          <span className="party-ac" title="AC">
+          <span className="party-ac" title="Armor Class — click to edit">
             <Icon name="shield" size={14}/>
-            <input className="ac-input" type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
+            <input className="ac-input wide" type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`} title="Armor Class"/>
           </span>
         </div>
       </div>
@@ -1615,7 +1628,7 @@ function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc
     <React.Fragment>
       {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onToggleCondition={onToggleCondition}/>)}
       <div className="disclosure">
-        <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)}>
+        <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)} title={showAdd ? 'Cancel adding a party member' : 'Open the form to add a new party member'}>
           <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
         </button>
         {showAdd && <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>}
@@ -1663,7 +1676,7 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
               </div>
             ))}
           </div>
-          <button className="add-btn" style={{marginTop:12, borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate}>
+          <button className="add-btn" style={{marginTop:12, borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate} title="Draft Win Condition, Battlefield Optimizer, and Hazard/Clock from this scene text and the current roster">
             <Icon name="sparkles" size={16}/>Draft Axes from Scene
           </button>
           <p style={{fontSize:12, color:'var(--parchment-faint)', marginTop:6}}>Drafts the axes above from this scene text and whatever's currently in the fight — doesn't add monsters itself.</p>
@@ -1735,22 +1748,22 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
         <button className="btn" onClick={randomize} disabled={locked} title={locked?'Locked — unlock to randomize':'Pick a random environmental hazard'}>
           <Icon name="sparkles" size={13}/>Randomize
         </button>
-        <button className="disclosure-toggle" style={{width:'auto', padding:'6px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowAdd(v=>!v)}>
+        <button className="disclosure-toggle" style={{width:'auto', padding:'6px 9px', border:'1px solid var(--line)'}} onClick={()=>setShowAdd(v=>!v)} title={showAdd ? 'Cancel adding a custom hazard' : 'Write your own hazard instead of picking one from the library'}>
           {showAdd ? 'Cancel' : '+ Add Hazard'}
         </button>
       </div>
       {showAdd && (
         <div style={{marginTop:8, display:'flex', flexDirection:'column', gap:6}}>
-          <input className="text-input" placeholder="Hazard name" value={title} onChange={e=>setTitle(e.target.value)}/>
-          <textarea className="text-input" style={{height:70, fontFamily:'inherit', fontSize:13.5}} placeholder="What happens when it triggers…" value={trigger} onChange={e=>setTrigger(e.target.value)}/>
+          <input className="text-input" placeholder="Hazard name" value={title} onChange={e=>setTitle(e.target.value)} title="Hazard name"/>
+          <textarea className="text-input" style={{height:70, fontFamily:'inherit', fontSize:13.5}} placeholder="What happens when it triggers…" value={trigger} onChange={e=>setTrigger(e.target.value)} title="What happens when this hazard triggers"/>
           <div style={{display:'flex', gap:10, alignItems:'center', flexWrap:'wrap'}}>
-            <label style={{fontSize:13, display:'flex', gap:5, alignItems:'center', color:'var(--parchment-dim)'}}>
+            <label style={{fontSize:13, display:'flex', gap:5, alignItems:'center', color:'var(--parchment-dim)'}} title="Trigger at the end of every round instead of at a specific initiative count">
               <input type="checkbox" checked={roundEnd} onChange={e=>setRoundEnd(e.target.checked)}/>
               Round End (not count-based)
             </label>
-            {!roundEnd && <input className="text-input" style={{width:70}} value={count} onChange={e=>setCount(e.target.value)} placeholder="Count"/>}
+            {!roundEnd && <input className="text-input" style={{width:70}} value={count} onChange={e=>setCount(e.target.value)} placeholder="Count" title="Initiative count this hazard triggers on"/>}
           </div>
-          <button className="add-btn" disabled={!title.trim()||!trigger.trim()} onClick={saveNew}>Save &amp; Apply</button>
+          <button className="add-btn" disabled={!title.trim()||!trigger.trim()} onClick={saveNew} title="Save this hazard to your library and apply it to this encounter">Save &amp; Apply</button>
         </div>
       )}
       {customHazards.length > 0 && (
@@ -1916,9 +1929,9 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
         <div className="mcard-head-bottom">
           <p className="mcard-type">{monster.baseType}</p>
           <div className="mcard-head-actions" onClick={e=>e.stopPropagation()}>
-            <span className="ac-badge">
+            <span className="ac-badge" title="Armor Class — click to edit">
               <Icon name="shield" size={14}/>
-              <input className="ac-input" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`}/>
+              <input className="ac-input wide" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`} title="Armor Class"/>
             </span>
             <span className="ac-badge" title="Speed">
               <Icon name="speed" size={14} style={{marginRight:1}}/>
@@ -1941,13 +1954,12 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <span>Init</span>
             <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
           </label>
-          <label className="init-label" title="HP adjustment — type a signed number, Enter applies it">
-            <span>HP Δ</span>
-            <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+          <label className="init-label wide" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
+            <span>HP Adjust</span>
+            <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
           </label>
-          <span className="hp-text mono">{monster.hpCurrent}/{monster.hpMax}</span>
-          <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}}>{monster.activePosture} · {meta.label}</span>
+          <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
         </div>
         <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
       </div>
@@ -1982,7 +1994,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           <div className="posture-row">
             {['A','B','C'].map(key=>{
               const active = monster.activePosture===key; const m = POSTURE_META[key];
-              return <button key={key} className={"posture-btn"+(active?" active":"")} style={{'--c':m.color,'--c-soft':m.soft}} onClick={()=>onPosture(monster.id,key)}>{key} · {m.label}</button>;
+              return <button key={key} className={"posture-btn"+(active?" active":"")} style={{'--c':m.color,'--c-soft':m.soft}} onClick={()=>onPosture(monster.id,key)} title={`Switch to Posture ${key}: ${m.label}`}>{key} · {m.label}</button>;
             })}
           </div>
           <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
@@ -2144,8 +2156,8 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
       </div>
       {!collapsed && <div style={{padding:'12px 14px'}}>
       <div className="tab-row">
-        <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')}>Quick Add</button>
-        <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')}>Paste Stat Block</button>
+        <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')} title="Add a monster by name, matched against the SRD compendium and your saved monsters">Quick Add</button>
+        <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')} title="Add a monster by pasting a full stat block in markdown format">Paste Stat Block</button>
       </div>
 
       {mode === 'quick' && (
@@ -2158,26 +2170,26 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
             </datalist>
             <label style={{display:'flex', alignItems:'center', gap:5, flexShrink:0}} htmlFor="qty-input">
               <span style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}}>Qty</span>
-              <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity"/>
+              <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label="Quantity" title="How many copies to add (1-12)"/>
             </label>
-            <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd}><Icon name="swords" size={16}/>Add</button>
+            <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd} title="Add this monster to the encounter"><Icon name="swords" size={16}/>Add</button>
           </div>
           <p className="hint" style={{margin:0}}>{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
 
           <div>
-            <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setShowAdvanced(v=>!v)}>{showAdvanced?'Hide manual stats':'Manual stats (AC / HP / Speed)'}</button>
+            <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setShowAdvanced(v=>!v)} title="Override AC, HP, or Speed before adding, instead of using the matched values">{showAdvanced?'Hide manual stats':'Manual stats (AC / HP / Speed)'}</button>
             {showAdvanced && (
               <div style={{display:'flex', gap:8, marginTop:8}}>
-                <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}}/>
-                <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:70}}/>
-                <input className="text-input" value={speed} onChange={e=>setSpeed(e.target.value)} placeholder="Speed" style={{width:80}}/>
+                <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}} title="Override Armor Class"/>
+                <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:70}} title="Override max HP"/>
+                <input className="text-input" value={speed} onChange={e=>setSpeed(e.target.value)} placeholder="Speed" style={{width:80}} title="Override Speed"/>
               </div>
             )}
           </div>
 
           {customMonsters.length > 0 && (
             <div>
-              <button className="disclosure-toggle" style={{width:'auto', padding:0, border:'none', background:'none', display:'flex', alignItems:'center', gap:5}} onClick={()=>setMyMonstersOpen(v=>!v)}>
+              <button className="disclosure-toggle" style={{width:'auto', padding:0, border:'none', background:'none', display:'flex', alignItems:'center', gap:5}} onClick={()=>setMyMonstersOpen(v=>!v)} title={myMonstersOpen ? 'Hide your saved monster library' : 'Show your saved monster library'}>
                 <Icon name="chevron" size={13} className={"chevron"+(myMonstersOpen?" open":"")}/>
                 <span style={{fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)'}}>My Monsters ({customMonsters.length})</span>
               </button>
@@ -2185,13 +2197,13 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
                 <div style={{marginTop:7}}>
                   {customMonsters.length > 8 && (
                     <input className="text-input" style={{marginBottom:7, fontSize:12.5, padding:'5px 8px'}} value={myMonstersFilter}
-                      onChange={e=>setMyMonstersFilter(e.target.value)} placeholder={`Filter ${customMonsters.length} saved monsters…`}/>
+                      onChange={e=>setMyMonstersFilter(e.target.value)} placeholder={`Filter ${customMonsters.length} saved monsters…`} title="Filter your saved monster library by name"/>
                   )}
                   <div className="my-monsters-list">
                     {customMonsters.filter(m=>m.name.toLowerCase().includes(myMonstersFilter.toLowerCase())).map(m=>(
                       <span key={m.name} className="tag" style={{display:'inline-flex', alignItems:'center', gap:5, padding:'3px 4px 3px 9px'}}>
                         {m.name}
-                        <button className="icon-btn" style={{padding:0}} onClick={()=>onRemoveCustom(m.name)} aria-label={`Remove ${m.name} from My Monsters`}><Icon name="x" size={13}/></button>
+                        <button className="icon-btn" style={{padding:0}} onClick={()=>onRemoveCustom(m.name)} aria-label={`Remove ${m.name} from My Monsters`} title={`Remove ${m.name} from your saved library`}><Icon name="x" size={13}/></button>
                       </span>
                     ))}
                   </div>
@@ -2204,18 +2216,18 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
       {mode === 'paste' && (
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block — take a photo or screenshot of one, then hand it and the prompt below to any AI chat you have access to, and paste back what it gives you. Only the top section (a normal stat block) is required; Reaction Cue and the three Postures are optional tactical notes — leave them out and they'll be auto-generated from the monster's style.</p>
-          <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)', alignSelf:'flex-start'}} onClick={copyPrompt}>
+          <p style={{fontSize:12, color:'var(--parchment-faint)'}}>Paste a stat block in the markdown format below. Only the top section (a normal stat block) is required; Reaction Cue and the three Postures are optional tactical notes — leave them out and they'll be auto-generated from the monster's style. Got a stat block from a screenshot instead? Use "Copy Transcription Prompt" below to get a ready-made prompt for any AI chat, then paste its reply here.</p>
+          <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)', alignSelf:'flex-start'}} onClick={copyPrompt} title="Copy a ready-made prompt to your clipboard — hand it, plus a photo of a stat block, to any AI chat">
             <Icon name={copied?'check':'copy'} size={14}/> {copied ? 'Copied!' : 'Copy Transcription Prompt'}
           </button>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} style={{height:160}}
             placeholder={'### Name (Base Type)\n- AC: 10\n- HP: 20/20\n- Speed: 30\n- Ability Scores: STR 16, DEX 10, CON 15, INT 3, WIS 5, CHA 5\n- Resistances: acid, cold (optional)\n- Vulnerabilities: bludgeoning (optional)\n- Passives: ...\n- Style: brute / skirmisher / pack / mindless / ambusher / leader (optional)\n\n#### Traits\n- Trait Name: full text\n\n#### Attacks\n- Name | Melee | 1d20+5 vs AC | 5 ft | 1d6+3 [bludgeoning]\n\n--- everything below is optional — auto-generated if omitted ---\n\n#### Spells (only for spellcasters)\n- Ability: Wisdom\n- DC: 13\n- Cantrips (at will): Spell One, Spell Two\n- 1st Level (4 slots): Spell Three, Spell Four\n\n- Reaction Cue: ...\n\n#### Posture A: Offensive\n- Trigger: ...\n- Movement: ...\n- Action: ...\n\n#### Posture B: Defensive\n...\n\n#### Posture C: Axis Interaction\n...'}/>
           {pasteError && <div className="error-box"><Icon name="alert" size={16}/><p>{pasteError}</p></div>}
-          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}}>
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--parchment-dim)'}} title="Keep this monster in your library so you can Quick Add it in future encounters">
             <input type="checkbox" checked={saveOnPaste} onChange={e=>setSaveOnPaste(e.target.checked)}/>
             Save to My Monsters (reuse this one in other encounters)
           </label>
-          <button className="add-btn" disabled={!pasteText.trim()} onClick={handlePasteAdd}><Icon name="clip" size={16}/>Parse &amp; Add</button>
+          <button className="add-btn" disabled={!pasteText.trim()} onClick={handlePasteAdd} title="Parse the pasted text and add this monster to the encounter"><Icon name="clip" size={16}/>Parse &amp; Add</button>
         </div>
       )}
 
@@ -2240,7 +2252,7 @@ function DataModal({mode, exportText, onImport, onClose}){
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-head">
           <h2><Icon name={mode==='export'?'download':'upload'} size={17} style={{color:'var(--arcane)'}}/>{mode==='export'?'Export All Data':'Import Data'}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
+          <button className="modal-close" onClick={onClose} aria-label="Close" title={mode==='export' ? 'Close this window' : 'Close without importing'}><Icon name="x" size={18}/></button>
         </div>
         <div className="modal-body">
           {mode==='export' ? (
@@ -2257,10 +2269,10 @@ function DataModal({mode, exportText, onImport, onClose}){
           {error && <div className="error-box"><Icon name="alert" size={16}/><p>{error}</p></div>}
         </div>
         <div className="modal-foot">
-          <button className="btn" onClick={onClose}>{mode==='export'?'Done':'Cancel'}</button>
+          <button className="btn" onClick={onClose} title={mode==='export' ? 'Close this window' : 'Close without importing'}>{mode==='export'?'Done':'Cancel'}</button>
           {mode==='export'
-            ? <button className="btn btn-arcane" onClick={copy}><Icon name={copied?'check':'copy'} size={15}/>{copied?'Copied!':'Copy to Clipboard'}</button>
-            : <button className="btn btn-blood" disabled={!text.trim()} onClick={handleImport}>Overwrite &amp; Import</button>}
+            ? <button className="btn btn-arcane" onClick={copy} title="Copy the full export to your clipboard"><Icon name={copied?'check':'copy'} size={15}/>{copied?'Copied!':'Copy to Clipboard'}</button>
+            : <button className="btn btn-blood" disabled={!text.trim()} onClick={handleImport} title="Replace everything on this device with the pasted data">Overwrite &amp; Import</button>}
         </div>
       </div>
     </div>
@@ -2278,15 +2290,15 @@ function ImportModal({onClose, onImport}){
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-head">
           <h2><Icon name="upload" size={17} style={{color:'var(--arcane)'}}/>Import Encounter Markdown</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={18}/></button>
+          <button className="modal-close" onClick={onClose} aria-label="Close" title="Close without importing"><Icon name="x" size={18}/></button>
         </div>
         <div className="modal-body">
-          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the encounter markdown here…"/>
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the encounter markdown here…" title="Full encounter markdown, including Scene, Party, Encounter Axes, and Monsters sections"/>
           {error && <div className="error-box"><Icon name="alert" size={16}/><p>{error}</p></div>}
         </div>
         <div className="modal-foot">
-          <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn btn-arcane" disabled={!text.trim()} onClick={handleImport}>Parse &amp; Load</button>
+          <button className="btn" onClick={onClose} title="Close without importing">Cancel</button>
+          <button className="btn btn-arcane" disabled={!text.trim()} onClick={handleImport} title="Parse this markdown and load it as the active encounter">Parse &amp; Load</button>
         </div>
       </div>
     </div>
@@ -2443,7 +2455,7 @@ function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDe
               </button>
             )}
             {!isRenaming && encounters.length>1 && (
-              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`}><Icon name="x" size={14}/></button>
+              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`} title="Delete this encounter"><Icon name="x" size={14}/></button>
             )}
           </div>
         );
@@ -2664,9 +2676,9 @@ function App(){
             <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
               <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
-            <button className="btn" onClick={()=>setDataModalMode('export')}><Icon name="download" size={15}/>Export Data</button>
-            <button className="btn" onClick={()=>setDataModalMode('import')}><Icon name="upload" size={15}/>Import Data</button>
-            <button className="btn" onClick={()=>setImportOpen(true)}><Icon name="upload" size={15}/>Import Markdown</button>
+            <button className="btn" onClick={()=>setDataModalMode('export')} title="Copy every encounter, custom monster, and custom hazard on this device as one block of text"><Icon name="download" size={15}/>Export Data</button>
+            <button className="btn" onClick={()=>setDataModalMode('import')} title="Paste back a previous export, overwriting what's on this device"><Icon name="upload" size={15}/>Import Data</button>
+            <button className="btn" onClick={()=>setImportOpen(true)} title="Load one full encounter from raw markdown text"><Icon name="upload" size={15}/>Import Markdown</button>
           </div>
         </div>
         <EncounterTabs encounters={store.encounters} activeId={store.activeId} onSelect={selectEncounterTab} onAdd={addEncounterTab} onDuplicate={duplicateEncounterTab} onDelete={deleteEncounterTab}
