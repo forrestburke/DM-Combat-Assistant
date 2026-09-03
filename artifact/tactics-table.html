@@ -1902,6 +1902,14 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
 
 const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block image into the exact markdown format below. Use official rules text where you can read it; if something is illegible or not shown in the image, infer a sensible tactical option consistent with the monster's abilities rather than leaving it blank. Output ONLY the filled-in block, no extra commentary.
 
+FORMATTING RULES — do not deviate from these, even if it feels more natural to:
+1. Every bullet point starts with a literal hyphen "-". Never use "*", "•", or any other bullet character.
+2. Every heading below must keep its exact "###" or "####" prefix. Never drop the # marks or turn a heading into a bold/plain text line.
+3. Speed is ONE number only (feet per round walking). If the creature also flies, swims, climbs, or burrows, note the fastest of those separately as a Passives entry, e.g. "Flyer (fly 60 ft)" — never write "30 ft., fly 60 ft." on the Speed line itself.
+4. Reaction Cue is a top-level bullet, grouped with AC/HP/Speed at the very top — never nested under Attacks, Traits, or anywhere else.
+5. Every Attacks and Spells-save line must have exactly 5 pipe-separated fields in this order: Name | Type | to-hit-or-DC | range | damage. Type must be exactly one of "Melee", "Ranged", or "Save" — nothing else.
+6. HP must be written as "current/max" (e.g. "78/78"), never a single number.
+
 ### Name (Base Type)
 - AC:
 - HP: current/max
