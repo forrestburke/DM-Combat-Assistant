@@ -2084,7 +2084,7 @@ function MobToolHeader({open, onToggle, icon, title, subtitle}){
     </React.Fragment>
   );
 }
-function AttackRollPanel({monster, party, onDamageParty}){
+function AttackRollPanel({monster, party, onDamageParty, onSetStats}){
   const meleeOrRanged = monster.attacks.filter(a=>a.type==='Melee' || a.type==='Ranged');
   const [direction, setDirection] = useState('mobToPc'); // 'mobToPc' | 'pcToMob'
   const [open, setOpen] = useState(true);
@@ -2128,6 +2128,16 @@ function AttackRollPanel({monster, party, onDamageParty}){
   function applyToTarget(){
     if(!result || !target) return;
     onDamageParty(target.id, -result.totalDamage);
+    setResult(null);
+  }
+  // "If a spell or attack reduces a monster to a handful of Hit Points, assume the monster is
+  // killed" — approximated here as total damage divided evenly across the mob's HP-per-monster.
+  const kills = result && !isMobToPc && monster.hpMax > 0
+    ? Math.min(monster.mobCount || 0, Math.floor(result.totalDamage / monster.hpMax))
+    : 0;
+  function applyKills(){
+    if(kills <= 0) return;
+    onSetStats(monster.id, {mobCount: Math.max(0, (monster.mobCount||0) - kills)});
     setResult(null);
   }
 
@@ -2214,7 +2224,16 @@ function AttackRollPanel({monster, party, onDamageParty}){
                   </React.Fragment>
                 )}
               </div>
-              {!isMobToPc && result && <p className="mob-attack-hint">Adjust "Still alive" above to reflect how many this killed — {result.hits>0 ? Math.round(result.totalDamage/result.hits) : 0} damage per hit is {(result.hits>0 ? result.totalDamage/result.hits : 0) >= (monster.hpMax||0) ? 'enough to drop one outright' : `less than this mob's ${monster.hpMax||'?'} HP each`}.</p>}
+              {!isMobToPc && result && (
+                <div className="mob-attack-row">
+                  <p className="mob-attack-hint" style={{margin:0, flex:1}}>
+                    {kills > 0
+                      ? `That's enough total damage to drop ${kills} of the ${monster.mobCount||0} still alive outright.`
+                      : `Not enough total damage to drop one of this mob's ${monster.hpMax||'?'}-HP monsters outright.`}
+                  </p>
+                  <button className="btn btn-arcane" onClick={applyKills} disabled={kills<=0} title={`Remove ${kills} from "Still alive"`}><Icon name="skull" size={14}/>Apply ({kills} killed)</button>
+                </div>
+              )}
             </React.Fragment>
           )}
         </React.Fragment>
@@ -2402,7 +2421,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             </div>
           )}
 
-          {monster.isMob && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
+          {monster.isMob && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
           {monster.isMob && <MobSavePanel monster={monster}/>}
 
           <div className="posture-row">
@@ -2917,7 +2936,7 @@ function HowToUseSection(){
         '"Browse Compendium" opens a filterable, scrollable list of the entire 2024 SRD roster — narrow it by Type, Size, CR, or Environment, or just search by name, then click a result to fill in Quick Add.',
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
-        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — monster AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC also gets an "Apply" to subtract the total straight from the target\'s HP.',
+        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — monster AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC gets an "Apply" to subtract the total straight from the target\'s PC HP; PC → Mob instead compares total damage against how many are "Still alive" and the mob\'s HP each (the DMG\'s own guidance — a monster reduced to a handful of HP is assumed killed) and its "Apply" removes that many from the headcount directly, capped at how many are actually still alive.',
         'The Mob Save panel handles area effects hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every monster in a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a monster outright.',
         'Both mob tools (Attack Roll, Mob Save) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by both as you knock monsters out.',
       ],
