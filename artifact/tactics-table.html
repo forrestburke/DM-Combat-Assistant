@@ -2099,7 +2099,7 @@ function AttackRollPanel({monster, party, onDamageParty}){
   const [attackCount, setAttackCount] = useState('1');
   const [attackerId, setAttackerId] = useState(party[0]?.id || '');
   const [toHitOverride, setToHitOverride] = useState('');
-  const [memberAcOverride, setMemberAcOverride] = useState('');
+  const [monsterAcOverride, setMonsterAcOverride] = useState('');
   const [damageFormula, setDamageFormula] = useState('');
 
   const isMobToPc = direction === 'mobToPc';
@@ -2113,7 +2113,7 @@ function AttackRollPanel({monster, party, onDamageParty}){
     : (toHitOverride.trim() !== '' ? Number(toHitOverride) : (attacker ? (attacker.attackBonus ?? 5) : 5));
   const ac = isMobToPc
     ? (targetAcOverride.trim() !== '' ? Number(targetAcOverride) : (target ? target.ac : 15))
-    : (memberAcOverride.trim() !== '' ? Number(memberAcOverride) : (monster.ac || 10));
+    : (monsterAcOverride.trim() !== '' ? Number(monsterAcOverride) : (monster.ac || 10));
   const dmgFormula = isMobToPc ? (attack ? attack.damage : '') : damageFormula;
   const neededRoll = Math.max(2, Math.min(20, ac - bonus));
 
@@ -2138,7 +2138,7 @@ function AttackRollPanel({monster, party, onDamageParty}){
         <React.Fragment>
           <div className="tab-row" style={{marginBottom:0}}>
             <button className={"tab-btn"+(isMobToPc?' active':'')} onClick={()=>switchDirection('mobToPc')} title="The mob attacks a party member">Mob → PC</button>
-            <button className={"tab-btn"+(!isMobToPc?' active':'')} onClick={()=>switchDirection('pcToMob')} title="A PC attacks a member of the mob">PC → Mob</button>
+            <button className={"tab-btn"+(!isMobToPc?' active':'')} onClick={()=>switchDirection('pcToMob')} title="A PC attacks a monster in the mob">PC → Mob</button>
           </div>
           {isMobToPc && meleeOrRanged.length === 0 ? (
             <p className="mob-attack-hint">This monster has no Melee or Ranged attack to use here.</p>
@@ -2187,8 +2187,8 @@ function AttackRollPanel({monster, party, onDamageParty}){
                       <input className="text-input" type="number" value={toHitOverride.trim()!==''?toHitOverride:bonus} onChange={e=>setToHitOverride(e.target.value)} title="Total attack bonus — auto-filled from the selected PC, editable"/>
                     </div>
                     <div className="mob-attack-field">
-                      <label>Member AC</label>
-                      <input className="text-input" type="number" value={memberAcOverride.trim()!==''?memberAcOverride:ac} onChange={e=>setMemberAcOverride(e.target.value)} title="AC of one member of the mob — auto-filled from this card's AC, editable"/>
+                      <label>Monster AC</label>
+                      <input className="text-input" type="number" value={monsterAcOverride.trim()!==''?monsterAcOverride:ac} onChange={e=>setMonsterAcOverride(e.target.value)} title="AC of one monster in the mob — auto-filled from this card's AC, editable"/>
                     </div>
                     <div className="mob-attack-field">
                       <label>Roll</label>
@@ -2203,7 +2203,7 @@ function AttackRollPanel({monster, party, onDamageParty}){
               </div>
               <p className="mob-attack-hint">
                 {attackerCount} attack{attackerCount>1?'s':''}, to-hit {bonus>=0?'+':''}{bonus} vs AC {ac} — needs a {neededRoll}+ to hit.
-                {isMobToPc ? ' Roll that on the table if you\'d rather, or use the statistical average below.' : ` Each member has ${monster.hpMax || '?'} HP.`}
+                {isMobToPc ? ' Roll that on the table if you\'d rather, or use the statistical average below.' : ` Each monster has ${monster.hpMax || '?'} HP.`}
               </p>
               <div className="mob-attack-row">
                 <button className="btn btn-blood" onClick={resolve} disabled={!dmgFormula.trim()} title="Statistical average — how many of these attacks would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Attacks</button>
@@ -2271,7 +2271,7 @@ function MobSavePanel({monster}){
             <div className="mob-attack-field wide">
               <label>Caught in the effect</label>
               <div style={{display:'flex', alignItems:'center', gap:8}}>
-                <input className="text-input" style={{width:56}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)} title="How many of the mob are actually caught in the area — not every member of a mob is necessarily inside a given blast"/>
+                <input className="text-input" style={{width:56}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)} title="How many of the mob are actually caught in the area — not every monster in a mob is necessarily inside a given blast"/>
                 <span className="mob-attack-vs">of {mobSize} in the mob</span>
                 {affected !== mobSize && (
                   <button type="button" className="icon-btn" onClick={()=>setAffectedCount(String(mobSize))} title="Reset to the mob's full headcount"><Icon name="reset" size={13}/></button>
@@ -2348,7 +2348,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           <div className="mob-count-row">
             <span className="mob-count-label">Still alive</span>
             <button className="stepper" onClick={()=>onSetStats(monster.id, {mobCount: Math.max(0, (monster.mobCount||1)-1)})} aria-label="Decrease mob size" title="One fewer left in the mob">−</button>
-            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>onSetStats(monster.id, {mobCount: Math.max(0, Number(e.target.value)||0)})} aria-label={`${monster.name} mob size`} title="Adjust as members of the mob are killed"/>
+            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>onSetStats(monster.id, {mobCount: Math.max(0, Number(e.target.value)||0)})} aria-label={`${monster.name} mob size`} title="Adjust as monsters in the mob are killed"/>
             <button className="stepper" onClick={()=>onSetStats(monster.id, {mobCount: (monster.mobCount||1)+1})} aria-label="Increase mob size" title="One more joins the mob">+</button>
           </div>
         ) : <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>}
@@ -2917,9 +2917,9 @@ function HowToUseSection(){
         '"Browse Compendium" opens a filterable, scrollable list of the entire 2024 SRD roster — narrow it by Type, Size, CR, or Environment, or just search by name, then click a result to fill in Quick Add.',
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
-        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — member AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC also gets an "Apply" to subtract the total straight from the target\'s HP.',
-        'The Mob Save panel handles area effects hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every member of a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a member outright.',
-        'Both mob tools (Attack Roll, Mob Save) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by both as you knock members out.',
+        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — monster AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC also gets an "Apply" to subtract the total straight from the target\'s HP.',
+        'The Mob Save panel handles area effects hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every monster in a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a monster outright.',
+        'Both mob tools (Attack Roll, Mob Save) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by both as you knock monsters out.',
       ],
     },
     {
