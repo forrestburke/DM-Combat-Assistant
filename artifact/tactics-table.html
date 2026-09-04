@@ -2104,15 +2104,18 @@ function MobSavePanel({monster}){
   const [damageFormula, setDamageFormula] = useState('');
   const [halfOnSave, setHalfOnSave] = useState(true);
   const [mode, setMode] = useState('normal');
+  const [affectedCount, setAffectedCount] = useState(String(monster.mobCount || 1));
   const [result, setResult] = useState(null);
 
   const score = monster.abilityScores?.[ability] ?? 10;
   const mod = abilityScoreMod(score);
   const dcNum = Number(dc) || 0;
+  const mobSize = monster.mobCount || 0;
+  const affected = Math.max(0, Math.min(mobSize, Number(affectedCount) || 0));
 
   function resolve(){
-    if(!damageFormula.trim()) return;
-    setResult(resolveMobSave(monster.mobCount || 1, mod, dcNum, damageFormula, halfOnSave, mode));
+    if(!damageFormula.trim() || affected <= 0) return;
+    setResult(resolveMobSave(affected, mod, dcNum, damageFormula, halfOnSave, mode));
   }
 
   return (
@@ -2127,13 +2130,20 @@ function MobSavePanel({monster}){
         <input className="text-input" style={{flex:1, minWidth:70}} value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="Damage, e.g. 8d6" title="Damage formula of the area effect"/>
         <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on the mob's save"/>
       </div>
+      <div className="mob-attack-row">
+        <input className="text-input" style={{width:52}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)} title="How many of the mob are actually caught in the area — not every member of a mob is necessarily inside a given blast"/>
+        <span className="mob-attack-vs">of {mobSize} caught in the effect</span>
+        {affected !== mobSize && (
+          <button type="button" className="icon-btn" onClick={()=>setAffectedCount(String(mobSize))} title="Reset to the mob's full headcount"><Icon name="reset" size={13}/></button>
+        )}
+      </div>
       <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer'}}>
         <input type="checkbox" checked={halfOnSave} onChange={e=>setHalfOnSave(e.target.checked)}/>
         Half damage on a successful save
       </label>
-      <p className="mob-attack-hint">{monster.mobCount || 1} in the mob, {ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod} vs DC {dcNum||'—'}.</p>
+      <p className="mob-attack-hint">{affected} caught in it, {ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod} vs DC {dcNum||'—'}.</p>
       <div className="mob-attack-row">
-        <button className="btn btn-blood" onClick={resolve} disabled={!damageFormula.trim()} title="Statistical average — how many of the mob fail/succeed and the expected total damage"><Icon name="sparkles" size={14}/>Resolve Mob Save</button>
+        <button className="btn btn-blood" onClick={resolve} disabled={!damageFormula.trim() || affected<=0} title="Statistical average — how many of the mob fail/succeed and the expected total damage"><Icon name="sparkles" size={14}/>Resolve Mob Save</button>
         {result && (
           <span className="mob-attack-result">{result.numFail} fail ({result.failDmg} dmg each) · {result.numSucceed} succeed ({result.succeedDmg} dmg each) · {result.totalDamage} total</span>
         )}
@@ -2762,7 +2772,7 @@ function HowToUseSection(){
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
         '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Mob Attack panel picks an attack, a target, and Normal/Advantage/Disadvantage, and works out the to-hit number needed against that target\'s AC — roll that yourself on the table if you want the dice, or click "Resolve Mob Attack" for the statistical average (how many of the mob would hit and the expected total damage, no dice rolled) and "Apply" to subtract it straight from the target\'s HP.',
-        'The Mob Save panel handles the other direction — an area effect hitting the mob. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a member outright. Adjust "Still alive" on either panel\'s headcount stepper as members of the mob die.',
+        'The Mob Save panel handles the other direction — an area effect hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every member of a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a member outright. Adjust "Still alive" on either panel\'s headcount stepper as members of the mob die.',
       ],
     },
     {
