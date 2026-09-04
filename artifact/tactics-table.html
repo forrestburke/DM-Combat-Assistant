@@ -692,7 +692,7 @@ function parseMonster(block){
     traitDetails: traitsB ? parseTraitDetails(traitsB.lines) : undefined,
     attacks:parseAttacks(attacksB.lines, context),
     spellcasting: spellsB ? parseSpellcasting(spellsB) : undefined,
-    reactionCue: f.get('reactioncue') || 'Autofilled — review and adjust before running.',
+    reactionCue: f.get('reactioncue') || generateReactionCue({passives:parseList(f.get('passives')), attacks:parseAttacks(attacksB.lines, context)}),
     postureA: pA ? parsePosture(pA, `${context} Posture A`) : generated.postureA,
     postureB: pB ? parsePosture(pB, `${context} Posture B`) : generated.postureB,
     postureC: pC ? parsePosture(pC, `${context} Posture C`) : generated.postureC,
@@ -1298,6 +1298,7 @@ const TRAIT_TEXT = {
   'Surprise Attack': "If it surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 2d6 damage.",
   'Vulnerable to bludgeoning': "Some tables rule that skeletal creatures take extra damage from bludgeoning weapons — check before applying; it isn't printed on every version of this stat block.",
   'Undead Fortitude': "If damage reduces it to 0 HP, it must make a Constitution saving throw (DC 5 + damage taken) unless the damage is radiant or from a critical hit. On a success, it drops to 1 HP instead.",
+  'Rampage': "When it reduces a creature to 0 hit points with a melee attack on its turn, it can take a bonus action to move up to half its speed and make a bite attack.",
   'Keen Hearing and Smell': "Has advantage on Wisdom (Perception) checks that rely on hearing or smell.",
   'Keen Smell': "Has advantage on Wisdom (Perception) checks that rely on smell.",
   'Keen Sight and Smell': "Has advantage on Wisdom (Perception) checks that rely on sight or smell.",
@@ -1323,6 +1324,17 @@ function passivesToTraitDetails(passives){
   }).filter(t=>t.description);
 }
 
+const REACTION_PASSIVE_PATTERN = /parry|deflect|shield|uncanny dodge|riposte|counter|redirect attack|interpose/i;
+function generateReactionCue(base){
+  const passives = base.passives || [];
+  const attacks = base.attacks || [];
+  const reactionTrait = passives.find(p => REACTION_PASSIVE_PATTERN.test(p));
+  if(reactionTrait) return `Uses ${reactionTrait.split('(')[0].trim()} in response to an incoming attack.`;
+  const melee = attacks.find(a => a.type === 'Melee');
+  if(melee) return `Makes an opportunity attack with ${melee.name} against a foe that leaves its reach.`;
+  if(attacks[0]) return `No reach-based reaction — ${attacks[0].name} only works on its own turn.`;
+  return 'No notable reaction available — acts only on its turn.';
+}
 function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
   const lookupName = rawName.trim().replace(/\s+\d+$/, '');
   const template = findSrdMonster(lookupName, extraTemplates);
@@ -1339,7 +1351,7 @@ function buildMonsterFromName(rawName, idSuffix, overrides, extraTemplates){
     name, baseType: base.baseType, ac, hpCurrent: hpMax, hpMax, speed, abilityScores: base.abilityScores,
     passives: base.passives, traitDetails: base.traitDetails || passivesToTraitDetails(base.passives), savingThrows: base.savingThrows,
     resistances: base.resistances, vulnerabilities: base.vulnerabilities, attacks: base.attacks, spellcasting: base.spellcasting,
-    reactionCue: template ? 'Autofilled from the local compendium — review before running.' : 'No stat block found in the local compendium — stats entered manually.',
+    reactionCue: template ? generateReactionCue(base) : 'No stat block found in the local compendium — stats entered manually.',
     style: base.style, ...generatePostures(base.style), activePosture:'A', isDefeated:false,
   };
 }
