@@ -172,14 +172,15 @@
   /* party */
   .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft);}
   .party-row:last-child{border-bottom:none;}
-  .party-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .party-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .party-identity{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .party-name-row{display:flex; align-items:center; gap:6px; min-width:0; flex-wrap:wrap;}
   .party-name{font-weight:600; color:var(--parchment); font-size:15px;}
-  .party-role{font-size:12.5px; color:var(--parchment-faint); margin-left:6px;}
-  .party-level{display:flex; align-items:center; gap:4px; flex-shrink:0;}
-  .party-level span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
-  .party-level input{width:30px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px;}
-  .party-ac{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
-  .party-atk{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
+  .party-role-row{display:flex; align-items:center; gap:6px;}
+  .party-role{font-size:12px; color:var(--parchment-faint);}
+  .party-stat{display:flex; align-items:center; gap:4px; flex-shrink:0;}
+  .party-stat span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
+  .party-stat input{width:30px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px;}
   .party-priority{font-size:13px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
   .link-icon{color:var(--parchment-faint); flex-shrink:0; display:inline-flex;}
   .link-icon:hover{color:var(--arcane);}
@@ -1730,14 +1731,18 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, o
   return (
     <div className="party-row">
       <div className="party-top">
-        <div style={{display:'flex', alignItems:'center', gap:6, minWidth:0}}>
-          <span className="party-name">{p.name}</span>
-          <label className="party-level" title="Character level — used for the encounter difficulty rating">
-            <span>Lvl</span>
-            <input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onSetLevel(p.id, Math.max(1, Math.min(20, Number(e.target.value)||1)))} aria-label={`${p.name} level`}/>
-          </label>
-          <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
-          {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
+        <div className="party-identity">
+          <div className="party-name-row">
+            <span className="party-name">{p.name}</span>
+            <label className="party-stat" title="Character level — used for the encounter difficulty rating">
+              <span>Lvl</span>
+              <input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onSetLevel(p.id, Math.max(1, Math.min(20, Number(e.target.value)||1)))} aria-label={`${p.name} level`}/>
+            </label>
+          </div>
+          <div className="party-role-row">
+            <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
+            {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
+          </div>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto'}}>
           <label className="init-label" title="Initiative">
@@ -1755,14 +1760,14 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, o
             <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
           </label>
-          <span className="party-ac" title="Armor Class — click to edit">
-            <Icon name="shield" size={14}/>
-            <input className="ac-input wide" type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`} title="Armor Class"/>
-          </span>
-          <span className="party-atk" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
-            <Icon name="swords" size={14}/>
-            <input className="ac-input wide" type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`} title="Attack Bonus"/>
-          </span>
+          <label className="party-stat" title="Armor Class">
+            <span>AC</span>
+            <input type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
+          </label>
+          <label className="party-stat" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
+            <span>Atk</span>
+            <input type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`}/>
+          </label>
         </div>
       </div>
       <p className="party-priority">{p.tacticalPriority}</p>
@@ -2926,7 +2931,7 @@ function HowToUseSection(){
         '"Add PC" adds a party member with level/AC/HP/role. The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Next Round" jumps straight to a new round, "Previous Round" steps back one, and "Reset" returns to round 1.',
         'Each combatant has a typeable HP delta box — type a negative number to damage, a positive number to heal, no "+" needed, then press Enter to apply.',
         'A "Difficulty" reading sits next to Round and Active — it compares the party\'s levels against the CR of every monster currently in the fight (using the same XP-budget math the SRD encounter-building guidance is built on) and labels the fight Trivial through Deadly. Hover it for the numbers behind the label. Set each PC\'s level with the "Lvl" box next to their name — this doesn\'t come from anywhere else, so keep it current as characters level up.',
-        'Each PC also has a sword-icon Attack Bonus field next to AC — it\'s only used to autofill the To-Hit Bonus when you pick that PC in a mob\'s Attack Roll panel (PC → Mob direction), so it\'s fine to leave at the default if you don\'t use mobs.',
+        'Each PC also has an "Atk" field next to AC — it\'s only used to autofill the To-Hit Bonus when you pick that PC in a mob\'s Attack Roll panel (PC → Mob direction), so it\'s fine to leave at the default if you don\'t use mobs.',
       ],
     },
     {
