@@ -721,6 +721,19 @@ function resolveMobSave(mobCount, saveMod, dc, damageFormula, halfOnSave, mode='
   const totalDamage = Math.round(numFail*failDmg + numSucceed*succeedDmg);
   return { numFail, numSucceed, totalDamage, failDmg, succeedDmg };
 }
+// Shared HP pool for a mob (e.g. 5 goblins at 7 HP = a 35 HP pool) — every time the pool drops
+// by one monster's HP, one fewer is standing. Keeps a wounded-but-alive monster counted as alive
+// (ceil, not floor) rather than discarding partial damage between separate applications.
+function mobHpPoolTotal(monster){ return monster.mobHpPool ?? ((monster.mobCount||0) * (monster.hpMax||0)); }
+function applyMobPoolDamage(monster, damage, onSetStats){
+  const hpEach = monster.hpMax || 0;
+  const before = monster.mobCount || 0;
+  const poolBefore = mobHpPoolTotal(monster);
+  const poolAfter = Math.max(0, poolBefore - Math.max(0, damage));
+  const after = hpEach > 0 ? Math.min(before, Math.ceil(poolAfter / hpEach)) : 0;
+  onSetStats(monster.id, {mobHpPool: poolAfter, mobCount: after});
+  return {killed: before - after, poolAfter};
+}
 const validStyles = ['brute','skirmisher','pack','mindless','ambusher','leader'];
 function parseAbilityScores(raw, context){
   if(!raw) return {...defaultAbilityScores};
@@ -2096,54 +2109,46 @@ function AttackRollPanel({monster, party, onDamageParty, onSetStats}){
   const [mode, setMode] = useState('normal');
   const [result, setResult] = useState(null);
 
-  // mob -> pc fields
+  // mob -> pc fields (this direction alone uses the Mob Results table — the mob is the one
+  // making many identical rolls at once)
   const [attackName, setAttackName] = useState(meleeOrRanged[0]?.name || '');
   const [targetId, setTargetId] = useState(party[0]?.id || '');
   const [targetAcOverride, setTargetAcOverride] = useState('');
-  // pc -> mob fields
-  const [attackCount, setAttackCount] = useState('1');
-  const [attackerId, setAttackerId] = useState(party[0]?.id || '');
-  const [toHitOverride, setToHitOverride] = useState('');
-  const [monsterAcOverride, setMonsterAcOverride] = useState('');
-  const [damageFormula, setDamageFormula] = useState('');
+  // pc -> mob: a PC's own single attack isn't a mob-rules case at all — they roll their own d20
+  // and damage as normal. This just logs the result against the mob's shared HP pool.
+  const [damageDealt, setDamageDealt] = useState('');
 
   const isMobToPc = direction === 'mobToPc';
   const attack = meleeOrRanged.find(a=>a.name===attackName) || meleeOrRanged[0];
   const target = party.find(p=>p.id===targetId);
-  const attacker = party.find(p=>p.id===attackerId);
 
-  const attackerCount = isMobToPc ? (monster.mobCount || 1) : Math.max(1, Number(attackCount) || 1);
-  const bonus = isMobToPc
-    ? (attack ? toHitBonus(attack.formula) : 0)
-    : (toHitOverride.trim() !== '' ? Number(toHitOverride) : (attacker ? (attacker.attackBonus ?? 5) : 5));
-  const ac = isMobToPc
-    ? (targetAcOverride.trim() !== '' ? Number(targetAcOverride) : (target ? target.ac : 15))
-    : (monsterAcOverride.trim() !== '' ? Number(monsterAcOverride) : (monster.ac || 10));
-  const dmgFormula = isMobToPc ? (attack ? attack.damage : '') : damageFormula;
+  const attackerCount = monster.mobCount || 1;
+  const bonus = attack ? toHitBonus(attack.formula) : 0;
+  const ac = targetAcOverride.trim() !== '' ? Number(targetAcOverride) : (target ? target.ac : 15);
   const neededRoll = Math.max(2, Math.min(20, ac - bonus));
+
+  const pool = mobHpPoolTotal(monster);
+  const [logResult, setLogResult] = useState(null);
 
   function switchDirection(next){
     setDirection(next);
     setResult(null);
+    setLogResult(null);
   }
   function resolve(){
-    if(!dmgFormula.trim()) return;
-    setResult(resolveMobAttack(attackerCount, bonus, ac, dmgFormula, mode));
+    if(!attack) return;
+    setResult(resolveMobAttack(attackerCount, bonus, ac, attack.damage, mode));
   }
   function applyToTarget(){
     if(!result || !target) return;
     onDamageParty(target.id, -result.totalDamage);
     setResult(null);
   }
-  // "If a spell or attack reduces a monster to a handful of Hit Points, assume the monster is
-  // killed" — approximated here as total damage divided evenly across the mob's HP-per-monster.
-  const kills = result && !isMobToPc && monster.hpMax > 0
-    ? Math.min(monster.mobCount || 0, Math.floor(result.totalDamage / monster.hpMax))
-    : 0;
-  function applyKills(){
-    if(kills <= 0) return;
-    onSetStats(monster.id, {mobCount: Math.max(0, (monster.mobCount||0) - kills)});
-    setResult(null);
+  function logDamage(){
+    const dmg = Number(damageDealt);
+    if(!dmg || dmg <= 0) return;
+    setLogResult(applyMobPoolDamage(monster, dmg, onSetStats));
+    setDamageDealt('');
   }
 
   return (
@@ -2155,89 +2160,59 @@ function AttackRollPanel({monster, party, onDamageParty, onSetStats}){
             <button className={"tab-btn"+(isMobToPc?' active':'')} onClick={()=>switchDirection('mobToPc')} title="The mob attacks a party member">Mob → PC</button>
             <button className={"tab-btn"+(!isMobToPc?' active':'')} onClick={()=>switchDirection('pcToMob')} title="A PC attacks a monster in the mob">PC → Mob</button>
           </div>
-          {isMobToPc && meleeOrRanged.length === 0 ? (
-            <p className="mob-attack-hint">This monster has no Melee or Ranged attack to use here.</p>
+          {isMobToPc ? (
+            meleeOrRanged.length === 0 ? (
+              <p className="mob-attack-hint">This monster has no Melee or Ranged attack to use here.</p>
+            ) : (
+              <React.Fragment>
+                <div className="mob-attack-grid">
+                  <div className="mob-attack-field">
+                    <label>Attack</label>
+                    {meleeOrRanged.length > 1 ? (
+                      <select className="text-input" value={attackName} onChange={e=>setAttackName(e.target.value)}>
+                        {meleeOrRanged.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
+                      </select>
+                    ) : <span className="mob-attack-static">{attack.name}</span>}
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Target</label>
+                    <select className="text-input" value={targetId} onChange={e=>{ setTargetId(e.target.value); setTargetAcOverride(''); }} title="Target — AC autofills from this party member">
+                      {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Target AC</label>
+                    <input className="text-input" type="number" value={targetAcOverride.trim()!==''?targetAcOverride:ac} onChange={e=>setTargetAcOverride(e.target.value)} title="Target AC — auto-filled from the selected PC, editable"/>
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Roll</label>
+                    <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on every attacker's roll"/>
+                  </div>
+                </div>
+                <p className="mob-attack-hint">{attackerCount} attackers, to-hit {bonus>=0?'+':''}{bonus} vs AC {ac} — needs a {neededRoll}+ to hit. Roll that on the table if you'd rather, or use the statistical average below.</p>
+                <div className="mob-attack-row">
+                  <button className="btn btn-blood" onClick={resolve} title="Statistical average — how many of the mob would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Mob Attack</button>
+                  {result && (
+                    <React.Fragment>
+                      <span className="mob-attack-result">{result.hits} of {attackerCount} hit (avg) · {result.totalDamage} damage</span>
+                      <button className="btn btn-arcane" onClick={applyToTarget} disabled={!target} title={`Apply ${result.totalDamage} damage to ${target?.name || 'the target'}`}>Apply to {target?.name}</button>
+                    </React.Fragment>
+                  )}
+                </div>
+              </React.Fragment>
+            )
           ) : (
             <React.Fragment>
-              <div className="mob-attack-grid">
-                {isMobToPc ? (
-                  <React.Fragment>
-                    <div className="mob-attack-field">
-                      <label>Attack</label>
-                      {meleeOrRanged.length > 1 ? (
-                        <select className="text-input" value={attackName} onChange={e=>setAttackName(e.target.value)}>
-                          {meleeOrRanged.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
-                        </select>
-                      ) : <span className="mob-attack-static">{attack.name}</span>}
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Target</label>
-                      <select className="text-input" value={targetId} onChange={e=>{ setTargetId(e.target.value); setTargetAcOverride(''); }} title="Target — AC autofills from this party member">
-                        {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Target AC</label>
-                      <input className="text-input" type="number" value={targetAcOverride.trim()!==''?targetAcOverride:ac} onChange={e=>setTargetAcOverride(e.target.value)} title="Target AC — auto-filled from the selected PC, editable"/>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Roll</label>
-                      <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on every attacker's roll"/>
-                    </div>
-                  </React.Fragment>
-                ) : (
-                  <React.Fragment>
-                    <div className="mob-attack-field">
-                      <label>Attacker</label>
-                      <select className="text-input" value={attackerId} onChange={e=>{ setAttackerId(e.target.value); setToHitOverride(''); }} title="Attacker — to-hit bonus autofills from this party member">
-                        {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Attacks</label>
-                      <input className="text-input" type="number" value={attackCount} onChange={e=>setAttackCount(e.target.value)} title="How many attacks this PC makes this turn (2+ for Extra Attack, etc.)"/>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>To-Hit Bonus</label>
-                      <input className="text-input" type="number" value={toHitOverride.trim()!==''?toHitOverride:bonus} onChange={e=>setToHitOverride(e.target.value)} title="Total attack bonus — auto-filled from the selected PC, editable"/>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Monster AC</label>
-                      <input className="text-input" type="number" value={monsterAcOverride.trim()!==''?monsterAcOverride:ac} onChange={e=>setMonsterAcOverride(e.target.value)} title="AC of one monster in the mob — auto-filled from this card's AC, editable"/>
-                    </div>
-                    <div className="mob-attack-field">
-                      <label>Roll</label>
-                      <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on these attacks"/>
-                    </div>
-                    <div className="mob-attack-field wide">
-                      <label>Damage (per hit)</label>
-                      <input className="text-input" value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="e.g. 1d8+3" title="The PC's damage formula on a single hit"/>
-                    </div>
-                  </React.Fragment>
-                )}
-              </div>
-              <p className="mob-attack-hint">
-                {attackerCount} attack{attackerCount>1?'s':''}, to-hit {bonus>=0?'+':''}{bonus} vs AC {ac} — needs a {neededRoll}+ to hit.
-                {isMobToPc ? ' Roll that on the table if you\'d rather, or use the statistical average below.' : ` Each monster has ${monster.hpMax || '?'} HP.`}
-              </p>
+              <p className="mob-attack-hint">Players still roll their own attack and damage against this mob's AC {monster.ac} as normal — no table for a single attack. Log what a hit dealt here and it comes out of the mob's shared HP pool ({pool} pooled HP across {monster.mobCount||0} monster{(monster.mobCount||0)===1?'':'s'}, {monster.hpMax||'?'} HP each) instead of tracking each monster's HP by hand.</p>
               <div className="mob-attack-row">
-                <button className="btn btn-blood" onClick={resolve} disabled={!dmgFormula.trim()} title="Statistical average — how many of these attacks would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Attacks</button>
-                {result && (
-                  <React.Fragment>
-                    <span className="mob-attack-result">{result.hits} of {attackerCount} hit (avg) · {result.totalDamage} damage</span>
-                    {isMobToPc && <button className="btn btn-arcane" onClick={applyToTarget} disabled={!target} title={`Apply ${result.totalDamage} damage to ${target?.name || 'the target'}`}>Apply to {target?.name}</button>}
-                  </React.Fragment>
-                )}
-              </div>
-              {!isMobToPc && result && (
-                <div className="mob-attack-row">
-                  <p className="mob-attack-hint" style={{margin:0, flex:1}}>
-                    {kills > 0
-                      ? `That's enough total damage to drop ${kills} of the ${monster.mobCount||0} still alive outright.`
-                      : `Not enough total damage to drop one of this mob's ${monster.hpMax||'?'}-HP monsters outright.`}
-                  </p>
-                  <button className="btn btn-arcane" onClick={applyKills} disabled={kills<=0} title={`Remove ${kills} from "Still alive"`}><Icon name="skull" size={14}/>Apply ({kills} killed)</button>
+                <div className="mob-attack-field" style={{flex:'0 0 auto'}}>
+                  <label>Damage Dealt</label>
+                  <input className="text-input" style={{width:80}} type="number" value={damageDealt} onChange={e=>setDamageDealt(e.target.value)} title="Total damage from the PC's own resolved hit"/>
                 </div>
+                <button className="btn btn-blood" onClick={logDamage} disabled={!damageDealt} style={{alignSelf:'flex-end'}} title="Subtract this from the mob's shared HP pool and update the headcount"><Icon name="skull" size={14}/>Log Damage</button>
+              </div>
+              {logResult && (
+                <p className="mob-attack-hint">{logResult.killed>0 ? `${logResult.killed} dropped — ` : 'No one dropped — '}{logResult.poolAfter} pooled HP left, {monster.mobCount||0} still alive.</p>
               )}
             </React.Fragment>
           )}
@@ -2247,7 +2222,7 @@ function AttackRollPanel({monster, party, onDamageParty, onSetStats}){
   );
 }
 const SAVE_ABILITIES = ['str','dex','con','int','wis','cha'];
-function MobSavePanel({monster}){
+function MobSavePanel({monster, onSetStats}){
   const [ability, setAbility] = useState('dex');
   const [dc, setDc] = useState('15');
   const [damageFormula, setDamageFormula] = useState('');
@@ -2266,6 +2241,11 @@ function MobSavePanel({monster}){
   function resolve(){
     if(!damageFormula.trim() || affected <= 0) return;
     setResult(resolveMobSave(affected, mod, dcNum, damageFormula, halfOnSave, mode));
+  }
+  function applyResult(){
+    if(!result) return;
+    applyMobPoolDamage(monster, result.totalDamage, onSetStats);
+    setResult(null);
   }
 
   return (
@@ -2311,10 +2291,12 @@ function MobSavePanel({monster}){
           <div className="mob-attack-row">
             <button className="btn btn-blood" onClick={resolve} disabled={!damageFormula.trim() || affected<=0} title="Statistical average — how many of the mob fail/succeed and the expected total damage"><Icon name="sparkles" size={14}/>Resolve Mob Save</button>
             {result && (
-              <span className="mob-attack-result">{result.numFail} fail ({result.failDmg} dmg each) · {result.numSucceed} succeed ({result.succeedDmg} dmg each) · {result.totalDamage} total</span>
+              <React.Fragment>
+                <span className="mob-attack-result">{result.numFail} fail ({result.failDmg} dmg each) · {result.numSucceed} succeed ({result.succeedDmg} dmg each) · {result.totalDamage} total</span>
+                <button className="btn btn-arcane" onClick={applyResult} title="Subtract this from the mob's shared HP pool and update the headcount"><Icon name="skull" size={14}/>Apply</button>
+              </React.Fragment>
             )}
           </div>
-          {result && <p className="mob-attack-hint">Adjust "Still alive" above to reflect how many this killed — {result.failDmg} damage each is {result.failDmg >= (monster.hpMax||0) ? 'enough to drop one outright' : `less than this mob's ${monster.hpMax||'?'} HP each`}.</p>}
         </React.Fragment>
       )}
     </div>
@@ -2371,9 +2353,9 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
         {monster.isMob ? (
           <div className="mob-count-row">
             <span className="mob-count-label">Still alive</span>
-            <button className="stepper" onClick={()=>onSetStats(monster.id, {mobCount: Math.max(0, (monster.mobCount||1)-1)})} aria-label="Decrease mob size" title="One fewer left in the mob">−</button>
-            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>onSetStats(monster.id, {mobCount: Math.max(0, Number(e.target.value)||0)})} aria-label={`${monster.name} mob size`} title="Adjust as monsters in the mob are killed"/>
-            <button className="stepper" onClick={()=>onSetStats(monster.id, {mobCount: (monster.mobCount||1)+1})} aria-label="Increase mob size" title="One more joins the mob">+</button>
+            <button className="stepper" onClick={()=>{ const n=Math.max(0,(monster.mobCount||1)-1); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Decrease mob size" title="One fewer left in the mob">−</button>
+            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>{ const n=Math.max(0, Number(e.target.value)||0); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label={`${monster.name} mob size`} title="Adjust as monsters in the mob are killed — resets each remaining monster to full HP"/>
+            <button className="stepper" onClick={()=>{ const n=(monster.mobCount||1)+1; onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Increase mob size" title="One more joins the mob">+</button>
           </div>
         ) : <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>}
         <div className="mcard-meta-row">
@@ -2427,7 +2409,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           )}
 
           {monster.isMob && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
-          {monster.isMob && <MobSavePanel monster={monster}/>}
+          {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
 
           <div className="posture-row">
             {['A','B','C'].map(key=>{
@@ -2941,8 +2923,9 @@ function HowToUseSection(){
         '"Browse Compendium" opens a filterable, scrollable list of the entire 2024 SRD roster — narrow it by Type, Size, CR, or Environment, or just search by name, then click a result to fill in Quick Add.',
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
-        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — monster AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC gets an "Apply" to subtract the total straight from the target\'s PC HP; PC → Mob instead compares total damage against how many are "Still alive" and the mob\'s HP each (the DMG\'s own guidance — a monster reduced to a handful of HP is assumed killed) and its "Apply" removes that many from the headcount directly, capped at how many are actually still alive.',
-        'The Mob Save panel handles area effects hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every monster in a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a monster outright.',
+        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle, and the two directions work differently on purpose — only the mob\'s own attacks use the Mob Results table math, since that\'s for collapsing many identical d20 tests into one lookup. "Mob → PC" picks one of the mob\'s attacks and a target, works out the to-hit number needed against that target\'s AC, and "Resolve Mob Attack" gives the statistical average (how many of the mob would hit and the total damage, no dice rolled) with an "Apply" to subtract it from the target PC\'s HP. "PC → Mob" is not a table case — a single PC\'s attack is just one roll, so roll it yourself as normal against the mob\'s own AC (shown in the hint), then use "Log Damage" to record what it dealt; that comes out of the mob\'s shared HP pool instead of a table.',
+        'The mob\'s HP is tracked as one shared pool (e.g. 10 goblins at 7 HP = a 70 HP pool) rather than per-monster bars — every "Log Damage" or "Apply" chips away at that pool and "Still alive" (the headcount stepper) updates itself once enough cumulative damage has landed to drop another one, carrying leftover damage forward between separate hits. Manually typing a new number into "Still alive" resets the pool to that many monsters at full HP.',
+        'The Mob Save panel handles area effects hitting the mob — this direction does use the Mob Results table (flipped: PC\'s spell save DC minus the mob\'s save modifier), since a saving throw against an AoE is exactly the "many identical d20 tests" case the table is for. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage; "Resolve Mob Save" gives how many fail versus succeed and the total damage, and "Apply" feeds that into the same shared HP pool.',
         'Both mob tools (Attack Roll, Mob Save) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by both as you knock monsters out.',
       ],
     },
