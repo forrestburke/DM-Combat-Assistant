@@ -179,6 +179,7 @@
   .party-level span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
   .party-level input{width:30px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px;}
   .party-ac{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
+  .party-atk{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
   .party-priority{font-size:13px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
   .link-icon{color:var(--parchment-faint); flex-shrink:0; display:inline-flex;}
   .link-icon:hover{color:var(--arcane);}
@@ -473,10 +474,10 @@ const sampleEncounter = {
     timeOfDay: 'Dusk',
   },
   party: [
-    {id:'pc-1', name:'Sable', role:'Rogue', level:5, ac:15, hpCurrent:27, hpMax:27, tacticalPriority:'Soft target — low AC, no armor proficiency', conditions:[]},
-    {id:'pc-2', name:'Ithren', role:'Druid', level:5, ac:14, hpCurrent:24, hpMax:24, tacticalPriority:'Disrupt Concentration — Conjure Animals caster', conditions:[]},
-    {id:'pc-3', name:'Bram', role:'Paladin', level:5, ac:18, hpCurrent:38, hpMax:38, tacticalPriority:'Hard target — ignore unless isolated', conditions:[]},
-    {id:'pc-4', name:'Voss', role:'Cleric', level:5, ac:16, hpCurrent:30, hpMax:30, tacticalPriority:'Priority — removes conditions & heals', conditions:[]},
+    {id:'pc-1', name:'Sable', role:'Rogue', level:5, ac:15, attackBonus:7, hpCurrent:27, hpMax:27, tacticalPriority:'Soft target — low AC, no armor proficiency', conditions:[]},
+    {id:'pc-2', name:'Ithren', role:'Druid', level:5, ac:14, attackBonus:5, hpCurrent:24, hpMax:24, tacticalPriority:'Disrupt Concentration — Conjure Animals caster', conditions:[]},
+    {id:'pc-3', name:'Bram', role:'Paladin', level:5, ac:18, attackBonus:7, hpCurrent:38, hpMax:38, tacticalPriority:'Hard target — ignore unless isolated', conditions:[]},
+    {id:'pc-4', name:'Voss', role:'Cleric', level:5, ac:16, attackBonus:5, hpCurrent:30, hpMax:30, tacticalPriority:'Priority — removes conditions & heals', conditions:[]},
   ],
   axes: {
     winCondition:{ title:'Break the Warband, Not the Room',
@@ -747,6 +748,7 @@ function parsePartyMember(block){
   return {id:slugify(block.heading), name:block.heading, role:roles.includes(role)?role:'Custom',
     species: f.get('species') || undefined,
     level: f.get('level') ? Math.max(1, Math.min(20, parseInt10(f.get('level'),'Level',context))) : 1,
+    attackBonus: f.get('attackbonus') ? parseInt10(f.get('attackbonus'),'Attack Bonus',context) : 5,
     ac:parseInt10(requireField(f,'ac',context),'AC',context), hpCurrent:hp.current, hpMax:hp.max,
     tacticalPriority:requireField(f,'tacticalpriority',context), conditions:parseList(f.get('conditions')),
     referenceLink: f.get('referencelink') || f.get('dndbeyond') || undefined};
@@ -1690,12 +1692,13 @@ const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
 function AddPartyMemberForm({onAdd, onDone}){
   const [name, setName] = useState(''); const [role, setRole] = useState('Custom');
   const [species, setSpecies] = useState(''); const [ac, setAc] = useState('15'); const [hp, setHp] = useState('20'); const [level, setLevel] = useState('1');
+  const [attackBonus, setAttackBonus] = useState('5');
   const [priority, setPriority] = useState(''); const [link, setLink] = useState('');
   function submit(){
     if(!name.trim()) return;
     const hpMax = Math.max(1, Number(hp) || 1);
     const lvl = Math.max(1, Math.min(20, Number(level) || 1));
-    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, hpCurrent:hpMax, hpMax,
+    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, attackBonus:Number(attackBonus)||0, hpCurrent:hpMax, hpMax,
       tacticalPriority: priority.trim() || 'No tactical note yet', conditions:[], referenceLink: link.trim() || undefined });
     onDone();
   }
@@ -1707,6 +1710,7 @@ function AddPartyMemberForm({onAdd, onDone}){
         <input className="text-input" type="number" min="1" max="20" value={level} onChange={e=>setLevel(e.target.value)} placeholder="Lvl" style={{width:48}} title="Character level — used for the encounter difficulty rating"/>
         <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:56}}/>
         <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:56}}/>
+        <input className="text-input" value={attackBonus} onChange={e=>setAttackBonus(e.target.value)} placeholder="Atk" style={{width:48}} title="Total attack bonus — used to autofill the Attack Roll panel on mobs"/>
       </div>
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
@@ -1716,7 +1720,7 @@ function AddPartyMemberForm({onAdd, onDone}){
   );
 }
 
-function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, onToggleCondition}){
+function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition}){
   const [deltaVal, setDeltaVal] = useState('');
   function applyDelta(){
     const n = Number(deltaVal);
@@ -1755,6 +1759,10 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, o
             <Icon name="shield" size={14}/>
             <input className="ac-input wide" type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`} title="Armor Class"/>
           </span>
+          <span className="party-atk" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
+            <Icon name="swords" size={14}/>
+            <input className="ac-input wide" type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`} title="Attack Bonus"/>
+          </span>
         </div>
       </div>
       <p className="party-priority">{p.tacticalPriority}</p>
@@ -1763,11 +1771,11 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, o
   );
 }
 
-function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onToggleCondition}){
+function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition}){
   const [showAdd, setShowAdd] = useState(false);
   return (
     <React.Fragment>
-      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onToggleCondition={onToggleCondition}/>)}
+      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onSetAttackBonus={onSetAttackBonus} onToggleCondition={onToggleCondition}/>)}
       <div className="disclosure">
         <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)} title={showAdd ? 'Cancel adding a party member' : 'Open the form to add a new party member'}>
           <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
@@ -1778,12 +1786,12 @@ function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc
   );
 }
 
-function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onToggleCondition}){
+function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition}){
   return (
     <div className="plate">
       <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
       <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
-      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onToggleCondition={onToggleCondition}/>
+      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onSetAttackBonus={onSetAttackBonus} onToggleCondition={onToggleCondition}/>
     </div>
   );
 }
@@ -2089,16 +2097,20 @@ function AttackRollPanel({monster, party, onDamageParty}){
   const [targetAcOverride, setTargetAcOverride] = useState('');
   // pc -> mob fields
   const [attackCount, setAttackCount] = useState('1');
-  const [toHit, setToHit] = useState('5');
+  const [attackerId, setAttackerId] = useState(party[0]?.id || '');
+  const [toHitOverride, setToHitOverride] = useState('');
   const [memberAcOverride, setMemberAcOverride] = useState('');
   const [damageFormula, setDamageFormula] = useState('');
 
   const isMobToPc = direction === 'mobToPc';
   const attack = meleeOrRanged.find(a=>a.name===attackName) || meleeOrRanged[0];
   const target = party.find(p=>p.id===targetId);
+  const attacker = party.find(p=>p.id===attackerId);
 
   const attackerCount = isMobToPc ? (monster.mobCount || 1) : Math.max(1, Number(attackCount) || 1);
-  const bonus = isMobToPc ? (attack ? toHitBonus(attack.formula) : 0) : (Number(toHit) || 0);
+  const bonus = isMobToPc
+    ? (attack ? toHitBonus(attack.formula) : 0)
+    : (toHitOverride.trim() !== '' ? Number(toHitOverride) : (attacker ? (attacker.attackBonus ?? 5) : 5));
   const ac = isMobToPc
     ? (targetAcOverride.trim() !== '' ? Number(targetAcOverride) : (target ? target.ac : 15))
     : (memberAcOverride.trim() !== '' ? Number(memberAcOverride) : (monster.ac || 10));
@@ -2161,12 +2173,18 @@ function AttackRollPanel({monster, party, onDamageParty}){
                 ) : (
                   <React.Fragment>
                     <div className="mob-attack-field">
+                      <label>Attacker</label>
+                      <select className="text-input" value={attackerId} onChange={e=>{ setAttackerId(e.target.value); setToHitOverride(''); }} title="Attacker — to-hit bonus autofills from this party member">
+                        {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="mob-attack-field">
                       <label>Attacks</label>
                       <input className="text-input" type="number" value={attackCount} onChange={e=>setAttackCount(e.target.value)} title="How many attacks this PC makes this turn (2+ for Extra Attack, etc.)"/>
                     </div>
                     <div className="mob-attack-field">
                       <label>To-Hit Bonus</label>
-                      <input className="text-input" type="number" value={toHit} onChange={e=>setToHit(e.target.value)} title="The attacking PC's total attack bonus"/>
+                      <input className="text-input" type="number" value={toHitOverride.trim()!==''?toHitOverride:bonus} onChange={e=>setToHitOverride(e.target.value)} title="Total attack bonus — auto-filled from the selected PC, editable"/>
                     </div>
                     <div className="mob-attack-field">
                       <label>Member AC</label>
@@ -2889,6 +2907,7 @@ function HowToUseSection(){
         '"Add PC" adds a party member with level/AC/HP/role. The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Next Round" jumps straight to a new round, "Previous Round" steps back one, and "Reset" returns to round 1.',
         'Each combatant has a typeable HP delta box — type a negative number to damage, a positive number to heal, no "+" needed, then press Enter to apply.',
         'A "Difficulty" reading sits next to Round and Active — it compares the party\'s levels against the CR of every monster currently in the fight (using the same XP-budget math the SRD encounter-building guidance is built on) and labels the fight Trivial through Deadly. Hover it for the numbers behind the label. Set each PC\'s level with the "Lvl" box next to their name — this doesn\'t come from anywhere else, so keep it current as characters level up.',
+        'Each PC also has a sword-icon Attack Bonus field next to AC — it\'s only used to autofill the To-Hit Bonus when you pick that PC in a mob\'s Attack Roll panel (PC → Mob direction), so it\'s fine to leave at the default if you don\'t use mobs.',
       ],
     },
     {
@@ -2898,7 +2917,7 @@ function HowToUseSection(){
         '"Browse Compendium" opens a filterable, scrollable list of the entire 2024 SRD roster — narrow it by Type, Size, CR, or Environment, or just search by name, then click a result to fill in Quick Add.',
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
-        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" takes a PC\'s attack count (2+ for Extra Attack), to-hit bonus, and damage against the mob\'s own AC — member AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC also gets an "Apply" to subtract the total straight from the target\'s HP.',
+        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Attack Roll panel has a Mob → PC / PC → Mob toggle at the top, since the two directions use the exact same math with attacker and defender swapped: "Mob → PC" picks one of the mob\'s attacks and a target and works out the to-hit number needed against that target\'s AC; "PC → Mob" picks the attacking PC from a dropdown (to-hit bonus autofills from their Attack Bonus field, editable) plus their attack count (2+ for Extra Attack) and damage against the mob\'s own AC — member AC/HP auto-fill either way. Either direction: roll it yourself on the table if you want the dice, or click "Resolve Attacks" for the statistical average (how many would hit and the expected total damage, no dice rolled). Mob → PC also gets an "Apply" to subtract the total straight from the target\'s HP.',
         'The Mob Save panel handles area effects hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every member of a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a member outright.',
         'Both mob tools (Attack Roll, Mob Save) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by both as you knock members out.',
       ],
@@ -3090,6 +3109,7 @@ function App(){
   }
   function setPartyAc(id, ac){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, ac} : p)})); }
   function setPartyLevel(id, level){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, level} : p)})); }
+  function setPartyAttackBonus(id, attackBonus){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, attackBonus} : p)})); }
   function toggleCondition(kind, id, condition){
     const flip = (list)=> (list||[]).includes(condition) ? list.filter(c=>c!==condition) : [...(list||[]), condition];
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, conditions: flip(p.conditions)} : p)}));
@@ -3228,7 +3248,7 @@ function App(){
         <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster}/>
         <div className="main-grid">
           <div className="stack">
-            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onSetLevel={setPartyLevel} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
+            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onSetLevel={setPartyLevel} onSetAttackBonus={setPartyAttackBonus} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
           </div>
           <div className="stack">
             <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
