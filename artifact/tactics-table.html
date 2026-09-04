@@ -719,26 +719,6 @@ function resolveMobSave(mobCount, saveMod, dc, damageFormula, halfOnSave, mode='
   const totalDamage = Math.round(numFail*failDmg + numSucceed*succeedDmg);
   return { numFail, numSucceed, totalDamage, failDmg, succeedDmg };
 }
-// Real dice, for the single-attacker case (PC vs one mob member) — unlike the mob-of-many
-// cases above, there's no speed argument for skipping an actual roll here.
-function rollD20(mode='normal'){
-  const a = 1 + Math.floor(Math.random()*20);
-  if(mode !== 'advantage' && mode !== 'disadvantage') return a;
-  const b = 1 + Math.floor(Math.random()*20);
-  return mode==='advantage' ? Math.max(a,b) : Math.min(a,b);
-}
-function rollDamageFormula(formula){
-  let total = 0, matched = false;
-  const re = /(\d+)d(\d+)([+-]\d+)?/g;
-  let m;
-  while((m = re.exec(formula))){
-    matched = true;
-    for(let i=0;i<Number(m[1]);i++) total += 1 + Math.floor(Math.random()*Number(m[2]));
-    if(m[3]) total += Number(m[3]);
-  }
-  if(!matched){ const flat = String(formula).match(/(\d+)/); if(flat) total = Number(flat[1]); }
-  return total;
-}
 const validStyles = ['brute','skirmisher','pack','mindless','ambusher','leader'];
 function parseAbilityScores(raw, context){
   if(!raw) return {...defaultAbilityScores};
@@ -2241,7 +2221,8 @@ function MobSavePanel({monster}){
     </div>
   );
 }
-function PcVsMobPanel({monster, onSetStats}){
+function PcVsMobPanel({monster}){
+  const [attackCount, setAttackCount] = useState('1');
   const [toHit, setToHit] = useState('5');
   const [manualAc, setManualAc] = useState('');
   const [damageFormula, setDamageFormula] = useState('');
@@ -2249,28 +2230,26 @@ function PcVsMobPanel({monster, onSetStats}){
   const [result, setResult] = useState(null);
   const [open, setOpen] = useState(true);
 
+  const attacks = Math.max(1, Number(attackCount) || 1);
   const bonus = Number(toHit) || 0;
   const ac = manualAc.trim() !== '' ? Number(manualAc) : (monster.ac || 10);
   const neededRoll = Math.max(2, Math.min(20, ac - bonus));
 
-  function roll(){
+  function resolve(){
     if(!damageFormula.trim()) return;
-    const d20 = rollD20(mode);
-    const hit = d20===20 || (d20!==1 && d20+bonus>=ac);
-    const damage = hit ? rollDamageFormula(damageFormula) : 0;
-    setResult({d20, hit, damage});
-  }
-  function removeOne(){
-    onSetStats(monster.id, {mobCount: Math.max(0, (monster.mobCount||1)-1)});
-    setResult(null);
+    setResult(resolveMobAttack(attacks, bonus, ac, damageFormula, mode));
   }
 
   return (
     <div className="mob-attack">
-      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="shield" title="PC vs Mob" subtitle="A single attack against one member of the mob"/>
+      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="shield" title="PC vs Mob" subtitle="The mirror of Mob Attack — one attacker's swings against the mob's AC"/>
       {open && (
         <React.Fragment>
           <div className="mob-attack-grid">
+            <div className="mob-attack-field">
+              <label>Attacks</label>
+              <input className="text-input" type="number" value={attackCount} onChange={e=>setAttackCount(e.target.value)} title="How many attacks this PC makes this turn (2+ for Extra Attack, etc.)"/>
+            </div>
             <div className="mob-attack-field">
               <label>To-Hit Bonus</label>
               <input className="text-input" type="number" value={toHit} onChange={e=>setToHit(e.target.value)} title="The attacking PC's total attack bonus"/>
@@ -2281,28 +2260,21 @@ function PcVsMobPanel({monster, onSetStats}){
             </div>
             <div className="mob-attack-field">
               <label>Roll</label>
-              <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on this attack"/>
+              <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on these attacks"/>
             </div>
             <div className="mob-attack-field wide">
-              <label>Damage</label>
-              <input className="text-input" value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="e.g. 1d8+3" title="The PC's damage formula on a hit"/>
+              <label>Damage (per hit)</label>
+              <input className="text-input" value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="e.g. 1d8+3" title="The PC's damage formula on a single hit"/>
             </div>
           </div>
-          <p className="mob-attack-hint">Needs a {neededRoll}+ to hit. Each member has {monster.hpMax || '?'} HP.</p>
+          <p className="mob-attack-hint">{attacks} attack{attacks>1?'s':''}, to-hit {bonus>=0?'+':''}{bonus} vs AC {ac} — needs a {neededRoll}+ to hit. Each member has {monster.hpMax || '?'} HP.</p>
           <div className="mob-attack-row">
-            <button className="btn btn-blood" onClick={roll} disabled={!damageFormula.trim()} title="Roll one d20 and, on a hit, one damage roll"><Icon name="sparkles" size={14}/>Roll Attack</button>
+            <button className="btn btn-blood" onClick={resolve} disabled={!damageFormula.trim()} title="Statistical average — how many of these attacks would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Attacks</button>
             {result && (
-              <span className="mob-attack-result">
-                {result.hit ? `Hit! Rolled ${result.d20} — ${result.damage} damage` : `Miss (rolled ${result.d20})`}
-              </span>
+              <span className="mob-attack-result">{result.hits} of {attacks} hit (avg) · {result.totalDamage} damage</span>
             )}
           </div>
-          {result?.hit && (
-            <div className="mob-attack-row">
-              <p className="mob-attack-hint" style={{margin:0, flex:1}}>{result.damage >= (monster.hpMax||0) ? 'That\'s enough to drop one member outright.' : `Not quite enough to drop a ${monster.hpMax||'?'}-HP member outright — track it however you like.`}</p>
-              <button className="btn btn-arcane" onClick={removeOne} title="Decrease the mob's headcount by one"><Icon name="skull" size={14}/>Remove one from the mob</button>
-            </div>
-          )}
+          {result && <p className="mob-attack-hint">Adjust "Still alive" above to reflect how many this killed — {result.hits>0 ? Math.round(result.totalDamage/result.hits) : 0} damage per hit is {(result.hits>0 ? result.totalDamage/result.hits : 0) >= (monster.hpMax||0) ? 'enough to drop one outright' : `less than this mob's ${monster.hpMax||'?'} HP each`}.</p>}
         </React.Fragment>
       )}
     </div>
@@ -2416,7 +2388,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
 
           {monster.isMob && party.length > 0 && <MobAttackPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
           {monster.isMob && <MobSavePanel monster={monster}/>}
-          {monster.isMob && <PcVsMobPanel monster={monster} onSetStats={onSetStats}/>}
+          {monster.isMob && <PcVsMobPanel monster={monster}/>}
 
           <div className="posture-row">
             {['A','B','C'].map(key=>{
@@ -2931,7 +2903,7 @@ function HowToUseSection(){
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
         '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Mob Attack panel picks an attack, a target, and Normal/Advantage/Disadvantage, and works out the to-hit number needed against that target\'s AC — roll that yourself on the table if you want the dice, or click "Resolve Mob Attack" for the statistical average (how many of the mob would hit and the expected total damage, no dice rolled) and "Apply" to subtract it straight from the target\'s HP.',
         'The Mob Save panel handles the other direction — an area effect hitting the mob. It defaults to the whole mob, but the "caught in the effect" field lets you knock that down when the blast doesn\'t reach everyone (not every member of a mob is necessarily inside a given area) — a reset icon puts it back to the full headcount. Pick the save ability, DC, damage formula, and Normal/Advantage/Disadvantage, and "Resolve Mob Save" gives how many fail versus succeed and the total damage, with a note on whether that damage is enough to drop a member outright.',
-        'PC vs Mob is for the simple case — one PC\'s normal attack against a single member of the mob. Enter their to-hit bonus and damage formula (member AC and HP auto-fill from the mob\'s own stats) and "Roll Attack" actually rolls it, since it\'s just one attack — no averaging needed there. A hit that meets or beats that member\'s HP gets a one-click "Remove one from the mob" to drop the headcount.',
+        'PC vs Mob is the exact mirror of Mob Attack, with the attacker and defender swapped: enter how many attacks a PC makes this turn (2+ for Extra Attack), their to-hit bonus, and damage — member AC and HP auto-fill from the mob\'s own stats — and "Resolve Attacks" gives the same statistical average (how many of those swings hit and the total damage), plus a note on whether the damage per hit is enough to drop a member outright.',
         'All three mob tools (Mob Attack, Mob Save, PC vs Mob) collapse independently with the chevron in their own header, and "Still alive" — the headcount stepper up top — is shared by all three as you knock members out.',
       ],
     },
