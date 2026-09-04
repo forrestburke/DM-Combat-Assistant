@@ -658,15 +658,13 @@ function computeEncounterDifficulty(party, monsters){
 const DIFFICULTY_COLOR = { Trivial:'var(--moss)', Easy:'var(--moss)', Medium:'var(--amber)', Hard:'var(--blood)', Deadly:'var(--blood)', Unknown:'var(--parchment-faint)' };
 
 /* ---------- mob attack resolver ---------- */
-function rollDie(sides){ return 1 + Math.floor(Math.random()*sides); }
-function rollDiceFormula(formula){
+function averageDiceFormula(formula){
   let total = 0, matched = false;
   const re = /(\d+)d(\d+)([+-]\d+)?/g;
   let m;
   while((m = re.exec(formula))){
     matched = true;
-    for(let i=0;i<Number(m[1]);i++) total += rollDie(Number(m[2]));
-    if(m[3]) total += Number(m[3]);
+    total += Number(m[1]) * (Number(m[2])+1)/2 + (m[3]?Number(m[3]):0);
   }
   if(!matched){ const flat = String(formula).match(/(\d+)/); if(flat) total = Number(flat[1]); }
   return total;
@@ -675,14 +673,18 @@ function toHitBonus(formula){
   const m = String(formula).match(/1d20\s*([+-]\d+)/i);
   return m ? Number(m[1]) : 0;
 }
+function hitProbability(toHit, targetAc){
+  let successCount = 0;
+  for(let roll=1; roll<=20; roll++){
+    const hit = roll===20 || (roll!==1 && roll+toHit>=targetAc);
+    if(hit) successCount++;
+  }
+  return successCount/20;
+}
 function resolveMobAttack(mobCount, toHit, targetAc, damageFormula){
   const neededRoll = Math.max(2, Math.min(20, targetAc - toHit));
-  let hits = 0, totalDamage = 0;
-  for(let i=0;i<mobCount;i++){
-    const d20 = rollDie(20);
-    const hit = d20 === 20 || (d20 !== 1 && d20 + toHit >= targetAc);
-    if(hit){ hits++; totalDamage += rollDiceFormula(damageFormula); }
-  }
+  const hits = Math.round(mobCount * hitProbability(toHit, targetAc));
+  const totalDamage = Math.round(hits * averageDiceFormula(damageFormula));
   return { hits, totalDamage, neededRoll };
 }
 const validStyles = ['brute','skirmisher','pack','mindless','ambusher','leader'];
@@ -2021,7 +2023,7 @@ function MobAttackPanel({monster, party, onDamageParty}){
 
   if(meleeOrRanged.length === 0) return null;
 
-  function roll(){
+  function resolve(){
     if(!attack) return;
     setResult(resolveMobAttack(monster.mobCount || 1, toHit, ac, attack.damage));
   }
@@ -2046,12 +2048,12 @@ function MobAttackPanel({monster, party, onDamageParty}){
         </select>
         <input className="text-input" style={{width:52}} type="number" value={manualAc.trim()!==''?manualAc:ac} onChange={e=>setManualAc(e.target.value)} title="Target AC — auto-filled from the selected PC, editable"/>
       </div>
-      <p className="mob-attack-hint">{monster.mobCount || 1} attackers, to-hit {toHit>=0?'+':''}{toHit} vs AC {ac} — needs a {neededRoll}+ to hit.</p>
+      <p className="mob-attack-hint">{monster.mobCount || 1} attackers, to-hit {toHit>=0?'+':''}{toHit} vs AC {ac} — needs a {neededRoll}+ to hit. Roll that on the table if you'd rather, or use the statistical average below.</p>
       <div className="mob-attack-row">
-        <button className="btn btn-blood" onClick={roll} title="Roll every attacker's d20 and damage at once"><Icon name="sparkles" size={14}/>Roll Mob Attack</button>
+        <button className="btn btn-blood" onClick={resolve} title="Statistical average — how many of the mob would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Mob Attack</button>
         {result && (
           <React.Fragment>
-            <span className="mob-attack-result">{result.hits} of {monster.mobCount || 1} hit · {result.totalDamage} damage</span>
+            <span className="mob-attack-result">{result.hits} of {monster.mobCount || 1} hit (avg) · {result.totalDamage} damage</span>
             <button className="btn btn-arcane" onClick={applyToTarget} disabled={!target} title={`Apply ${result.totalDamage} damage to ${target?.name || 'the target'}`}>Apply to {target?.name}</button>
           </React.Fragment>
         )}
@@ -2433,9 +2435,9 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
             </label>
             <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd} title="Add this monster to the encounter"><Icon name="swords" size={16}/>Add</button>
           </div>
-          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer'}} title="Instead of adding separate cards, group them into one mob card with a headcount and a Mob Attack resolver that rolls all their attacks against one target at once">
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer'}} title="Instead of adding separate cards, group them into one mob card with a headcount and a Mob Attack resolver that works out the to-hit number and statistical average against one target at once">
             <input type="checkbox" checked={asMob} onChange={e=>{ setAsMob(e.target.checked); if(e.target.checked && Number(count)<=1) setCount('10'); }}/>
-            Add as a mob (one card, rolls all attacks against a target at once)
+            Add as a mob (one card, resolves all attacks against a target at once)
           </label>
           <p className="hint" style={{margin:0}}>{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType}${match.cr!=null?`, CR ${crLabel(match.cr)}`:''})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
 
@@ -2677,7 +2679,7 @@ function HowToUseSection(){
         '"Browse Compendium" opens a filterable, scrollable list of the entire 2024 SRD roster — narrow it by Type, Size, CR, or Environment, or just search by name, then click a result to fill in Quick Add.',
         'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
         '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
-        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Mob Attack panel picks an attack and a target, works out the to-hit number needed against that target\'s AC, and rolls every attacker\'s d20 and damage at once — click "Apply" to subtract the total straight from the target\'s HP. Adjust the headcount with the +/− stepper as members of the mob die.',
+        '"Add as a mob" collapses a large group of identical monsters into one card with a headcount instead of one card per creature. Its Mob Attack panel picks an attack and a target and works out the to-hit number needed against that target\'s AC — roll that yourself on the table if you want the dice, or click "Resolve Mob Attack" for the statistical average (how many of the mob would hit and the expected total damage, no dice rolled) and "Apply" to subtract it straight from the target\'s HP. Adjust the headcount with the +/− stepper as members of the mob die.',
       ],
     },
     {
