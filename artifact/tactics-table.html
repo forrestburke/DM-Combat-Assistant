@@ -2212,13 +2212,13 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
           )}
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
         </div>
-        {monster.isMob && party.length > 0 && <MobAttackPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
-        {monster.isMob && <MobSavePanel monster={monster}/>}
         <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
       </div>
 
       {expanded && (
         <div className="mcard-body">
+          {monster.isMob && party.length > 0 && <MobAttackPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
+          {monster.isMob && <MobSavePanel monster={monster}/>}
           <div className="hp-exact-row">
             <span className="hp-exact-label">HP</span>
             <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
