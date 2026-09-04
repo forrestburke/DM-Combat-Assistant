@@ -280,11 +280,17 @@
   .mob-count-row{display:flex; align-items:center; gap:8px;}
   .mob-count-label{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
   .mob-count-row .init-input{width:44px;}
-  .mob-attack{margin-top:10px; padding-top:10px; border-top:1px solid var(--line-soft);}
-  .mob-attack-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:6px;}
-  .mob-attack-static{font-size:13px; color:var(--parchment); flex:1; min-width:0;}
-  .mob-attack-vs{font-size:11px; color:var(--parchment-faint); flex-shrink:0;}
-  .mob-attack-hint{font-size:12px; color:var(--parchment-dim); margin:6px 0 0;}
+  .mob-attack{margin-top:16px; padding:14px; border-top:1px solid var(--line-soft); background:var(--panel-raised); border-radius:4px;}
+  .mob-attack + .mob-attack{margin-top:14px; border-top:none;}
+  .mob-attack-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(96px,1fr)); gap:10px 12px; margin-top:10px;}
+  .mob-attack-field{display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .mob-attack-field.wide{grid-column:1 / -1;}
+  .mob-attack-field label{font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--parchment-faint);}
+  .mob-attack-subtitle{font-size:11.5px; font-weight:400; color:var(--parchment-faint); margin:-2px 0 0;}
+  .mob-attack-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .mob-attack-static{font-size:13px; color:var(--parchment); padding:7px 0;}
+  .mob-attack-vs{font-size:11.5px; color:var(--parchment-faint); flex-shrink:0; white-space:nowrap;}
+  .mob-attack-hint{font-size:12px; color:var(--parchment-dim); margin:12px 0 0; line-height:1.5;}
   .mob-attack-result{font-size:12.5px; color:var(--parchment); font-weight:600;}
   .mcard-body{padding:0 14px 13px;}
   .ac-badge{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
@@ -1611,13 +1617,30 @@ function splitSensesFromPassives(passives){
   return {senses, other};
 }
 const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
+const CONDITION_INFO = {
+  Blinded: "Can't see; automatically fails any check that requires sight. Attack rolls against it have advantage; its own attack rolls have disadvantage.",
+  Charmed: "Can't attack the charmer or target it with harmful abilities. The charmer has advantage on social checks with it.",
+  Deafened: "Can't hear; automatically fails any check that requires hearing.",
+  Exhaustion: "Stacking levels — each one gives a cumulative d20-test penalty and cuts Speed; enough levels kills the creature outright.",
+  Frightened: "Disadvantage on ability checks and attack rolls while the source of fear is in sight; can't willingly move closer to it.",
+  Grappled: "Speed becomes 0. Ends automatically if the grappler is incapacitated or is moved away from the grappled creature.",
+  Incapacitated: "Can't take actions or reactions, and can't take a bonus action if it also has a bonus action available.",
+  Invisible: "Can't be seen without special senses; attack rolls against it have disadvantage, and its own attack rolls have advantage.",
+  Paralyzed: "Incapacitated; can't move or speak. Automatically fails Strength and Dexterity saves. Attacks against it have advantage, and any hit from within 5 feet is a critical hit.",
+  Petrified: "Turned to stone and incapacitated; can't move or speak and is unaware of its surroundings. Resistant to all damage and immune to poison and disease.",
+  Poisoned: "Disadvantage on attack rolls and ability checks.",
+  Prone: "Disadvantage on attack rolls. Attacks against it have advantage from within 5 feet, disadvantage from farther away. Can only crawl or stand up to move.",
+  Restrained: "Speed becomes 0. Disadvantage on attack rolls and Dexterity saves. Attack rolls against it have advantage.",
+  Stunned: "Incapacitated; can't move and can speak only falteringly. Automatically fails Strength and Dexterity saves. Attacks against it have advantage.",
+  Unconscious: "Incapacitated, can't move or speak, and is unaware of its surroundings. Drops what it's holding and falls prone. Automatically fails Strength and Dexterity saves. Attacks against it have advantage, and any hit from within 5 feet is a critical hit.",
+};
 function ConditionRow({conditions, onToggle}){
   const active = conditions || [];
   const [adding, setAdding] = useState(false);
   return (
     <div className="condition-row">
       {active.map(c=>(
-        <button key={c} className="condition-chip active" onClick={()=>onToggle(c)} title="Click to remove">
+        <button key={c} className="condition-chip active" onClick={()=>onToggle(c)} title={`${CONDITION_INFO[c] || ''} Click to remove.`}>
           {c}<Icon name="x" size={10}/>
         </button>
       ))}
@@ -1627,7 +1650,7 @@ function ConditionRow({conditions, onToggle}){
       {adding && (
         <div className="condition-picker">
           {CONDITIONS.filter(c=>!active.includes(c)).map(c=>(
-            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }} title={`Apply ${c}`}>{c}</button>
+            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }} title={CONDITION_INFO[c] || `Apply ${c}`}>{c}</button>
           ))}
         </div>
       )}
@@ -2069,22 +2092,31 @@ function MobAttackPanel({monster, party, onDamageParty}){
   return (
     <div className="mob-attack">
       <div className="section-label"><Icon name="swords" size={14} style={{color:'var(--parchment-faint)'}}/><span>Mob Attack</span></div>
-      <div className="mob-attack-row">
-        {meleeOrRanged.length > 1 ? (
-          <select className="text-input" style={{flex:1}} value={attackName} onChange={e=>setAttackName(e.target.value)}>
-            {meleeOrRanged.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
+      <div className="mob-attack-grid">
+        <div className="mob-attack-field">
+          <label>Attack</label>
+          {meleeOrRanged.length > 1 ? (
+            <select className="text-input" value={attackName} onChange={e=>setAttackName(e.target.value)}>
+              {meleeOrRanged.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
+            </select>
+          ) : <span className="mob-attack-static">{attack.name}</span>}
+        </div>
+        <div className="mob-attack-field">
+          <label>Target</label>
+          <select className="text-input" value={targetId} onChange={e=>{ setTargetId(e.target.value); setManualAc(''); }} title="Target — AC autofills from this party member">
+            {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-        ) : <span className="mob-attack-static">{attack.name}</span>}
-        <span className="mob-attack-vs">vs</span>
-        <select className="text-input" style={{flex:1}} value={targetId} onChange={e=>{ setTargetId(e.target.value); setManualAc(''); }} title="Target — AC autofills from this party member">
-          {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <input className="text-input" style={{width:52}} type="number" value={manualAc.trim()!==''?manualAc:ac} onChange={e=>setManualAc(e.target.value)} title="Target AC — auto-filled from the selected PC, editable"/>
+        </div>
+        <div className="mob-attack-field">
+          <label>Target AC</label>
+          <input className="text-input" type="number" value={manualAc.trim()!==''?manualAc:ac} onChange={e=>setManualAc(e.target.value)} title="Target AC — auto-filled from the selected PC, editable"/>
+        </div>
+        <div className="mob-attack-field">
+          <label>Roll</label>
+          <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on every attacker's roll"/>
+        </div>
       </div>
-      <div className="mob-attack-row">
-        <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on every attacker's roll"/>
-        <p className="mob-attack-hint" style={{margin:0}}>{monster.mobCount || 1} attackers, to-hit {toHit>=0?'+':''}{toHit} vs AC {ac} — needs a {neededRoll}+ to hit. Roll that on the table if you'd rather, or use the statistical average below.</p>
-      </div>
+      <p className="mob-attack-hint">{monster.mobCount || 1} attackers, to-hit {toHit>=0?'+':''}{toHit} vs AC {ac} — needs a {neededRoll}+ to hit. Roll that on the table if you'd rather, or use the statistical average below.</p>
       <div className="mob-attack-row">
         <button className="btn btn-blood" onClick={resolve} title="Statistical average — how many of the mob would hit and the expected total damage, no dice rolled"><Icon name="sparkles" size={14}/>Resolve Mob Attack</button>
         {result && (
@@ -2120,24 +2152,39 @@ function MobSavePanel({monster}){
 
   return (
     <div className="mob-attack">
-      <div className="section-label"><Icon name="scroll" size={14} style={{color:'var(--parchment-faint)'}}/><span>Mob Save (area effect against the mob)</span></div>
-      <div className="mob-attack-row">
-        <select className="text-input" style={{width:80}} value={ability} onChange={e=>setAbility(e.target.value)} title="Which saving throw the mob is making">
-          {SAVE_ABILITIES.map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
-        </select>
-        <span className="mob-attack-vs">save, DC</span>
-        <input className="text-input" style={{width:52}} type="number" value={dc} onChange={e=>setDc(e.target.value)} title="Save DC of the effect"/>
-        <input className="text-input" style={{flex:1, minWidth:70}} value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="Damage, e.g. 8d6" title="Damage formula of the area effect"/>
-        <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on the mob's save"/>
+      <div className="section-label"><Icon name="scroll" size={14} style={{color:'var(--parchment-faint)'}}/><span>Mob Save</span></div>
+      <p className="mob-attack-subtitle">Area effect against the mob</p>
+      <div className="mob-attack-grid">
+        <div className="mob-attack-field">
+          <label>Ability</label>
+          <select className="text-input" value={ability} onChange={e=>setAbility(e.target.value)} title="Which saving throw the mob is making">
+            {SAVE_ABILITIES.map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
+          </select>
+        </div>
+        <div className="mob-attack-field">
+          <label>Save DC</label>
+          <input className="text-input" type="number" value={dc} onChange={e=>setDc(e.target.value)} title="Save DC of the effect"/>
+        </div>
+        <div className="mob-attack-field">
+          <label>Roll</label>
+          <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on the mob's save"/>
+        </div>
+        <div className="mob-attack-field wide">
+          <label>Damage</label>
+          <input className="text-input" value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="e.g. 8d6" title="Damage formula of the area effect"/>
+        </div>
+        <div className="mob-attack-field wide">
+          <label>Caught in the effect</label>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            <input className="text-input" style={{width:56}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)} title="How many of the mob are actually caught in the area — not every member of a mob is necessarily inside a given blast"/>
+            <span className="mob-attack-vs">of {mobSize} in the mob</span>
+            {affected !== mobSize && (
+              <button type="button" className="icon-btn" onClick={()=>setAffectedCount(String(mobSize))} title="Reset to the mob's full headcount"><Icon name="reset" size={13}/></button>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="mob-attack-row">
-        <input className="text-input" style={{width:52}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)} title="How many of the mob are actually caught in the area — not every member of a mob is necessarily inside a given blast"/>
-        <span className="mob-attack-vs">of {mobSize} caught in the effect</span>
-        {affected !== mobSize && (
-          <button type="button" className="icon-btn" onClick={()=>setAffectedCount(String(mobSize))} title="Reset to the mob's full headcount"><Icon name="reset" size={13}/></button>
-        )}
-      </div>
-      <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer'}}>
+      <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer', marginTop:10}}>
         <input type="checkbox" checked={halfOnSave} onChange={e=>setHalfOnSave(e.target.checked)}/>
         Half damage on a successful save
       </label>
@@ -2169,10 +2216,10 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
   }
 
   return (
-    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")}>
+    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")} onClick={onToggleExpand} title={expanded ? 'Click to collapse' : 'Click to expand'}>
       <div className="corner corner-tl" style={{'--c':cornerColor}}/><div className="corner corner-tr" style={{'--c':cornerColor}}/>
       <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
-      <div className="mcard-head" onClick={onToggleExpand}>
+      <div className="mcard-head">
         <div className="mcard-head-top">
           <Icon name="chevron" size={16} className={"chevron" + (expanded ? " open" : "")}/>
           <p className="mcard-name">{monster.name}</p>
@@ -2226,9 +2273,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
       </div>
 
       {expanded && (
-        <div className="mcard-body">
-          {monster.isMob && party.length > 0 && <MobAttackPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
-          {monster.isMob && <MobSavePanel monster={monster}/>}
+        <div className="mcard-body" onClick={e=>e.stopPropagation()}>
           <div className="hp-exact-row">
             <span className="hp-exact-label">HP</span>
             <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
@@ -2259,6 +2304,9 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
               )}
             </div>
           )}
+
+          {monster.isMob && party.length > 0 && <MobAttackPanel monster={monster} party={party} onDamageParty={onDamageParty}/>}
+          {monster.isMob && <MobSavePanel monster={monster}/>}
 
           <div className="posture-row">
             {['A','B','C'].map(key=>{
@@ -2778,8 +2826,9 @@ function HowToUseSection(){
     {
       title: 'Monster Cards',
       body: [
-        'AC, Speed, and Initiative are editable directly in the card header. CR shows right next to the base type when known. A "Multiattack" badge appears only when the monster actually has a named Multiattack action — not just because it has more than one attack listed — and both the badge\'s tooltip and a line under Attacks spell out exactly which attacks it strings together (e.g. "makes two Rend attacks"). Senses and movement modes (Darkvision, Flyer, etc.) show right under the name; other passive traits sit in a callout further down when expanded.',
-        'Expand a card to see its full stat block: abilities, resistances/vulnerabilities/immunities (each gets its own callout), the three Postures (click A/B/C to switch which one is active), Attacks, Spells (if it\'s a spellcaster), traits, and any matching Trait Trigger. The Reaction Cue is generated from the monster\'s own attacks and passives, not a generic placeholder. On Posture C specifically, a "Right now" box shows the encounter\'s current Win Condition and Hazard/Clock live — it updates automatically whenever those axes change.',
+        'Click anywhere on a card to expand or collapse it — not just the chevron — except the AC/Speed/skull/trash controls in the header and anything inside the expanded body, which stay clickable without toggling the card shut.',
+        'AC, Speed, and Initiative are editable directly in the card header. CR shows right next to the base type when known. A "Multiattack" badge appears only when the monster actually has a named Multiattack action — not just because it has more than one attack listed — and both the badge\'s tooltip and a line under Attacks spell out exactly which attacks it strings together (e.g. "makes two Rend attacks"). Senses and movement modes (Darkvision, Flyer, etc.) show right under the name; other passive traits sit in a callout further down when expanded. Every condition chip (active or in the add-picker) has a tooltip explaining what that condition actually does mechanically.',
+        'Expand a card to see its full stat block, in order: exact HP, abilities, resistances/vulnerabilities/immunities (each gets its own callout), then — for a mob — the Mob Attack and Mob Save panels, then the three Postures (click A/B/C to switch which one is active), Attacks, Spells (if it\'s a spellcaster), traits, and any matching Trait Trigger. The Reaction Cue is generated from the monster\'s own attacks and passives, not a generic placeholder. On Posture C specifically, a "Right now" box shows the encounter\'s current Win Condition and Hazard/Clock live — it updates automatically whenever those axes change.',
         'The skull button toggles defeated (fades the card); the trash button removes it from the fight entirely. Monsters pulled from the compendium or Browse Compendium carry their CR along automatically, which feeds the Difficulty reading in the Round Tracker.',
       ],
     },
