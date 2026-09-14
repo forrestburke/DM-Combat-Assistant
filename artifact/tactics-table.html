@@ -82,8 +82,9 @@
   .shell{max-width:1360px; margin:0 auto; padding:1px 20px 40px;}
   .topbar{
     position:sticky; top:0; z-index:20;
-    background:linear-gradient(var(--ink), var(--ink) 80%, transparent);
-    border-bottom:1px solid var(--line-soft);
+    background:var(--ink);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 10px 24px -12px rgba(0,0,0,.6);
     padding:16px 20px 14px;
   }
   .topbar-inner{max-width:1360px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
@@ -331,6 +332,24 @@
   .spell-freq{color:var(--parchment-dim); font-weight:600; flex-shrink:0; font-size:11.5px; white-space:nowrap;}
   .spell-names{color:var(--parchment);}
   .multiattack-badge{font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--blood-text); background:var(--blood-soft); border:1px solid rgba(178,60,55,.4); border-radius:20px; padding:2px 7px; margin-left:2px;}
+  .mob-count-badge{font-size:11px; font-weight:700; color:var(--amber-text); background:var(--amber-soft); border:1px solid rgba(255,182,39,.35); border-radius:20px; padding:1px 7px; flex-shrink:0;}
+  .mob-count-row{display:flex; align-items:center; gap:8px;}
+  .mob-count-label{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
+  .mob-count-row .init-input{width:44px;}
+  .mob-attack{margin-top:16px; padding:14px; border-top:1px solid var(--line-soft); background:var(--panel-raised); border-radius:4px;}
+  .mob-attack + .mob-attack{margin-top:14px; border-top:none;}
+  .mob-attack-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(96px,1fr)); gap:10px 12px; margin-top:10px;}
+  .mob-attack-field{display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .mob-attack-field.wide{grid-column:1 / -1;}
+  .mob-attack-field label{font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--parchment-faint);}
+  .mob-attack-subtitle{font-size:11.5px; font-weight:400; color:var(--parchment-faint); margin:-2px 0 0;}
+  .mob-attack-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .mob-attack-static{font-size:13px; color:var(--parchment); padding:7px 0;}
+  .mob-attack-vs{font-size:11.5px; color:var(--parchment-faint); flex-shrink:0; white-space:nowrap;}
+  .mob-attack-hint{font-size:12px; color:var(--parchment-dim); margin:12px 0 0; line-height:1.5;}
+  .mob-attack-result{font-size:12.5px; color:var(--parchment); font-weight:600;}
+  .mob-tool-header{cursor:pointer; user-select:none; margin-bottom:0;}
+  .mob-tool-header:hover span{color:var(--parchment);}
 
   .callout{display:flex; align-items:flex-start; gap:6px; margin-top:11px;}
   .callout p{font-size:12.5px; line-height:1.5; color:var(--parchment-dim); margin:0;}
@@ -589,6 +608,92 @@ function parseInt10(raw, field, context){
 }
 function parseList(raw){ return raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : []; }
 const defaultAbilityScores = {str:10,dex:10,con:10,int:10,wis:10,cha:10};
+/* ---------- encounter difficulty rating (SRD-style XP-budget math) ---------- */
+const CR_TO_XP = {0:10,0.125:25,0.25:50,0.5:100,1:200,2:450,3:700,4:1100,5:1800,6:2300,7:2900,8:3900,9:5000,10:5900,
+  11:7200,12:8400,13:10000,14:11500,15:13000,16:15000,17:18000,18:20000,19:22000,20:25000,21:33000,22:41000,
+  23:50000,24:62000,25:75000,26:90000,27:105000,28:120000,29:135000,30:155000};
+const XP_THRESHOLDS = {
+  1:[25,50,75,100], 2:[50,100,150,200], 3:[75,150,225,400], 4:[125,250,375,500],
+  5:[250,500,750,1100], 6:[300,600,900,1400], 7:[350,750,1100,1700], 8:[450,900,1400,2100],
+  9:[550,1100,1600,2400], 10:[600,1200,1900,2800], 11:[800,1600,2400,3600], 12:[1000,2000,3000,4500],
+  13:[1100,2200,3400,5100], 14:[1250,2500,3800,5700], 15:[1400,2800,4300,6400], 16:[1600,3200,4800,7200],
+  17:[2000,3900,5900,8800], 18:[2100,4200,6300,9500], 19:[2400,4900,7300,10900], 20:[2800,5700,8500,12700],
+};
+function parseCr(raw){
+  const s = String(raw).trim();
+  if(s.includes('/')){ const [n,d] = s.split('/').map(Number); return d ? n/d : undefined; }
+  const n = Number(s);
+  return Number.isNaN(n) ? undefined : n;
+}
+function monsterCountMultiplier(count){
+  if(count <= 1) return 1; if(count === 2) return 1.5;
+  if(count <= 6) return 2; if(count <= 10) return 2.5;
+  if(count <= 14) return 3; return 4;
+}
+function computeEncounterDifficulty(party, monsters){
+  const livingParty = (party||[]).filter(p=>p.hpCurrent > 0);
+  const livingMonsters = (monsters||[]).filter(m=>!m.isDefeated);
+  if(livingParty.length === 0 || livingMonsters.length === 0) return null;
+  const thresholds = [0,0,0,0];
+  for(const p of livingParty){ const t = XP_THRESHOLDS[Math.max(1, Math.min(20, p.level ?? 1))]; for(let i=0;i<4;i++) thresholds[i] += t[i]; }
+  const knownMonsters = livingMonsters.filter(m=>m.cr != null && CR_TO_XP[m.cr] != null);
+  if(knownMonsters.length === 0) return {tier:'Unknown', reason:'No CR data on the monsters in this fight.'};
+  const rawXp = knownMonsters.reduce((sum,m)=>sum + CR_TO_XP[m.cr], 0);
+  const adjustedXp = Math.round(rawXp * monsterCountMultiplier(knownMonsters.length));
+  const [easy, medium, hard, deadly] = thresholds;
+  let tier = 'Trivial';
+  if(adjustedXp >= deadly) tier = 'Deadly'; else if(adjustedXp >= hard) tier = 'Hard';
+  else if(adjustedXp >= medium) tier = 'Medium'; else if(adjustedXp >= easy) tier = 'Easy';
+  return { tier, adjustedXp, rawXp, thresholds:{easy,medium,hard,deadly}, unknownCount: livingMonsters.length - knownMonsters.length };
+}
+const DIFFICULTY_COLOR = { Trivial:'var(--moss)', Easy:'var(--moss)', Medium:'var(--amber)', Hard:'var(--blood)', Deadly:'var(--blood)', Unknown:'var(--parchment-faint)' };
+
+/* ---------- mob tools: statistical resolver ---------- */
+function averageDiceFormula(formula){
+  let total = 0, matched = false;
+  const re = /(\d+)d(\d+)([+-]\d+)?/g; let m;
+  while((m = re.exec(formula))){ matched = true; total += Number(m[1]) * (Number(m[2])+1)/2 + (m[3]?Number(m[3]):0); }
+  if(!matched){ const flat = String(formula).match(/(\d+)/); if(flat) total = Number(flat[1]); }
+  return total;
+}
+function toHitBonus(formula){ const m = String(formula).match(/1d20\s*([+-]\d+)/i); return m ? Number(m[1]) : 0; }
+function abilityScoreMod(score){ return Math.floor((score-10)/2); }
+const ROLL_MODES = [['normal','Normal'],['advantage','Advantage'],['disadvantage','Disadvantage']];
+function rollProbability(mode, succeedsOnDie){
+  if(mode !== 'advantage' && mode !== 'disadvantage'){
+    let count = 0; for(let roll=1; roll<=20; roll++) if(succeedsOnDie(roll)) count++; return count/20;
+  }
+  let count = 0;
+  for(let a=1; a<=20; a++) for(let b=1; b<=20; b++){ const chosen = mode==='advantage' ? Math.max(a,b) : Math.min(a,b); if(succeedsOnDie(chosen)) count++; }
+  return count/400;
+}
+function hitProbability(toHit, targetAc, mode='normal'){ return rollProbability(mode, roll => roll===20 || (roll!==1 && roll+toHit>=targetAc)); }
+function saveProbability(saveMod, dc, mode='normal'){ return rollProbability(mode, roll => roll+saveMod>=dc); }
+function resolveMobAttack(mobCount, toHit, targetAc, damageFormula, mode='normal'){
+  const neededRoll = Math.max(2, Math.min(20, targetAc - toHit));
+  const hits = Math.round(mobCount * hitProbability(toHit, targetAc, mode));
+  const totalDamage = Math.round(hits * averageDiceFormula(damageFormula));
+  return { hits, totalDamage, neededRoll };
+}
+function resolveMobSave(mobCount, saveMod, dc, damageFormula, halfOnSave, mode='normal'){
+  const successChance = saveProbability(saveMod, dc, mode);
+  const numSucceed = Math.round(mobCount * successChance);
+  const numFail = mobCount - numSucceed;
+  const failDmg = averageDiceFormula(damageFormula);
+  const succeedDmg = halfOnSave ? Math.floor(failDmg/2) : 0;
+  const totalDamage = Math.round(numFail*failDmg + numSucceed*succeedDmg);
+  return { numFail, numSucceed, totalDamage, failDmg, succeedDmg };
+}
+function mobHpPoolTotal(monster){ return monster.mobHpPool ?? ((monster.mobCount||0) * (monster.hpMax||0)); }
+function applyMobPoolDamage(monster, damage, onSetStats){
+  const hpEach = monster.hpMax || 0; const before = monster.mobCount || 0;
+  const poolBefore = mobHpPoolTotal(monster);
+  const poolAfter = Math.max(0, poolBefore - Math.max(0, damage));
+  const after = hpEach > 0 ? Math.min(before, Math.ceil(poolAfter / hpEach)) : 0;
+  onSetStats(monster.id, {mobHpPool: poolAfter, mobCount: after});
+  return {killed: before - after, poolAfter};
+}
+
 const validStyles = ['brute','skirmisher','pack','mindless','ambusher','leader'];
 function parseAbilityScores(raw, context){
   if(!raw) return {...defaultAbilityScores};
@@ -1822,7 +1927,197 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
   );
 }
 
-function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onReset, onRemoveMonster, onToggleTeam}){
+function DifficultyStat({party, monsters}){
+  const result = React.useMemo(()=>computeEncounterDifficulty(party, monsters), [party, monsters]);
+  if(!result) return null;
+  const tooltip = result.tier === 'Unknown' ? result.reason :
+    `Adjusted XP vs. budget: ${result.adjustedXp.toLocaleString()} XP (multi-monster multiplier applied). `+
+    `Thresholds — Easy ${result.thresholds.easy.toLocaleString()} · Medium ${result.thresholds.medium.toLocaleString()} · Hard ${result.thresholds.hard.toLocaleString()} · Deadly ${result.thresholds.deadly.toLocaleString()}.`+
+    (result.unknownCount ? ` (${result.unknownCount} monster${result.unknownCount>1?'s':''} without CR excluded.)` : '');
+  return (
+    <React.Fragment>
+      <div className="stat-divider"/>
+      <div title={tooltip}><p className="stat-label">Difficulty</p><p className="stat-value" style={{color:DIFFICULTY_COLOR[result.tier]}}>{result.tier}</p></div>
+    </React.Fragment>
+  );
+}
+function RollModeSelect({value, onChange, title}){
+  return (
+    <select className="text-input" style={{width:112, flexShrink:0}} value={value} onChange={e=>onChange(e.target.value)} title={title}>
+      {ROLL_MODES.map(([v,label])=><option key={v} value={v}>{label}</option>)}
+    </select>
+  );
+}
+function MobToolHeader({open, onToggle, icon, title, subtitle}){
+  return (
+    <React.Fragment>
+      <div className="section-label mob-tool-header" onClick={onToggle}>
+        <Icon name="chevron" size={13} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
+        <Icon name={icon} size={14} style={{color:'var(--parchment-faint)'}}/><span>{title}</span>
+      </div>
+      {subtitle && <p className="mob-attack-subtitle">{subtitle}</p>}
+    </React.Fragment>
+  );
+}
+function AttackRollPanel({monster, party, onDamageParty, onSetStats}){
+  const meleeOrRanged = monster.attacks.filter(a=>a.type==='Melee' || a.type==='Ranged');
+  const [direction, setDirection] = React.useState('mobToPc');
+  const [open, setOpen] = React.useState(true);
+  const [mode, setMode] = React.useState('normal');
+  const [result, setResult] = React.useState(null);
+  const [attackName, setAttackName] = React.useState(meleeOrRanged[0]?.name || '');
+  const [targetId, setTargetId] = React.useState(party[0]?.id || '');
+  const [targetAcOverride, setTargetAcOverride] = React.useState('');
+  const [damageDealt, setDamageDealt] = React.useState('');
+  const [logResult, setLogResult] = React.useState(null);
+  const isMobToPc = direction === 'mobToPc';
+  const attack = meleeOrRanged.find(a=>a.name===attackName) || meleeOrRanged[0];
+  const target = party.find(p=>p.id===targetId);
+  const attackerCount = monster.mobCount || 1;
+  const bonus = attack ? toHitBonus(attack.formula) : 0;
+  const ac = targetAcOverride.trim() !== '' ? Number(targetAcOverride) : (target ? target.ac : 15);
+  const neededRoll = Math.max(2, Math.min(20, ac - bonus));
+  const pool = mobHpPoolTotal(monster);
+  function switchDirection(next){ setDirection(next); setResult(null); setLogResult(null); }
+  function resolve(){ if(!attack) return; setResult(resolveMobAttack(attackerCount, bonus, ac, attack.damage, mode)); }
+  function applyToTarget(){ if(!result || !target) return; onDamageParty(target.id, -result.totalDamage); setResult(null); }
+  function logDamage(){ const dmg = Number(damageDealt); if(!dmg || dmg<=0) return; setLogResult(applyMobPoolDamage(monster, dmg, onSetStats)); setDamageDealt(''); }
+  return (
+    <div className="mob-attack">
+      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="swords" title="Attack Roll"/>
+      {open && (
+        <React.Fragment>
+          <div className="tab-row" style={{marginBottom:0}}>
+            <button className={"tab-btn"+(isMobToPc?' active':'')} onClick={()=>switchDirection('mobToPc')} title="The mob attacks a party member">Mob → PC</button>
+            <button className={"tab-btn"+(!isMobToPc?' active':'')} onClick={()=>switchDirection('pcToMob')} title="A PC attacks a monster in the mob">PC → Mob</button>
+          </div>
+          {isMobToPc ? (
+            meleeOrRanged.length === 0 ? <p className="mob-attack-hint">This monster has no Melee or Ranged attack to use here.</p> : (
+              <React.Fragment>
+                <div className="mob-attack-grid">
+                  <div className="mob-attack-field">
+                    <label>Attack</label>
+                    {meleeOrRanged.length > 1 ? (
+                      <select className="text-input" value={attackName} onChange={e=>setAttackName(e.target.value)}>
+                        {meleeOrRanged.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
+                      </select>
+                    ) : <span className="mob-attack-static">{attack.name}</span>}
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Target</label>
+                    <select className="text-input" value={targetId} onChange={e=>{ setTargetId(e.target.value); setTargetAcOverride(''); }}>
+                      {party.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Target AC</label>
+                    <input className="text-input" type="number" value={targetAcOverride.trim()!==''?targetAcOverride:ac} onChange={e=>setTargetAcOverride(e.target.value)}/>
+                  </div>
+                  <div className="mob-attack-field">
+                    <label>Roll</label>
+                    <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on every attacker's roll"/>
+                  </div>
+                </div>
+                <p className="mob-attack-hint">{attackerCount} attackers, to-hit {bonus>=0?'+':''}{bonus} vs AC {ac} — needs a {neededRoll}+ to hit.</p>
+                <div className="mob-attack-row">
+                  <button className="btn btn-blood" onClick={resolve}><Icon name="sparkles" size={14}/>Resolve Mob Attack</button>
+                  {result && (
+                    <React.Fragment>
+                      <span className="mob-attack-result">{result.hits} of {attackerCount} hit (avg) · {result.totalDamage} damage</span>
+                      <button className="btn btn-arcane" onClick={applyToTarget} disabled={!target}>Apply to {target?.name}</button>
+                    </React.Fragment>
+                  )}
+                </div>
+              </React.Fragment>
+            )
+          ) : (
+            <React.Fragment>
+              <p className="mob-attack-hint">Players roll their own attack against AC {monster.ac} as normal. Log damage from a hit here — it comes out of the mob's shared HP pool ({pool} pooled HP across {monster.mobCount||0} monsters, {monster.hpMax||'?'} HP each).</p>
+              <div className="mob-attack-row">
+                <div className="mob-attack-field" style={{flex:'0 0 auto'}}>
+                  <label>Damage Dealt</label>
+                  <input className="text-input" style={{width:80}} type="number" value={damageDealt} onChange={e=>setDamageDealt(e.target.value)}/>
+                </div>
+                <button className="btn btn-blood" onClick={logDamage} disabled={!damageDealt} style={{alignSelf:'flex-end'}}><Icon name="skull" size={14}/>Log Damage</button>
+              </div>
+              {logResult && <p className="mob-attack-hint">{logResult.killed>0 ? `${logResult.killed} dropped — ` : 'No one dropped — '}{logResult.poolAfter} pooled HP left, {monster.mobCount||0} still alive.</p>}
+            </React.Fragment>
+          )}
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+const SAVE_ABILITIES = ['str','dex','con','int','wis','cha'];
+function MobSavePanel({monster, onSetStats}){
+  const [ability, setAbility] = React.useState('dex');
+  const [dc, setDc] = React.useState('15');
+  const [damageFormula, setDamageFormula] = React.useState('');
+  const [halfOnSave, setHalfOnSave] = React.useState(true);
+  const [mode, setMode] = React.useState('normal');
+  const [affectedCount, setAffectedCount] = React.useState(String(monster.mobCount || 1));
+  const [result, setResult] = React.useState(null);
+  const [open, setOpen] = React.useState(true);
+  const score = monster.abilityScores?.[ability] ?? 10;
+  const mod = abilityScoreMod(score);
+  const dcNum = Number(dc) || 0;
+  const mobSize = monster.mobCount || 0;
+  const affected = Math.max(0, Math.min(mobSize, Number(affectedCount) || 0));
+  function resolve(){ if(!damageFormula.trim() || affected <= 0) return; setResult(resolveMobSave(affected, mod, dcNum, damageFormula, halfOnSave, mode)); }
+  function applyResult(){ if(!result) return; applyMobPoolDamage(monster, result.totalDamage, onSetStats); setResult(null); }
+  return (
+    <div className="mob-attack">
+      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="scroll" title="Mob Save" subtitle="Area effect against the mob"/>
+      {open && (
+        <React.Fragment>
+          <div className="mob-attack-grid">
+            <div className="mob-attack-field">
+              <label>Ability</label>
+              <select className="text-input" value={ability} onChange={e=>setAbility(e.target.value)}>
+                {SAVE_ABILITIES.map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div className="mob-attack-field">
+              <label>Save DC</label>
+              <input className="text-input" type="number" value={dc} onChange={e=>setDc(e.target.value)}/>
+            </div>
+            <div className="mob-attack-field">
+              <label>Roll</label>
+              <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on the mob's save"/>
+            </div>
+            <div className="mob-attack-field wide">
+              <label>Damage</label>
+              <input className="text-input" value={damageFormula} onChange={e=>setDamageFormula(e.target.value)} placeholder="e.g. 8d6"/>
+            </div>
+            <div className="mob-attack-field wide">
+              <label>Caught in the effect</label>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <input className="text-input" style={{width:56}} type="number" value={affectedCount} onChange={e=>setAffectedCount(e.target.value)}/>
+                <span className="mob-attack-vs">of {mobSize} in the mob</span>
+                {affected !== mobSize && <button type="button" className="icon-btn" onClick={()=>setAffectedCount(String(mobSize))} title="Reset to full mob"><Icon name="reset" size={13}/></button>}
+              </div>
+            </div>
+          </div>
+          <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer', marginTop:10}}>
+            <input type="checkbox" checked={halfOnSave} onChange={e=>setHalfOnSave(e.target.checked)}/>
+            Half damage on a successful save
+          </label>
+          <p className="mob-attack-hint">{affected} caught in it, {ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod} vs DC {dcNum||'—'}.</p>
+          <div className="mob-attack-row">
+            <button className="btn btn-blood" onClick={resolve} disabled={!damageFormula.trim() || affected<=0}><Icon name="sparkles" size={14}/>Resolve Mob Save</button>
+            {result && (
+              <React.Fragment>
+                <span className="mob-attack-result">{result.numFail} fail ({Math.round(result.failDmg)} dmg each) · {result.numSucceed} succeed ({Math.round(result.succeedDmg)} dmg each) · {result.totalDamage} total</span>
+                <button className="btn btn-arcane" onClick={applyResult}><Icon name="skull" size={14}/>Apply</button>
+              </React.Fragment>
+            )}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+function RoundTracker({round, order, party, onNextTurn, onPrevTurn, onPrevRound, onNextRound, onReset, onRemoveMonster, onToggleTeam}){
   const active = order.find(c=>c.id===round.activeCombatantId) ?? order[0];
   return (
     <div className="roundbar">
@@ -1831,10 +2126,12 @@ function RoundTracker({round, order, onNextTurn, onPrevRound, onNextRound, onRes
           <div><p className="stat-label">Round</p><p className="stat-value mono">{round.roundNumber}</p></div>
           <div className="stat-divider"/>
           <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
+          <DifficultyStat party={party} monsters={round.monsters}/>
         </div>
         <div className="roundbar-actions">
           <button className="btn" onClick={onReset}><Icon name="reset" size={15}/>Reset</button>
           <button className="btn" onClick={onPrevRound}><Icon name="chevron" size={15} style={{transform:'scaleX(-1)'}}/>Previous Round</button>
+          <button className="btn" onClick={onPrevTurn}><Icon name="chevron" size={15} style={{transform:'scaleX(-1)'}}/>Previous Turn</button>
           <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={15}/>Next Turn</button>
           <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={15}/>Next Round</button>
         </div>
@@ -1899,7 +2196,7 @@ function AbilityRow({monster}){
   );
 }
 
-function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, onToggleTeam, traitTriggers, axes, onToggleCondition}){
+function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, onToggleTeam, traitTriggers, axes, onToggleCondition, party, onDamageParty}){
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
   const isAlly = monster.team === 'ally';
@@ -1961,17 +2258,24 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
       </div>
 
       <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
-        <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>
+        {monster.isMob ? (
+          <div className="mob-count-row">
+            <span className="mob-count-label">Still alive</span>
+            <button className="stepper" onClick={()=>{ const n=Math.max(0,(monster.mobCount||1)-1); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Decrease mob size">−</button>
+            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>{ const n=Math.max(0, Number(e.target.value)||0); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label={`${monster.name} mob size`}/>
+            <button className="stepper" onClick={()=>{ const n=(monster.mobCount||1)+1; onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Increase mob size">+</button>
+          </div>
+        ) : <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>}
         <div className="mcard-meta-row">
           <label className="init-label" title="Initiative">
             <span>Init</span>
             <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
           </label>
-          <label className="init-label wide" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
+          {!monster.isMob && <label className="init-label wide" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
             <span>HP Adjust</span>
             <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
-          </label>
+          </label>}
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
         </div>
         <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
@@ -2009,6 +2313,9 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
               )}
             </div>
           )}
+
+          {monster.isMob && party && party.length > 0 && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
+          {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
 
           {isAlly && (
             <div className="ally-banner">
@@ -2479,7 +2786,8 @@ function HowToUseSection(){
     {
       title: 'Party & Round Tracker',
       body: [
-        '"Add PC" adds a party member with AC/HP/role. The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Next Round" jumps straight to a new round, "Previous Round" steps back one, and "Reset" returns to round 1.',
+        '"Add PC" adds a party member with AC/HP/role. Set each PC\'s level so the Encounter Difficulty rating (shown in the round tracker header) can calculate XP thresholds — it displays Easy / Medium / Hard / Deadly based on the party\'s combined thresholds vs. the monsters\' adjusted XP.',
+        'The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Previous Turn" steps back one combatant (or to the previous round\'s last combatant), "Next Round" jumps straight to a new round, "Previous Round" steps back a full round, and "Reset" returns to round 1.',
         'Each combatant has a typeable HP delta box — type a negative number to damage, a positive number to heal, no "+" needed, then press Enter or the checkmark.',
       ],
     },
@@ -2487,16 +2795,27 @@ function HowToUseSection(){
       title: 'Adding Monsters',
       body: [
         'Quick Add: type a name — it autocompletes against the local SRD compendium and anything you\'ve saved to My Monsters, autofilling AC/HP/Speed/attacks/posture. Qty adds multiples at once. "Manual stats" lets you override AC/HP/Speed on the spot.',
-        'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Only the core stat block (AC/HP/Speed/abilities/attacks) is required; Reaction Cue and the three Postures are optional and auto-generate from Style if left out. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block into this format using any AI chat you have access to.',
-        '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter, not just this one.',
+        'To add a group as a Mob (sharing one HP pool and resolved statistically), check "Mob rules" before adding — the card then shows a shared HP pool and the Mob Attack / Mob Save panels instead of individual HP tracking.',
+        'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block using any AI chat you have access to.',
+        '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter.',
       ],
     },
     {
       title: 'Monster Cards',
       body: [
-        'AC, Speed, and Initiative are editable directly in the card header. A "Multiattack" badge appears automatically whenever a monster has more than one listed attack. Senses and movement modes (Darkvision, Flyer, etc.) show right under the name; other passive traits sit in a callout further down when expanded.',
-        'Expand a card to see its full stat block: abilities, resistances/vulnerabilities, the three Postures (click A/B/C to switch which one is active), Attacks, Spells (if it\'s a spellcaster), traits, and any matching Trait Trigger. On Posture C specifically, a "Right now" box shows the encounter\'s current Win Condition and Hazard/Clock live — it updates automatically whenever those axes change.',
+        'AC, Speed, and Initiative are editable directly in the card header. Click the monster\'s name or type to edit them inline. A "Multiattack" badge appears automatically whenever a monster has more than one listed attack.',
+        'The colored dot next to an initiative chip indicates team — red for enemy, green for ally. Click it to switch a monster between enemy and ally. Allies show a green banner in their card and their chip turns green in the initiative strip; they also receive ally-specific tactic guidance.',
+        'Expand a card to see its full stat block: abilities, resistances/vulnerabilities, the three Postures (click A/B/C to switch), Attacks, Spells, traits, and any matching Trait Trigger. Posture C shows the current Win Condition and Hazard/Clock live.',
         'The skull button toggles defeated (fades the card); the trash button removes it from the fight entirely.',
+      ],
+    },
+    {
+      title: 'Mob Rules',
+      body: [
+        'When a monster is added as a Mob, its card shows a count stepper ("Still alive") instead of individual HP. Adjust the count manually with ± or type a number — the shared HP pool updates automatically.',
+        'Expand the card to access two statistical resolvers. "Mob Attack Roll" (Mob→PC direction) calculates how many hits land against a target PC\'s AC and sums the average damage across the whole group — set the attack\'s to-hit bonus, the target\'s AC, and roll mode (Normal / Advantage / Disadvantage). Flip to "PC→Mob" to log damage directly to the mob\'s shared HP pool and watch the surviving count update.',
+        '"Mob Save" resolves a saving throw across the group — set the ability modifier, DC, damage formula, whether half-damage applies on a success, and how many creatures are affected. The panel shows how many fail, how many succeed, and the total expected damage.',
+        'All mob math is statistical (no dice rolled), so results reflect the expected average outcome rather than a single random roll.',
       ],
     },
     {
@@ -2758,6 +3077,18 @@ function App(){
       return {...enc, round:{...enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
     });
   }
+  function prevTurn(){
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      if(order.length === 0) return enc;
+      const curIdx = order.findIndex(c=>c.id === enc.round.activeCombatantId);
+      const atStart = curIdx === -1 || curIdx === 0;
+      const prevIdx = atStart ? order.length - 1 : curIdx - 1;
+      const prev = order[prevIdx];
+      if(prev.kind === 'monster') expand(prev.id);
+      return {...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}};
+    });
+  }
   function nextRound(){
     updateActive(enc=>{
       const order = getTurnOrder(enc);
@@ -2812,7 +3143,7 @@ function App(){
           onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
           locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
           customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
-        <RoundTracker round={encounter.round} order={turnOrder} onNextTurn={nextTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam}/>
+        <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam}/>
         <div className="main-grid">
           <div className="stack">
             <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)}/>
@@ -2824,7 +3155,8 @@ function App(){
                 <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
                   expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
                   onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster} onSetStats={setMonsterStats} onToggleTeam={toggleMonsterTeam}
-                  traitTriggers={encounter.traitTriggers} axes={encounter.axes} onToggleCondition={(id,c)=>toggleCondition('monster', id, c)}/>
+                  traitTriggers={encounter.traitTriggers} axes={encounter.axes} onToggleCondition={(id,c)=>toggleCondition('monster', id, c)}
+                  party={encounter.party} onDamageParty={updatePartyHp}/>
               ))}
             </div>
           </div>
