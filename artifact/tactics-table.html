@@ -255,6 +255,9 @@
   .action-btn.defeat{ border-color:rgba(255,182,39,.35); }
   .action-btn.defeat:hover{ color:var(--amber-text); border-color:var(--amber); background:var(--amber-soft); }
   .action-btn.defeat.active{ background:var(--line-soft); border-color:var(--parchment-faint); color:var(--parchment); }
+  .action-btn.ally{ border-color:rgba(143,232,90,.35); }
+  .action-btn.ally:hover{ color:var(--moss); border-color:var(--moss); background:var(--moss-soft); }
+  .action-btn.ally.active{ background:var(--moss-soft); border-color:var(--moss); color:var(--moss); }
   .action-btn.remove{ border-color:rgba(255,77,74,.35); color:var(--blood-text); }
   .action-btn.remove:hover{ border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); box-shadow:var(--glow-blood); }
   .action-btn.apply{ width:30px; height:30px; border-color:rgba(46,230,201,.4); color:var(--arcane); }
@@ -2328,6 +2331,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
                 <span style={{color:'var(--parchment-faint)'}}>ft</span>
               </span>
             </span>
+            <button className={"action-btn ally"+(isAlly?" active":"")} onClick={()=>onToggleTeam(monster.id)} aria-label={isAlly ? `Mark ${monster.name} as enemy` : `Mark ${monster.name} as ally`} title={isAlly ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}><Icon name="userplus" size={17}/></button>
             <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
             <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
           </div>
@@ -2399,11 +2403,6 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <div className="ally-banner">
               <span style={{fontSize:16}}>🤝</span>
               <span><b>Allied combatant</b> — postures below describe tactics against enemies, not the party.</span>
-              <button
-                className="btn"
-                style={{marginLeft:'auto', fontSize:11, padding:'2px 8px'}}
-                onClick={()=>onToggleTeam(monster.id)}
-              >Mark as enemy</button>
             </div>
           )}
           <div className="posture-row">
@@ -2949,7 +2948,7 @@ function HowToUseSection(){
       title: 'Monster Cards',
       body: [
         'Click anywhere on a card to expand or collapse it — not just the chevron — except the header\'s AC/Speed/skull/trash controls and anything inside the expanded body, which stay clickable without toggling the card shut. AC, Speed, and Initiative are editable directly in the card header, and the monster\'s name and type are editable inline too. A "Multiattack" badge appears only when the monster actually has a named Multiattack action — not just because it has more than one attack listed — and expanding the card shows the exact breakdown (e.g. "3 attacks · 1× Bite + 2× Claws") under Attacks.',
-        'Every monster has a team — enemy (red) or ally (green). Click the colored dot next to its initiative chip to toggle between them. Alternatively, expand the monster\'s card: allies show a green "Allied combatant" banner with a "Mark as enemy" button. Ally chips appear green in the initiative strip, ally cards show a green Ally badge in the header, and ally XP is excluded from the Encounter Difficulty calculation. Tactic postures describe how the creature behaves against enemies, not the party.',
+        'Every monster has a team — enemy (red) or ally (green). Click the handshake icon in a card\'s header to toggle between them, or click the colored dot next to its initiative chip. Ally chips appear green in the initiative strip, ally cards show a green Ally badge and an "Allied combatant" banner when expanded, and ally XP is excluded from the Encounter Difficulty calculation. Tactic postures describe how the creature behaves against enemies, not the party.',
         'Expand a card to see its full stat block: abilities, resistances/vulnerabilities, the three Postures (click A/B/C to switch), Attacks, Spells, traits, and any matching Trait Trigger. Posture C shows the current Win Condition and Hazard/Clock live.',
         'The skull button toggles defeated (fades the card); the trash button removes it from the fight entirely.',
       ],
