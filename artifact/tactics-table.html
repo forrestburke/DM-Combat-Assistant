@@ -5,6 +5,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 
 <style>
   :root{
@@ -420,6 +423,102 @@
 <script type="text/babel" data-presets="react">
 const {useState, useEffect, useMemo, useRef} = React;
 
+/* ---------- cloud sync (Firebase) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBgdSBkQkfT20hVRGmvYJO4Nyzbcn6LAS8",
+  authDomain: "tactics-table.firebaseapp.com",
+  projectId: "tactics-table",
+  storageBucket: "tactics-table.firebasestorage.app",
+  messagingSenderId: "897948562479",
+  appId: "1:897948562479:web:5feab3fe575317120202da",
+};
+let fbAuth = null, fbDb = null;
+try{
+  const fbApp = firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth(fbApp);
+  fbDb = firebase.firestore(fbApp);
+}catch(e){ console.error('Firebase failed to initialize', e); }
+
+const SYNC_EMAIL_KEY = 'tactics-table-sync-email';
+const SIGN_IN_ACTION_SETTINGS = () => ({ url: window.location.href.split('?')[0], handleCodeInApp: true });
+
+/**
+ * Cloud sync via Firebase: email-link sign-in + one Firestore document per user
+ * holding the whole local data blob. Local storage stays as the offline cache —
+ * this hook layers cloud persistence on top rather than replacing it.
+ */
+function useCloudSync(blob, onRemoteBlob){
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [linkSent, setLinkSent] = useState(false);
+  const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
+  const [error, setError] = useState(null);
+  const skipNextWrite = useRef(false);
+
+  // Complete an email-link sign-in if we just arrived via the link in the email.
+  useEffect(()=>{
+    if(!fbAuth) { setAuthLoading(false); return; }
+    (async () => {
+      if(fbAuth.isSignInWithEmailLink(window.location.href)){
+        let email = null;
+        try{ email = window.localStorage.getItem(SYNC_EMAIL_KEY); }catch(e){}
+        if(!email) email = window.prompt('Confirm your email to finish signing in:');
+        if(email){
+          try{
+            await fbAuth.signInWithEmailLink(email, window.location.href);
+            try{ window.localStorage.removeItem(SYNC_EMAIL_KEY); }catch(e){}
+            const url = new URL(window.location.href);
+            url.search = ''; window.history.replaceState({}, '', url.toString());
+          }catch(e){ setError(e.message || 'That sign-in link is invalid or expired.'); }
+        }
+      }
+    })();
+    const unsub = fbAuth.onAuthStateChanged(u => { setUser(u); setAuthLoading(false); });
+    return unsub;
+  }, []);
+
+  // Live-listen to this user's cloud document once signed in.
+  useEffect(()=>{
+    if(!fbDb || !user) return;
+    setSyncState('syncing');
+    const ref = fbDb.collection('users').doc(user.uid);
+    const unsub = ref.onSnapshot(snap => {
+      if(snap.metadata.hasPendingWrites) return; // ignore the echo of our own writes
+      if(snap.exists){
+        skipNextWrite.current = true;
+        onRemoteBlob(snap.data().blob);
+      }
+      setSyncState('synced');
+    }, e => { setError(e.message); setSyncState('error'); });
+    return unsub;
+  }, [user?.uid]);
+
+  // Push local changes up (debounced), skipping the write that was just caused by a remote update.
+  useEffect(()=>{
+    if(!fbDb || !user) return;
+    if(skipNextWrite.current){ skipNextWrite.current = false; return; }
+    setSyncState('syncing');
+    const t = setTimeout(() => {
+      fbDb.collection('users').doc(user.uid).set({ blob, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true})
+        .then(()=>setSyncState('synced'))
+        .catch(e=>{ setError(e.message); setSyncState('error'); });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [blob, user?.uid]);
+
+  async function sendSignInLink(email){
+    if(!fbAuth) return;
+    try{
+      await fbAuth.sendSignInLinkToEmail(email, SIGN_IN_ACTION_SETTINGS());
+      try{ window.localStorage.setItem(SYNC_EMAIL_KEY, email); }catch(e){}
+      setLinkSent(true); setError(null);
+    }catch(e){ setError(e.message || 'Could not send the sign-in link.'); }
+  }
+  function signOut(){ fbAuth?.signOut(); setLinkSent(false); }
+
+  return { user, authLoading, linkSent, syncState, error, sendSignInLink, signOut, available: !!fbAuth };
+}
+
 /* ---------- theme ---------- */
 const THEME_KEY = 'tactics-table-theme';
 function useTheme(){
@@ -473,6 +572,7 @@ function Icon({name, size=18, style, className}) {
     case 'sun': return <svg {...c}><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.5" y1="4.5" x2="6.2" y2="6.2"/><line x1="17.8" y1="17.8" x2="19.5" y2="19.5"/><line x1="4.5" y1="19.5" x2="6.2" y2="17.8"/><line x1="17.8" y1="6.2" x2="19.5" y2="4.5"/></svg>;
     case 'moon': return <svg {...c}><path d="M20 14.5 A8.5 8.5 0 1 1 9.5 4 A7 7 0 0 0 20 14.5 Z"/></svg>;
     case 'photo': return <svg {...c}><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M3 17 L9 12 L13 15 L16 12.5 L21 16.5"/></svg>;
+    case 'cloud': return <svg {...c}><path d="M7 18 A4.5 4.5 0 0 1 7.5 9.1 A6 6 0 0 1 19 10.5 A4 4 0 0 1 18.5 18 Z"/></svg>;
     default: return null;
   }
 }
@@ -3022,6 +3122,44 @@ function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDe
   );
 }
 
+function CloudSyncControl({cloud, open, onToggleOpen}){
+  const [email, setEmail] = useState('');
+  if(!cloud.available){
+    return <button className="icon-toggle" disabled title="Cloud sync unavailable — Firebase failed to load"><Icon name="cloud" size={17}/></button>;
+  }
+  const statusColor = cloud.syncState==='error' ? 'var(--blood)' : cloud.syncState==='syncing' ? 'var(--amber)' : cloud.user ? 'var(--moss)' : 'var(--parchment-faint)';
+  const statusLabel = cloud.authLoading ? 'Checking sign-in…' : !cloud.user ? 'Not signed in' : cloud.syncState==='syncing' ? 'Syncing…' : cloud.syncState==='error' ? 'Sync error' : 'Synced';
+  function submit(){ if(email.trim()) cloud.sendSignInLink(email.trim()); }
+  return (
+    <div style={{position:'relative'}}>
+      <button className="btn" onClick={onToggleOpen} title={statusLabel}>
+        <Icon name="cloud" size={15} style={{color:statusColor}}/>{cloud.user ? cloud.user.email : 'Sync'}
+      </button>
+      {open && (
+        <div className="name-suggest-list" style={{width:260, padding:12}} onClick={e=>e.stopPropagation()}>
+          {cloud.user ? (
+            <React.Fragment>
+              <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:'0 0 8px'}}>Signed in as <b style={{color:'var(--parchment)'}}>{cloud.user.email}</b></p>
+              <p style={{fontSize:11.5, color:statusColor, margin:'0 0 10px'}}>● {statusLabel}</p>
+              {cloud.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 10px'}}>{cloud.error}</p>}
+              <button className="btn btn-blood" style={{width:'100%'}} onClick={cloud.signOut}>Sign Out</button>
+            </React.Fragment>
+          ) : cloud.linkSent ? (
+            <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:0}}>Check your email for a sign-in link. Opening it — on this device or any other — signs that device in and syncs your data.</p>
+          ) : (
+            <React.Fragment>
+              <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:'0 0 8px'}}>Sign in to sync your encounters and monster library across devices.</p>
+              <input className="text-input" style={{marginBottom:8}} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" onKeyDown={e=>{if(e.key==='Enter') submit();}}/>
+              {cloud.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 8px'}}>{cloud.error}</p>}
+              <button className="btn btn-arcane" style={{width:'100%'}} disabled={!email.trim()} onClick={submit}>Send Sign-in Link</button>
+            </React.Fragment>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [theme, toggleTheme] = useTheme();
   const [store, setStore] = useState(loadEncounterStore);
@@ -3039,6 +3177,16 @@ function App(){
   useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
   useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
   useEffect(()=>{ saveCustomHazards(customHazards); }, [customHazards]);
+
+  const cloudBlob = useMemo(()=>({store, customMonsters, customHazards}), [store, customMonsters, customHazards]);
+  const applyRemoteBlob = React.useCallback(remote=>{
+    if(!remote) return;
+    if(remote.store && Array.isArray(remote.store.encounters) && remote.store.encounters.length>0) setStore(remote.store);
+    if(Array.isArray(remote.customMonsters)) setCustomMonsters(remote.customMonsters);
+    if(Array.isArray(remote.customHazards)) setCustomHazards(remote.customHazards);
+  }, []);
+  const cloud = useCloudSync(cloudBlob, applyRemoteBlob);
+  const [syncPanelOpen, setSyncPanelOpen] = useState(false);
 
   const encounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
   function updateActive(fn){ setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===s.activeId ? fn(e) : e)})); }
@@ -3246,6 +3394,7 @@ function App(){
             <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
               <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
+            <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
             <button className="btn" onClick={()=>setDataModalMode('export')} title="Copy every encounter, custom monster, and custom hazard on this device as one block of text"><Icon name="download" size={15}/>Export Data</button>
             <button className="btn" onClick={()=>setDataModalMode('import')} title="Paste back a previous export, overwriting what's on this device"><Icon name="upload" size={15}/>Import Data</button>
             <button className="btn" onClick={()=>setImportOpen(true)} title="Load one full encounter from raw markdown text"><Icon name="upload" size={15}/>Import Markdown</button>
