@@ -2907,79 +2907,54 @@ function HowToUseSection(){
     {
       title: 'Encounters & Tabs',
       body: [
-        'Each tab across the top is a separate encounter with its own party, monsters, axes, and round tracker. Add a new one with the "+" tab, duplicate or delete a tab from its own controls, and double-click a tab name to rename it.',
-        'Your party (PCs) carries over automatically when you create a new encounter tab, so you don\'t have to re-enter them each fight.',
+        'Each tab is a separate encounter with its own party, monsters, axes, and round tracker. Add one with "+", duplicate/delete from a tab\'s own controls, double-click to rename. Your party carries over into new tabs automatically.',
       ],
     },
     {
-      title: 'Encounter Axes (Win Condition / Battlefield Optimizer / Hazard-Clock)',
+      title: 'Axes & Scene',
       body: [
-        '"Roll Combat Menu" rolls a fresh Win Condition and Battlefield Optimizer together. "Suggest from Roster" drafts both from whatever monsters are currently in the fight. Each axis card also has its own small sparkle button to roll just that one axis on its own.',
-        'Click the lock icon on any axis card (including Hazard/Clock) to protect it — a locked axis is skipped by every roll/suggest action, so you can keep an axis you like while re-rolling the others.',
-        'Hazard/Clock has its own "Randomize" button, or add a fully custom one with "+ Add Hazard".',
-      ],
-    },
-    {
-      title: 'Scene Notes & Recommended Map Elements',
-      body: [
-        'Type Environment, Terrain, Combat Situation, and Time of Day directly — these feed both the Recommended Map Elements list and the "Draft Axes from Scene" button, which drafts the axes above from your scene text and current roster without adding any monsters itself.',
-        'Both this section and Recommended Map Elements collapse with the chevron in their header if you want to save space.',
+        '"Roll Combat Menu" rolls a fresh Win Condition + Battlefield Optimizer; "Suggest from Roster" drafts both from the current monsters instead. Lock any axis — including Hazard/Clock — to protect it from rolls and suggestions.',
+        'Fill in Scene Notes (Environment, Terrain, Situation, Time) for tailored Recommended Map Elements and to power "Draft Axes from Scene."',
       ],
     },
     {
       title: 'Party & Round Tracker',
       body: [
-        '"Add PC" adds a party member with AC/HP/role. Set each PC\'s level so the Encounter Difficulty rating (shown in the round tracker header) calculates correctly — it uses 2024 DMG math (Low / Moderate / High) based on total enemy XP vs. the party\'s combined XP budget. No monster-count multiplier is applied; ally monsters are excluded from the calculation.',
-        'Each PC also has an "Atk" field next to AC — it\'s only used to autofill the To-Hit Bonus when you pick that PC in a mob\'s Attack Roll panel (PC → Mob direction), so it\'s fine to leave at the default if you don\'t use mobs.',
-        'The initiative strip merges PCs and monsters by initiative — "Next Turn" advances through it, "Previous Turn" steps back one combatant (or to the previous round\'s last combatant), "Next Round" jumps straight to a new round, "Previous Round" steps back a full round, and "Reset" returns to round 1.',
-        'Each combatant has a typeable HP delta box — type a negative number to damage, a positive number to heal, no "+" needed, then press Enter or the checkmark.',
+        '"Add PC" sets AC/HP/role/level. Level drives the Encounter Difficulty rating (2024 DMG Low/Moderate/High vs. total enemy XP — no monster-count multiplier, allies excluded). Atk only autofills the To-Hit Bonus in a mob\'s PC → Mob Attack Roll.',
+        'The initiative strip merges PCs and monsters — Next/Previous Turn and Round navigate it, Reset returns to round 1. Type a signed number into any HP box and press Enter to apply it.',
       ],
     },
     {
       title: 'Adding Monsters',
       body: [
-        'Quick Add: type a name — it autocompletes against the local SRD compendium and anything you\'ve saved to My Monsters, autofilling AC/HP/Speed/attacks/posture. Qty adds multiples at once. "Manual stats" lets you override AC/HP/Speed on the spot.',
-        'To add a group as a Mob (sharing one HP pool and resolved statistically), check "Mob rules" before adding — the card then shows a shared HP pool and the Mob Attack / Mob Save panels instead of individual HP tracking.',
-        'Paste Stat Block: for anything not in the compendium — homebrew, or a monster from a book you own. Click "Copy Transcription Prompt" to get a ready-made prompt for converting a photo of a stat block using any AI chat you have access to.',
-        '"Save to My Monsters" (checked by default when pasting) keeps that monster available in every future encounter.',
+        'Quick Add autocompletes against the SRD compendium and My Monsters, autofilling stats; Qty adds multiples, and "Manual stats" overrides AC/HP/Speed. Check "Add as a mob" to share one HP pool with the Mob Attack/Save tools instead of tracking each one individually.',
+        'Paste Stat Block covers homebrew or book monsters — "Copy Transcription Prompt" hands you a ready-made prompt for turning a photo of a stat block into this format via any AI chat.',
       ],
     },
     {
       title: 'Monster Cards',
       body: [
-        'Click anywhere on a card to expand or collapse it — not just the chevron — except the header\'s AC/Speed/skull/trash controls and anything inside the expanded body, which stay clickable without toggling the card shut. AC, Speed, and Initiative are editable directly in the card header, and the monster\'s name and type are editable inline too. A "Multiattack" badge appears only when the monster actually has a named Multiattack action — not just because it has more than one attack listed — and expanding the card shows the exact breakdown (e.g. "3 attacks · 1× Bite + 2× Claws") under Attacks.',
-        'Every monster has a team — enemy (red) or ally (green). Click the handshake icon in a card\'s header to toggle between them, or click the colored dot next to its initiative chip. Ally chips appear green in the initiative strip, ally cards show a green Ally badge and an "Allied combatant" banner when expanded, and ally XP is excluded from the Encounter Difficulty calculation. Tactic postures describe how the creature behaves against enemies, not the party.',
-        'Expand a card to see its full stat block: abilities, resistances/vulnerabilities, the three Postures (click A/B/C to switch), Attacks, Spells, traits, and any matching Trait Trigger. Posture C shows the current Win Condition and Hazard/Clock live.',
-        'The skull button toggles defeated (fades the card); the trash button removes it from the fight entirely.',
+        'Click anywhere on a card to expand or collapse it — header controls and the expanded body stay clickable without toggling it shut. AC, Speed, Initiative, name, and type are all editable inline.',
+        'The handshake icon toggles ally/enemy; ally cards get a green badge and are excluded from Difficulty math. A "Multiattack" badge only appears for a genuine Multiattack action, with the real breakdown shown once expanded — not just because a monster has more than one attack listed.',
+        'Expanding a card shows its full stat block, Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
       ],
     },
     {
       title: 'Mob Rules',
       body: [
-        'When a monster is added as a Mob, its card shows a count stepper ("Still alive") instead of individual HP. Adjust the count manually with ± or type a number — the shared HP pool updates automatically.',
-        'Expand the card to access two statistical resolvers. "Mob Attack Roll" (Mob→PC direction) calculates how many hits land against a target PC\'s AC and sums the average damage across the whole group — set the attack\'s to-hit bonus, the target\'s AC, and roll mode (Normal / Advantage / Disadvantage). Flip to "PC→Mob" to log damage directly to the mob\'s shared HP pool and watch the surviving count update.',
-        '"Mob Save" resolves a saving throw across the group — set the ability modifier, DC, damage formula, whether half-damage applies on a success, and how many creatures are affected. The panel shows how many fail, how many succeed, and the total expected damage.',
-        'All mob math is statistical (no dice rolled), so results reflect the expected average outcome rather than a single random roll.',
+        'A mob card shows a live count instead of individual HP — expand it for two statistical (no dice rolled) resolvers: Mob Attack Roll (either direction) and Mob Save, both reporting expected average outcomes.',
       ],
     },
     {
-      title: 'My Monsters Library',
+      title: 'Library & Data',
       body: [
-        'Every monster you save (from Paste Stat Block, or Quick Add\'s custom entries) lives here across all encounters. Click the header to expand it — past 8 saved monsters a filter box appears, and the list scrolls instead of growing forever.',
-      ],
-    },
-    {
-      title: 'Export / Import Data',
-      body: [
-        'Export Data shows every encounter tab plus your My Monsters and custom hazard libraries as one block of text, with a Copy to Clipboard button — save that somewhere (a note, a text file). Import Data pastes it back in, overwriting what\'s currently on this device.',
-        'This is the only way to move your data between devices or browsers, since everything is stored locally in this browser and nothing syncs automatically — including if multiple people use this same page, each person\'s saved data is private to their own browser.',
-        '"Import Markdown" is a separate, older feature for loading one full encounter from raw markdown text — most people won\'t need it if they\'re using the fields and forms above.',
+        'My Monsters holds everything you\'ve saved, searchable once it grows past 8 entries. Export Data copies every encounter plus your libraries as one block of text — paste it back with Import Data to restore or move devices, since nothing syncs automatically. Import Markdown is a separate, legacy path for one raw-markdown encounter.',
       ],
     },
     {
       title: 'Theme',
       body: [
-        'The sun/moon icon in the top-right switches between light and dark parchment themes.',
+        'The sun/moon icon in the top-right switches between dark and light parchment themes.',
       ],
     },
   ];
