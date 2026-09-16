@@ -82,7 +82,7 @@
   }
   @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
 
-  .shell{max-width:1360px; margin:0 auto; padding:1px 20px 40px;}
+  .shell{max-width:1680px; margin:0 auto; padding:1px 20px 40px;}
   .topbar{
     position:sticky; top:0; z-index:20;
     background:var(--ink);
@@ -90,7 +90,7 @@
     box-shadow:0 10px 24px -12px rgba(0,0,0,.6);
     padding:16px 20px 14px;
   }
-  .topbar-inner{max-width:1360px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .topbar-inner{max-width:1680px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
   .brand{display:flex; align-items:center; gap:12px;}
   .brand h1{font-size:21px; font-weight:600; letter-spacing:.02em; margin:0; color:var(--parchment);}
   .brand p{margin:2px 0 0; font-size:14px; color:var(--parchment-dim);}
@@ -120,8 +120,10 @@
   .axes-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
-  .scene-elements-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; align-items:start;}
-  @media (max-width:900px){ .scene-elements-row{grid-template-columns:1fr;} }
+  .page-frame{display:grid; grid-template-columns:240px 1fr 240px; gap:16px; align-items:start;}
+  .side-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
+  .center-col{min-width:0;}
+  @media (max-width:1200px){ .page-frame{grid-template-columns:1fr;} .side-col{order:2;} .center-col{order:1;} }
   .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
   .axis-card.axis-locked{border-style:dashed;}
   .icon-btn.lock-active{color:var(--amber);}
@@ -290,8 +292,7 @@
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
   .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
 
-  .monster-grid{column-count:3; column-gap:16px; margin-top:16px;}
-  @media (max-width:900px){ .monster-grid{column-count:1;} }
+  .monster-grid{column-width:280px; column-count:3; column-gap:16px; margin-top:16px;}
   .mcard{padding:0; margin-bottom:16px; break-inside:avoid; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
   .mcard:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(0,0,0,.65); border-color:var(--parchment-faint); z-index:5; }
   .mcard:hover .corner{ filter:brightness(1.4); }
@@ -2002,7 +2003,7 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
             {fields.map(([key,label,placeholder])=>(
               <div key={key}>
                 <label style={{display:'block', fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', marginBottom:4}}>{label}</label>
-                <textarea className="text-input" style={{minHeight:64, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+                <textarea className="text-input" style={{height:32, minHeight:32, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
               </div>
             ))}
           </div>
@@ -2113,7 +2114,7 @@ function HazardCell({hazard, customHazards, onApply, onSaveCustom, onRemoveCusto
   );
 }
 
-function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate, onRollCombatMenu, onRollWinCondition, onRollBattlefieldOptimizer, locked, onToggleLock, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
+function AxesStrip({axes, monsters, scene, onSuggest, onRollCombatMenu, onRollWinCondition, onRollBattlefieldOptimizer, locked, onToggleLock, customHazards, onApplyHazard, onSaveCustomHazard, onRemoveCustomHazard}){
   const cells = [
     {key:'win', eyebrow:'Win Condition', color:'var(--blood)', textColor:'var(--blood-text)', icon:null, title:axes.winCondition.title, desc:axes.winCondition.description, note:axes.winCondition.moraleThresholds, onRoll:onRollWinCondition},
     {key:'opt', eyebrow:'Battlefield Optimizer', color:'var(--arcane)', textColor:'var(--arcane-text)', icon:'mountain', title:axes.battlefieldOptimizer.title, desc:axes.battlefieldOptimizer.description, note:axes.battlefieldOptimizer.mechanicalBenefit, onRoll:onRollBattlefieldOptimizer},
@@ -2160,10 +2161,6 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
         );})}
         <HazardCell hazard={axes.hazardOrClock} customHazards={customHazards} onApply={onApplyHazard} onSaveCustom={onSaveCustomHazard} onRemoveCustom={onRemoveCustomHazard}
           locked={!!locked?.hazard} onToggleLock={()=>onToggleLock('hazard')}/>
-      </div>
-      <div className="scene-elements-row">
-        <SceneFieldsStrip scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
-        <MapElementsStrip scene={scene}/>
       </div>
     </div>
   );
@@ -3213,7 +3210,7 @@ function HowToUseSection(){
 
 function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
   return (
-    <div style={{display:'flex', alignItems:'center', gap:6, overflowX:'auto', padding:'10px 20px 0', maxWidth:1360, margin:'0 auto'}}>
+    <div style={{display:'flex', alignItems:'center', gap:6, overflowX:'auto', padding:'10px 20px 0', maxWidth:1680, margin:'0 auto'}}>
       {encounters.map(e=>{
         const isActive = e.id===activeId;
         const isRenaming = renamingId===e.id;
@@ -3543,11 +3540,21 @@ function App(){
       {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
       <div className="shell">
-        <HowToUseSection/>
-        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes} onSceneChange={setScene} onGenerate={handleGenerateEncounter}
-          onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
-          locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
-          customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
+        <div className="page-frame">
+          <div className="side-col">
+            <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
+          </div>
+          <div className="center-col">
+            <HowToUseSection/>
+            <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}
+              onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
+              locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
+              customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
+          </div>
+          <div className="side-col">
+            <MapElementsStrip scene={encounter.scene}/>
+          </div>
+        </div>
         <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam}/>
         <div className="main-grid">
           <div className="stack">
