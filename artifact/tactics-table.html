@@ -319,8 +319,10 @@
 
   .abl-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; margin:10px 0; background:var(--line-soft);}
   .abl-cell{ background:var(--panel); text-align:center; padding:5px 2px; }
-  .abl-cell .k{font-size:10.5px; font-weight:700; color:var(--parchment-faint);}
+  .abl-cell .k{font-size:10.5px; font-weight:700; color:var(--parchment-faint); text-transform:uppercase;}
   .abl-cell .v{font-size:12.5px; color:var(--parchment); }
+  .abl-grid.saves .abl-cell.proficient{ background:var(--arcane-soft); }
+  .abl-grid.saves .abl-cell.proficient .k, .abl-grid.saves .abl-cell.proficient .v{ color:var(--arcane-text); font-weight:700; }
   .abl-cell .v span{color:var(--parchment-faint);}
 
   .posture-row{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:4px;}
@@ -2429,9 +2431,6 @@ function saveModifierFor(monster, abilityKey){
 }
 function AbilityRow({monster}){
   const abilities = [['str','STR'],['dex','DEX'],['con','CON'],['int','INT'],['wis','WIS'],['cha','CHA']];
-  const proficientList = abilities
-    .filter(([k])=> saveModifierFor(monster, k).proficient)
-    .map(([k,label])=>{ const {mod} = saveModifierFor(monster, k); return `${label} ${mod>=0?'+':''}${mod}`; });
   return (
     <div>
       <div className="abl-grid">
@@ -2442,7 +2441,17 @@ function AbilityRow({monster}){
           </div>
         ))}
       </div>
-      {proficientList.length>0 && <p style={{fontSize:12, color:'var(--parchment-faint)', margin:'0 0 8px'}}><b>Proficient saves: </b>{proficientList.join(', ')}</p>}
+      <div className="abl-grid saves" style={{marginTop:0}}>
+        {abilities.map(([k,label])=>{
+          const {mod, proficient} = saveModifierFor(monster, k);
+          return (
+            <div className={"abl-cell"+(proficient?" proficient":"")} key={k} title={`${label} save${proficient?' (proficient)':''}`}>
+              <div className="k">{label} save</div>
+              <div className="v mono">{mod>=0?'+':''}{mod}</div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -2455,9 +2464,10 @@ function parseSavingThrowBonus(text, abilityKey){
   return m ? Number(m[1]) : null;
 }
 /** Rolls a real d20 saving throw for one monster (as opposed to Mob Save's statistical group math). */
+/** No DC here on purpose — whoever called for the save (a player's spell, usually) already knows their
+ * own DC. This just gives the DM the monster's roll to report back, not a pass/fail verdict. */
 function SaveRollPanel({monster}){
   const [ability, setAbility] = React.useState('dex');
-  const [dc, setDc] = React.useState('15');
   const [mode, setMode] = React.useState('normal');
   const [result, setResult] = React.useState(null);
   const [open, setOpen] = React.useState(false);
@@ -2466,8 +2476,7 @@ function SaveRollPanel({monster}){
     const d1 = rollD20(), d2 = rollD20();
     const useAdv = mode==='advantage', useDis = mode==='disadvantage';
     const die = useAdv ? Math.max(d1,d2) : useDis ? Math.min(d1,d2) : d1;
-    const dcNum = Number(dc) || 0;
-    setResult({ rolls: (useAdv||useDis) ? [d1,d2] : [d1], die, total: die+mod, success: (die+mod) >= dcNum, nat1: die===1, nat20: die===20 });
+    setResult({ rolls: (useAdv||useDis) ? [d1,d2] : [d1], die, total: die+mod, nat1: die===1, nat20: die===20 });
   }
   return (
     <div className="mob-attack">
@@ -2482,20 +2491,16 @@ function SaveRollPanel({monster}){
               </select>
             </div>
             <div className="mob-attack-field">
-              <label>DC</label>
-              <input className="text-input" type="number" value={dc} onChange={e=>setDc(e.target.value)}/>
-            </div>
-            <div className="mob-attack-field">
               <label>Roll</label>
               <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on this save"/>
             </div>
           </div>
-          <p className="mob-attack-hint">{ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod}{proficient?' (proficient)':''} vs DC {Number(dc)||'—'}.</p>
+          <p className="mob-attack-hint">{ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod}{proficient?' (proficient)':''}.</p>
           <div className="mob-attack-row">
             <button className="btn btn-blood" onClick={roll}><Icon name="dice" size={14}/>Roll Save</button>
             {result && (
-              <span className="mob-attack-result" style={{color: result.success ? 'var(--moss)' : 'var(--blood-text)'}}>
-                {result.rolls.join(' / ')} {mod>=0?'+':''}{mod} = <b>{result.total}</b> — {result.success ? 'Success' : 'Failure'}{result.nat1?' (nat 1)':result.nat20?' (nat 20)':''}
+              <span className="mob-attack-result">
+                {result.rolls.join(' / ')} {mod>=0?'+':''}{mod} = <b>{result.total}</b>{result.nat1?' (nat 1)':result.nat20?' (nat 20)':''}
               </span>
             )}
           </div>
@@ -3178,7 +3183,7 @@ function HowToUseSection(){
       body: [
         'Click anywhere on a card to expand or collapse it — header controls and the expanded body stay clickable without toggling it shut. AC, Speed, Initiative, name, and type are all editable inline.',
         'The handshake icon toggles ally/enemy; ally cards get a green badge and are excluded from Difficulty math. A "Multiattack" badge only appears for a genuine Multiattack action, with the real breakdown shown once expanded — not just because a monster has more than one attack listed.',
-        'Expanding a card shows its full stat block, a "Roll a Save" tool (a real d20 roll — pick ability, DC, advantage/disadvantage — for a one-off saving throw against something like a spell), Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
+        'Expanding a card shows its full stat block: ability scores with each save\'s real total modifier underneath (proficient ones highlighted), a "Roll a Save" tool (a real d20 roll — pick ability and advantage/disadvantage, no DC needed since whoever called for the save already knows it), Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
       ],
     },
     {
