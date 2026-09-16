@@ -122,10 +122,8 @@
   .axes-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
-  .page-frame{display:grid; grid-template-columns:240px 1fr 240px; gap:16px; align-items:start;}
-  .side-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
-  .center-col{min-width:0;}
-  @media (max-width:1200px){ .page-frame{grid-template-columns:1fr;} .side-col{order:2;} .center-col{order:1;} }
+  .scene-elements-row{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; align-items:start;}
+  @media (max-width:900px){ .scene-elements-row{grid-template-columns:1fr;} }
   .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
   .axis-card.axis-locked{border-style:dashed;}
   .icon-btn.lock-active{color:var(--amber);}
@@ -3554,19 +3552,13 @@ function App(){
       {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
       <div className="shell">
-        <div className="page-frame">
-          <div className="side-col">
-            <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
-          </div>
-          <div className="center-col">
-            <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}
-              onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
-              locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
-              customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
-          </div>
-          <div className="side-col">
-            <MapElementsStrip scene={encounter.scene}/>
-          </div>
+        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}
+          onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
+          locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
+          customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
+        <div className="scene-elements-row">
+          <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
+          <MapElementsStrip scene={encounter.scene}/>
         </div>
         <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam}/>
         <div className="main-grid">
