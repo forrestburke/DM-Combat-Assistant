@@ -3194,7 +3194,7 @@ function HowToUseSection(){
   ];
   return (
     <React.Fragment>
-      <button className="btn" style={{marginBottom:12}} onClick={()=>setOpen(true)} title="Open a quick guide to this page's features">
+      <button className="btn" onClick={()=>setOpen(true)} title="Open a quick guide to this page's features">
         <Icon name="scroll" size={15}/>How to Use This Page
       </button>
       {open && (
@@ -3540,6 +3540,7 @@ function App(){
               <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
             <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
+            <HowToUseSection/>
             <button className="btn" onClick={()=>setDataModalMode('export')} title="Copy every encounter, custom monster, and custom hazard on this device as one block of text"><Icon name="download" size={15}/>Export Data</button>
             <button className="btn" onClick={()=>setDataModalMode('import')} title="Paste back a previous export, overwriting what's on this device"><Icon name="upload" size={15}/>Import Data</button>
             <button className="btn" onClick={()=>setImportOpen(true)} title="Load one full encounter from raw markdown text"><Icon name="upload" size={15}/>Import Markdown</button>
@@ -3558,7 +3559,6 @@ function App(){
             <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
           </div>
           <div className="center-col">
-            <HowToUseSection/>
             <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}
               onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
               locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
