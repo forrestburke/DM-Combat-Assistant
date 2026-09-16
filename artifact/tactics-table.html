@@ -181,12 +181,19 @@
   .stack > * + *{margin-top:16px;}
 
   /* party */
-  .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft); transition:opacity .15s;}
+  .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft);}
   .party-row:last-child{border-bottom:none;}
-  .party-row.absent{opacity:.45;}
-  .absent-badge{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--parchment-faint); background:var(--line-soft); border:1px solid var(--line); border-radius:20px; padding:2px 7px; flex-shrink:0; }
-  .icon-btn.absent-toggle:hover{ color:var(--amber-text); }
-  .icon-btn.absent-toggle.active{ color:var(--amber-text); }
+  .party-row-head{display:flex; align-items:flex-start; gap:8px;}
+  .party-row-dim{flex:1; min-width:0; transition:opacity .15s;}
+  .party-row.absent .party-row-dim{opacity:.4;}
+  .absent-toggle-btn{
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; height:22px; margin-top:1px;
+    font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
+    color:var(--parchment-faint); background:var(--panel-raised); border:1px solid var(--line);
+    border-radius:20px; padding:0 8px; transition:color .15s, border-color .15s, background .15s;
+  }
+  .absent-toggle-btn:hover{ color:var(--amber-text); border-color:var(--amber); }
+  .absent-toggle-btn.active{ color:var(--amber-text); background:var(--amber-soft); border-color:var(--amber); }
   .party-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
   .party-identity{display:flex; flex-direction:column; gap:2px; min-width:0;}
   .party-name-row{display:flex; align-items:center; gap:6px; min-width:0; flex-wrap:wrap;}
@@ -1853,55 +1860,60 @@ function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, o
   }
   return (
     <div className={"party-row"+(isAbsent?" absent":"")}>
-      <div className="party-top">
-        <div className="party-identity">
-          <div className="party-name-row">
-            <span className="party-name">{p.name}</span>
-            {isAbsent && <span className="absent-badge">Absent</span>}
-            <label className="party-stat" title="Character level — used for the encounter difficulty rating">
-              <span>Lvl</span>
-              <input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onSetLevel(p.id, Math.max(1, Math.min(20, Number(e.target.value)||1)))} aria-label={`${p.name} level`}/>
+      <div className="party-row-head">
+        <div className="party-row-dim">
+          <div className="party-top">
+            <div className="party-identity">
+              <div className="party-name-row">
+                <span className="party-name">{p.name}</span>
+                <label className="party-stat" title="Character level — used for the encounter difficulty rating">
+                  <span>Lvl</span>
+                  <input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onSetLevel(p.id, Math.max(1, Math.min(20, Number(e.target.value)||1)))} aria-label={`${p.name} level`}/>
+                </label>
+              </div>
+              <div className="party-role-row">
+                <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
+                {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
+              </div>
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto'}}>
+              <label className="init-label" title="Initiative">
+                <span>Init</span>
+                <input className="init-input" type="number" value={p.initiative ?? 10} onChange={e=>onSetInitiative(p.id, e.target.value)} aria-label={`${p.name} initiative`}/>
+              </label>
+              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`} title="Permanently delete this character"><Icon name="trash" size={15}/></button>
+            </div>
+          </div>
+        </div>
+        <button
+          className={"absent-toggle-btn"+(isAbsent?" active":"")}
+          onClick={()=>onToggleActive(p.id)}
+          aria-label={isAbsent ? `Mark ${p.name} present` : `Mark ${p.name} absent`}
+          title={isAbsent ? 'Absent this session — click to bring them back into the initiative tracker' : "Player absent this session? Click to pull them out of the initiative tracker without deleting their sheet"}
+        >{isAbsent ? 'Absent' : <Icon name="userminus" size={13}/>}</button>
+      </div>
+      <div className="party-row-dim">
+        <div className="hp-row">
+          <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
+          <div className="hp-row-sub">
+            <label className="init-label wide" title="Damage or heal this character — type a negative number to damage, a positive number to heal, then press Enter to apply">
+              <span>HP Adjust</span>
+              <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+                onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
+            </label>
+            <label className="party-stat" title="Armor Class">
+              <span>AC</span>
+              <input type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
+            </label>
+            <label className="party-stat" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
+              <span>Atk</span>
+              <input type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`}/>
             </label>
           </div>
-          <div className="party-role-row">
-            <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
-            {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
-          </div>
         </div>
-        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto'}}>
-          <label className="init-label" title="Initiative">
-            <span>Init</span>
-            <input className="init-input" type="number" value={p.initiative ?? 10} onChange={e=>onSetInitiative(p.id, e.target.value)} aria-label={`${p.name} initiative`}/>
-          </label>
-          <button
-            className={"icon-btn absent-toggle"+(isAbsent?" active":"")}
-            onClick={()=>onToggleActive(p.id)}
-            aria-label={isAbsent ? `Mark ${p.name} present` : `Mark ${p.name} absent`}
-            title={isAbsent ? 'Absent this session — click to bring them back into the initiative tracker' : "Player absent this session? Click to pull them out of the initiative tracker without deleting their sheet"}
-          ><Icon name={isAbsent ? 'userplus' : 'userminus'} size={15}/></button>
-          <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`} title="Permanently delete this character"><Icon name="trash" size={15}/></button>
-        </div>
+        <p className="party-priority">{p.tacticalPriority}</p>
+        <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
       </div>
-      <div className="hp-row">
-        <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
-        <div className="hp-row-sub">
-          <label className="init-label wide" title="Damage or heal this character — type a negative number to damage, a positive number to heal, then press Enter to apply">
-            <span>HP Adjust</span>
-            <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-              onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
-          </label>
-          <label className="party-stat" title="Armor Class">
-            <span>AC</span>
-            <input type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
-          </label>
-          <label className="party-stat" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
-            <span>Atk</span>
-            <input type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`}/>
-          </label>
-        </div>
-      </div>
-      <p className="party-priority">{p.tacticalPriority}</p>
-      <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
     </div>
   );
 }
@@ -3034,7 +3046,7 @@ function HowToUseSection(){
       title: 'Party & Round Tracker',
       body: [
         '"Add PC" sets AC/HP/role/level. Level drives the Encounter Difficulty rating (2024 DMG Low/Moderate/High vs. total enemy XP — no monster-count multiplier, allies excluded). Atk only autofills the To-Hit Bonus in a mob\'s PC → Mob Attack Roll.',
-        'Player missing this session? Click the person icon next to a PC\'s trash button to mark them Absent — they drop out of the initiative strip and the Difficulty calculation without deleting their sheet, and clicking it again brings them right back.',
+        'Player missing this session? Click the small pill button at the top-right of their row to mark them Absent — the rest of that PC\'s row dims so the pill (now reading "Absent") is the one clearly clickable thing left. They drop out of the initiative strip and the Difficulty calculation without deleting their sheet; click the pill again to bring them right back.',
         'The initiative strip merges PCs and monsters — Next/Previous Turn and Round navigate it, Reset returns to round 1. Type a signed number into any HP box and press Enter to apply it.',
       ],
     },
