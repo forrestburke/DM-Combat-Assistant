@@ -317,11 +317,16 @@
   .chevron.open{ transform:rotate(90deg); }
 
   .abl-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; margin:10px 0; background:var(--line-soft);}
-  .abl-cell{ background:var(--panel); text-align:center; padding:5px 2px; }
+  .abl-cell{ background:var(--panel); text-align:center; padding:5px 2px; border:none; font:inherit; width:100%; }
+  .abl-cell.rollable{ cursor:pointer; transition:background .12s; }
+  .abl-cell.rollable:hover{ background:var(--panel-raised); }
+  .abl-cell.rollable:active{ background:var(--line-soft); }
   .abl-cell .k{font-size:10.5px; font-weight:700; color:var(--parchment-faint); text-transform:uppercase;}
   .abl-cell .v{font-size:12.5px; color:var(--parchment); }
   .abl-grid.saves .abl-cell.proficient{ background:var(--arcane-soft); }
+  .abl-grid.saves .abl-cell.proficient:hover{ background:rgba(79,168,154,.3); }
   .abl-grid.saves .abl-cell.proficient .k, .abl-grid.saves .abl-cell.proficient .v{ color:var(--arcane-text); font-weight:700; }
+  .abl-roll-result{ font-size:12.5px; color:var(--parchment); margin:0 0 10px; padding:6px 10px; background:var(--panel-raised); border-left:2px solid var(--arcane); border-radius:0 4px 4px 0; }
   .abl-cell .v span{color:var(--parchment-faint);}
 
   .posture-row{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:4px;}
@@ -2428,33 +2433,6 @@ function saveModifierFor(monster, abilityKey){
   if(parsed != null) return {mod: parsed, proficient: parsed !== plainMod};
   return {mod: plainMod, proficient: false};
 }
-function AbilityRow({monster}){
-  const abilities = [['str','STR'],['dex','DEX'],['con','CON'],['int','INT'],['wis','WIS'],['cha','CHA']];
-  return (
-    <div>
-      <div className="abl-grid">
-        {abilities.map(([k,label])=>(
-          <div className="abl-cell" key={k}>
-            <div className="k">{label}</div>
-            <div className="v mono">{monster.abilityScores[k]} <span>({abilityMod(monster.abilityScores[k])})</span></div>
-          </div>
-        ))}
-      </div>
-      <div className="abl-grid saves" style={{marginTop:0}}>
-        {abilities.map(([k,label])=>{
-          const {mod, proficient} = saveModifierFor(monster, k);
-          return (
-            <div className={"abl-cell"+(proficient?" proficient":"")} key={k} title={`${label} save${proficient?' (proficient)':''}`}>
-              <div className="k">{label} save</div>
-              <div className="v mono">{mod>=0?'+':''}{mod}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function rollD20(){ return 1 + Math.floor(Math.random()*20); }
 function parseSavingThrowBonus(text, abilityKey){
   if(!text) return null;
@@ -2462,48 +2440,41 @@ function parseSavingThrowBonus(text, abilityKey){
   const m = text.match(new RegExp(`${abbr}\\s*([+-]\\d+)`, 'i'));
   return m ? Number(m[1]) : null;
 }
-/** Rolls a real d20 saving throw for one monster (as opposed to Mob Save's statistical group math). */
-/** No DC here on purpose — whoever called for the save (a player's spell, usually) already knows their
- * own DC. This just gives the DM the monster's roll to report back, not a pass/fail verdict. */
-function SaveRollPanel({monster}){
-  const [ability, setAbility] = React.useState('dex');
-  const [mode, setMode] = React.useState('normal');
+/** Click an ability score to roll a check, or a save underneath it to roll that save — no menu, no DC,
+ * just a d20 plus the right modifier. Whoever called for the roll already has a DC to compare it to. */
+function AbilityRow({monster}){
+  const abilities = [['str','STR'],['dex','DEX'],['con','CON'],['int','INT'],['wis','WIS'],['cha','CHA']];
   const [result, setResult] = React.useState(null);
-  const [open, setOpen] = React.useState(false);
-  const {mod, proficient} = saveModifierFor(monster, ability);
-  function roll(){
-    const d1 = rollD20(), d2 = rollD20();
-    const useAdv = mode==='advantage', useDis = mode==='disadvantage';
-    const die = useAdv ? Math.max(d1,d2) : useDis ? Math.min(d1,d2) : d1;
-    setResult({ rolls: (useAdv||useDis) ? [d1,d2] : [d1], die, total: die+mod, nat1: die===1, nat20: die===20 });
+  function rollFor(label, mod){
+    const die = rollD20();
+    setResult({label, die, mod, total: die+mod});
   }
   return (
-    <div className="mob-attack">
-      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="dice" title="Roll a Save" subtitle={`Resolve one saving throw for ${monster.name}`}/>
-      {open && (
-        <React.Fragment>
-          <div className="mob-attack-grid">
-            <div className="mob-attack-field">
-              <label>Ability</label>
-              <select className="text-input" value={ability} onChange={e=>{setAbility(e.target.value); setResult(null);}}>
-                {SAVE_ABILITIES.map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
-              </select>
-            </div>
-            <div className="mob-attack-field">
-              <label>Roll</label>
-              <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on this save"/>
-            </div>
-          </div>
-          <p className="mob-attack-hint">{ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod}{proficient?' (proficient)':''}.</p>
-          <div className="mob-attack-row">
-            <button className="btn btn-blood" onClick={roll}><Icon name="dice" size={14}/>Roll Save</button>
-            {result && (
-              <span className="mob-attack-result">
-                {result.rolls.join(' / ')} {mod>=0?'+':''}{mod} = <b>{result.total}</b>{result.nat1?' (nat 1)':result.nat20?' (nat 20)':''}
-              </span>
-            )}
-          </div>
-        </React.Fragment>
+    <div>
+      <div className="abl-grid">
+        {abilities.map(([k,label])=>(
+          <button type="button" className="abl-cell rollable" key={k} onClick={()=>rollFor(`${label} check`, abilityScoreMod(monster.abilityScores[k]))} title={`Roll a ${label} check`}>
+            <div className="k">{label}</div>
+            <div className="v mono">{monster.abilityScores[k]} <span>({abilityMod(monster.abilityScores[k])})</span></div>
+          </button>
+        ))}
+      </div>
+      <div className="abl-grid saves" style={{marginTop:0}}>
+        {abilities.map(([k,label])=>{
+          const {mod, proficient} = saveModifierFor(monster, k);
+          return (
+            <button type="button" className={"abl-cell rollable"+(proficient?" proficient":"")} key={k}
+              onClick={()=>rollFor(`${label} save${proficient?' (proficient)':''}`, mod)} title={`Roll a ${label} save${proficient?' (proficient)':''}`}>
+              <div className="k">{label} save</div>
+              <div className="v mono">{mod>=0?'+':''}{mod}</div>
+            </button>
+          );
+        })}
+      </div>
+      {result && (
+        <p className="abl-roll-result">
+          <b>{result.label}:</b> {result.die} {result.mod>=0?'+':''}{result.mod} = <b>{result.total}</b>{result.die===1?' (nat 1)':result.die===20?' (nat 20)':''}
+        </p>
       )}
     </div>
   );
@@ -2630,7 +2601,6 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             </div>
           )}
 
-          <SaveRollPanel monster={monster}/>
           {monster.isMob && party && party.length > 0 && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
           {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
 
@@ -3180,7 +3150,7 @@ function HowToUseSection(){
       body: [
         'Click anywhere on a card to expand or collapse it — header controls and the expanded body stay clickable without toggling it shut. AC, Speed, Initiative, name, and type are all editable inline.',
         'The handshake icon toggles ally/enemy; ally cards get a green badge and are excluded from Difficulty math. A "Multiattack" badge only appears for a genuine Multiattack action, with the real breakdown shown once expanded — not just because a monster has more than one attack listed.',
-        'Expanding a card shows its full stat block: ability scores with each save\'s real total modifier underneath (proficient ones highlighted), a "Roll a Save" tool (a real d20 roll — pick ability and advantage/disadvantage, no DC needed since whoever called for the save already knows it), Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
+        'Expanding a card shows its full stat block: ability scores, with each save\'s real total modifier underneath (proficient ones highlighted). Click any ability score to roll a check, or any save to roll that save — an instant d20 + modifier, no menu and no DC to enter, since whoever called for the roll already has one to compare it to. Below that: Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
       ],
     },
     {
