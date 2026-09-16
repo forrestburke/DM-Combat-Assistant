@@ -2264,6 +2264,10 @@ function MobSavePanel({monster, onSetStats}){
   const [affectedCount, setAffectedCount] = React.useState(String(monster.mobCount || 1));
   const [result, setResult] = React.useState(null);
   const [open, setOpen] = React.useState(true);
+  // Keep this tracking how many are actually still alive — casualties logged
+  // elsewhere (Attack Roll's Log Damage, the mob-count stepper) shouldn't
+  // leave this field pointing at a headcount that no longer exists.
+  React.useEffect(()=>{ setAffectedCount(String(monster.mobCount || 0)); }, [monster.mobCount]);
   const score = monster.abilityScores?.[ability] ?? 10;
   const mod = abilityScoreMod(score);
   const dcNum = Number(dc) || 0;
