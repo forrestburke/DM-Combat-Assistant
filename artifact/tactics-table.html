@@ -509,12 +509,18 @@ function useCloudSync(blob, onRemoteBlob){
     if(!fbDb || !user) return;
     if(skipNextWrite.current){ skipNextWrite.current = false; return; }
     setSyncState('syncing');
+    let stale = false;
     const t = setTimeout(() => {
-      fbDb.collection('users').doc(user.uid).set({ blob, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true})
-        .then(()=>setSyncState('synced'))
-        .catch(e=>{ setError(e.message); setSyncState('error'); });
+      const write = fbDb.collection('users').doc(user.uid).set({ blob, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+      // Firestore's write promise can hang indefinitely if a request never resolves
+      // (blocked network, misconfigured rules) — surface that as an error instead of
+      // leaving the UI stuck on "Syncing…" with no way to tell something's wrong.
+      const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error('Sync timed out — check your connection, or that the Firestore rules have been published.')), 15000));
+      Promise.race([write, timeout])
+        .then(()=>{ if(!stale) setSyncState('synced'); })
+        .catch(e=>{ if(!stale){ setError(e.message); setSyncState('error'); } });
     }, 1200);
-    return () => clearTimeout(t);
+    return () => { stale = true; clearTimeout(t); };
   }, [blob, user?.uid]);
 
   async function sendSignInLink(email){
