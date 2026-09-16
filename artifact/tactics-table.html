@@ -336,9 +336,11 @@
   .tag-row{display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;}
   .tag{font-size:11px; border:1px solid var(--line); color:var(--parchment-dim); padding:1.5px 7px; border-radius:20px;}
   .condition-row{display:flex; flex-wrap:wrap; gap:5px; align-items:center; position:relative; margin-top:6px;}
-  .condition-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);}
-  .condition-chip.active{border-color:var(--amber); background:var(--amber-soft); color:var(--amber-text);}
+  .condition-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); transition:border-color .15s, background .15s, color .15s;}
+  .condition-chip.active{border-color:var(--c, var(--amber)); background:color-mix(in srgb, var(--c, var(--amber)) 20%, transparent); color:var(--c, var(--amber-text));}
   .condition-chip.add{color:var(--parchment-faint); border-style:dashed;}
+  .condition-chip.pickable:hover{border-color:var(--c); background:color-mix(in srgb, var(--c) 16%, transparent); color:var(--c);}
+  .condition-dot{width:7px; height:7px; border-radius:50%; background:var(--c); flex-shrink:0;}
   .condition-picker{display:flex; flex-wrap:wrap; gap:5px; position:absolute; top:100%; left:0; margin-top:4px; padding:8px; background:var(--panel); border:1px solid var(--line); z-index:5; width:max-content; max-width:260px;}
   .my-monsters-list{display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow-y:auto; padding-right:2px;}
   .browse-results{display:flex; flex-direction:column; gap:3px; max-height:280px; overflow-y:auto; padding-right:2px;}
@@ -1782,13 +1784,20 @@ const CONDITION_INFO = {
   Stunned: "Incapacitated; can't move and can speak only falteringly. Automatically fails Strength and Dexterity saves. Attacks against it have advantage.",
   Unconscious: "Incapacitated, can't move or speak, and is unaware of its surroundings. Drops what it's holding and falls prone. Automatically fails Strength and Dexterity saves. Attacks against it have advantage, and any hit from within 5 feet is a critical hit.",
 };
+/* A color per condition, loosely themed to what it represents (fear=purple, poison=green, etc.) — purely decorative. */
+const CONDITION_COLORS = {
+  Blinded: '#7c8fa6', Charmed: '#e0679a', Deafened: '#6b93b0', Exhaustion: '#b3703f',
+  Frightened: '#9b6bcf', Grappled: '#d98c3a', Incapacitated: '#8b7ba3', Invisible: '#4fc9c2',
+  Paralyzed: '#d9b23a', Petrified: '#a08f74', Poisoned: '#6fae4a', Prone: '#9c7248',
+  Restrained: '#c2703a', Stunned: '#e8d24a', Unconscious: '#6a5acd',
+};
 function ConditionRow({conditions, onToggle}){
   const active = conditions || [];
   const [adding, setAdding] = useState(false);
   return (
     <div className="condition-row">
       {active.map(c=>(
-        <button key={c} className="condition-chip active" onClick={()=>onToggle(c)} title={`${CONDITION_INFO[c] || ''} Click to remove.`}>
+        <button key={c} className="condition-chip active" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>onToggle(c)} title={`${CONDITION_INFO[c] || ''} Click to remove.`}>
           {c}<Icon name="x" size={10}/>
         </button>
       ))}
@@ -1798,7 +1807,9 @@ function ConditionRow({conditions, onToggle}){
       {adding && (
         <div className="condition-picker">
           {CONDITIONS.filter(c=>!active.includes(c)).map(c=>(
-            <button key={c} className="condition-chip" onClick={()=>{ onToggle(c); setAdding(false); }} title={CONDITION_INFO[c] || `Apply ${c}`}>{c}</button>
+            <button key={c} className="condition-chip pickable" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>{ onToggle(c); setAdding(false); }} title={CONDITION_INFO[c] || `Apply ${c}`}>
+              <span className="condition-dot"/>{c}
+            </button>
           ))}
         </div>
       )}
@@ -2420,6 +2431,66 @@ function AbilityRow({monster}){
   );
 }
 
+function rollD20(){ return 1 + Math.floor(Math.random()*20); }
+function parseSavingThrowBonus(text, abilityKey){
+  if(!text) return null;
+  const abbr = {str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'}[abilityKey];
+  const m = text.match(new RegExp(`${abbr}\\s*([+-]\\d+)`, 'i'));
+  return m ? Number(m[1]) : null;
+}
+/** Rolls a real d20 saving throw for one monster (as opposed to Mob Save's statistical group math). */
+function SaveRollPanel({monster}){
+  const [ability, setAbility] = React.useState('dex');
+  const [dc, setDc] = React.useState('15');
+  const [mode, setMode] = React.useState('normal');
+  const [result, setResult] = React.useState(null);
+  const [open, setOpen] = React.useState(false);
+  const score = monster.abilityScores?.[ability] ?? 10;
+  const proficient = parseSavingThrowBonus(monster.savingThrows, ability);
+  const mod = proficient != null ? proficient : abilityScoreMod(score);
+  function roll(){
+    const d1 = rollD20(), d2 = rollD20();
+    const useAdv = mode==='advantage', useDis = mode==='disadvantage';
+    const die = useAdv ? Math.max(d1,d2) : useDis ? Math.min(d1,d2) : d1;
+    const dcNum = Number(dc) || 0;
+    setResult({ rolls: (useAdv||useDis) ? [d1,d2] : [d1], die, total: die+mod, success: (die+mod) >= dcNum, nat1: die===1, nat20: die===20 });
+  }
+  return (
+    <div className="mob-attack">
+      <MobToolHeader open={open} onToggle={()=>setOpen(v=>!v)} icon="dice" title="Roll a Save" subtitle={`Resolve one saving throw for ${monster.name}`}/>
+      {open && (
+        <React.Fragment>
+          <div className="mob-attack-grid">
+            <div className="mob-attack-field">
+              <label>Ability</label>
+              <select className="text-input" value={ability} onChange={e=>{setAbility(e.target.value); setResult(null);}}>
+                {SAVE_ABILITIES.map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div className="mob-attack-field">
+              <label>DC</label>
+              <input className="text-input" type="number" value={dc} onChange={e=>setDc(e.target.value)}/>
+            </div>
+            <div className="mob-attack-field">
+              <label>Roll</label>
+              <RollModeSelect value={mode} onChange={setMode} title="Advantage or disadvantage on this save"/>
+            </div>
+          </div>
+          <p className="mob-attack-hint">{ability.toUpperCase()} save modifier {mod>=0?'+':''}{mod}{proficient!=null?' (proficient, from Saving Throws text)':''} vs DC {Number(dc)||'—'}.</p>
+          <div className="mob-attack-row">
+            <button className="btn btn-blood" onClick={roll}><Icon name="dice" size={14}/>Roll Save</button>
+            {result && (
+              <span className="mob-attack-result" style={{color: result.success ? 'var(--moss)' : 'var(--blood-text)'}}>
+                {result.rolls.join(' / ')} {mod>=0?'+':''}{mod} = <b>{result.total}</b> — {result.success ? 'Success' : 'Failure'}{result.nat1?' (nat 1)':result.nat20?' (nat 20)':''}
+              </span>
+            )}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
 function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, onToggleTeam, traitTriggers, axes, onToggleCondition, party, onDamageParty}){
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
@@ -2539,6 +2610,7 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             </div>
           )}
 
+          <SaveRollPanel monster={monster}/>
           {monster.isMob && party && party.length > 0 && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
           {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
 
@@ -3054,10 +3126,18 @@ function HowToUseSection(){
       ],
     },
     {
+      title: 'Rules & Compendium',
+      body: [
+        "This tool runs on the 2024 revision of D&D 5e — the 2024 Player's Handbook / Dungeon Master's Guide / Monster Manual rules (also called \"5.5e\" or \"One D&D\"), not the 2014 rules. Encounter Difficulty math, Multiattack behavior, and condition text all follow the 2024 versions.",
+        "The monster compendium (328 creatures) is built from the free 2024 SRD (System Reference Document) — the open-license subset of the Monster Manual that Wizards of the Coast publishes under Creative Commons (CC BY 4.0). It's a real slice of the official rules, but not the whole book — if a specific monster isn't in the SRD, it won't be in Quick Add or Browse Compendium; use Paste Stat Block for anything outside it.",
+      ],
+    },
+    {
       title: 'Axes & Scene',
       body: [
-        '"Roll Combat Menu" rolls a fresh Win Condition + Battlefield Optimizer; "Suggest from Roster" drafts both from the current monsters instead. Lock any axis — including Hazard/Clock — to protect it from rolls and suggestions.',
-        'Fill in Scene Notes (Environment, Terrain, Situation, Time) for tailored Recommended Map Elements and to power "Draft Axes from Scene."',
+        "These three cards exist to push a fight past \"monsters stand still and trade hits until someone hits 0\": Win Condition names what actually ends the encounter — which isn't always \"kill everyone\", see its morale/retreat note — Battlefield Optimizer is one concrete terrain feature worth fighting over, and Hazard/Clock is a ticking complication that escalates the longer the fight runs.",
+        '"Roll Combat Menu" rolls a fresh Win Condition + Battlefield Optimizer together; "Suggest from Roster" drafts both from the current monsters instead. Lock any axis — including Hazard/Clock — to protect it from rolls and suggestions.',
+        'Scene Notes (Environment, Terrain, Situation, Time) are freeform prompts, not required fields — jot down whatever you already know about the fight. They drive two things below them: the Recommended Map Elements list (terrain/cover ideas matched to keywords in what you typed), and "Draft Axes from Scene", which rewrites the three axis cards above from that text plus whoever is currently in the fight.',
       ],
     },
     {
@@ -3080,7 +3160,7 @@ function HowToUseSection(){
       body: [
         'Click anywhere on a card to expand or collapse it — header controls and the expanded body stay clickable without toggling it shut. AC, Speed, Initiative, name, and type are all editable inline.',
         'The handshake icon toggles ally/enemy; ally cards get a green badge and are excluded from Difficulty math. A "Multiattack" badge only appears for a genuine Multiattack action, with the real breakdown shown once expanded — not just because a monster has more than one attack listed.',
-        'Expanding a card shows its full stat block, Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
+        'Expanding a card shows its full stat block, a "Roll a Save" tool (a real d20 roll — pick ability, DC, advantage/disadvantage — for a one-off saving throw against something like a spell), Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
       ],
     },
     {
