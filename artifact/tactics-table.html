@@ -34,6 +34,7 @@
     --veil: rgba(6,5,3,.78);
     --glow-blood: 0 0 16px rgba(255,77,74,.35);
     --glow-arcane: 0 0 16px rgba(46,230,201,.3);
+    --glow-moss: 0 0 16px rgba(143,232,90,.35);
   }
   :root[data-theme="light"]{
     --ink:#f1ead9;
@@ -59,6 +60,7 @@
     --veil: rgba(30,24,10,.5);
     --glow-blood: 0 0 14px rgba(216,30,30,.22);
     --glow-arcane: 0 0 14px rgba(13,148,136,.2);
+    --glow-moss: 0 0 14px rgba(77,138,31,.22);
   }
 
   *{box-sizing:border-box;}
@@ -295,6 +297,8 @@
   .monster-grid{column-width:280px; column-count:3; column-gap:16px; margin-top:16px;}
   .mcard{padding:0; margin-bottom:16px; break-inside:avoid; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
   .mcard:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(0,0,0,.65); border-color:var(--parchment-faint); z-index:5; }
+  .mcard.active-turn{ border-color:var(--c); box-shadow:0 0 0 1.5px var(--c), var(--glow); }
+  .mcard.active-turn:hover{ border-color:var(--c); box-shadow:0 0 0 1.5px var(--c), var(--glow), 0 14px 30px -14px rgba(0,0,0,.65); }
   .mcard:hover .corner{ filter:brightness(1.4); }
   .mcard.defeated{opacity:.4;}
   .mcard.defeated:hover{ transform:none; box-shadow:none; }
@@ -2003,7 +2007,7 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
             {fields.map(([key,label,placeholder])=>(
               <div key={key}>
                 <label style={{display:'block', fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', marginBottom:4}}>{label}</label>
-                <textarea className="text-input" style={{height:32, minHeight:32, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+                <textarea className="text-input" style={{height:46, minHeight:46, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
               </div>
             ))}
           </div>
@@ -2486,7 +2490,8 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
   const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
   const meta = POSTURE_META[monster.activePosture];
   const isAlly = monster.team === 'ally';
-  const cornerColor = isActiveTurn && !monster.isDefeated ? (isAlly ? 'var(--moss)' : 'var(--blood)') : 'var(--line)';
+  const isCurrentTurn = isActiveTurn && !monster.isDefeated;
+  const cornerColor = isCurrentTurn ? (isAlly ? 'var(--moss)' : 'var(--blood)') : 'var(--line)';
   const matchedTriggers = traitTriggers.filter(t=>{
     const c = t.creatureName.toLowerCase();
     return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
@@ -2507,7 +2512,9 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
   }, [monster.name]);
 
   return (
-    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")} onClick={onToggleExpand} title={expanded ? 'Click to collapse' : 'Click to expand'}>
+    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "") + (isCurrentTurn ? " active-turn" : "")}
+      style={isCurrentTurn ? {'--c':cornerColor, '--glow': isAlly ? 'var(--glow-moss)' : 'var(--glow-blood)'} : undefined}
+      onClick={onToggleExpand} title={expanded ? 'Click to collapse' : 'Click to expand'}>
       <div className="corner corner-tl" style={{'--c':cornerColor}}/><div className="corner corner-tr" style={{'--c':cornerColor}}/>
       <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
       <div className="mcard-head">
@@ -3186,25 +3193,31 @@ function HowToUseSection(){
     },
   ];
   return (
-    <div className="axis-card" style={{marginTop:12}}>
-      <div className="axis-eyebrow" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
-        <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
-        <Icon name="scroll" size={14} style={{color:'var(--moss, var(--arcane))'}}/>
-        <span className="eyebrow">How to Use This Page</span>
-      </div>
+    <React.Fragment>
+      <button className="btn" style={{marginBottom:12}} onClick={()=>setOpen(true)} title="Open a quick guide to this page's features">
+        <Icon name="scroll" size={15}/>How to Use This Page
+      </button>
       {open && (
-        <div style={{marginTop:10, display:'flex', flexDirection:'column', gap:14}}>
-          {sections.map(s=>(
-            <div key={s.title}>
-              <p style={{fontSize:13, fontWeight:700, color:'var(--parchment)', margin:'0 0 4px'}}>{s.title}</p>
-              {s.body.map((p,i)=>(
-                <p key={i} style={{fontSize:12.5, color:'var(--parchment-dim)', lineHeight:1.5, margin:'0 0 5px'}}>{p}</p>
+        <div className="modal-veil" onClick={()=>setOpen(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-head">
+              <h2><Icon name="scroll" size={17} style={{color:'var(--moss, var(--arcane))'}}/>How to Use This Page</h2>
+              <button className="modal-close" onClick={()=>setOpen(false)} aria-label="Close" title="Close"><Icon name="x" size={18}/></button>
+            </div>
+            <div className="modal-body">
+              {sections.map(s=>(
+                <div key={s.title} style={{marginBottom:14}}>
+                  <p style={{fontSize:13, fontWeight:700, color:'var(--parchment)', margin:'0 0 4px'}}>{s.title}</p>
+                  {s.body.map((p,i)=>(
+                    <p key={i} style={{fontSize:12.5, color:'var(--parchment-dim)', lineHeight:1.5, margin:'0 0 5px'}}>{p}</p>
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
-    </div>
+    </React.Fragment>
   );
 }
 
