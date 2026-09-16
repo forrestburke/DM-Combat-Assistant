@@ -511,14 +511,22 @@ function useCloudSync(blob, onRemoteBlob){
     setSyncState('syncing');
     let stale = false;
     const t = setTimeout(() => {
-      const write = fbDb.collection('users').doc(user.uid).set({ blob, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
-      // Firestore's write promise can hang indefinitely if a request never resolves
-      // (blocked network, misconfigured rules) — surface that as an error instead of
-      // leaving the UI stuck on "Syncing…" with no way to tell something's wrong.
-      const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error('Sync timed out — check your connection, or that the Firestore rules have been published.')), 15000));
-      Promise.race([write, timeout])
-        .then(()=>{ if(!stale) setSyncState('synced'); })
-        .catch(e=>{ if(!stale){ setError(e.message); setSyncState('error'); } });
+      try{
+        // Firestore rejects any `undefined` field with a *synchronous throw*, not a
+        // rejected promise (optional fields like a PC's species/referenceLink, or a
+        // monster's savingThrows/spellcasting, end up undefined rather than omitted).
+        // Round-tripping through JSON strips those the same way JSON.stringify always
+        // has, before Firestore ever sees them.
+        const safeBlob = JSON.parse(JSON.stringify(blob));
+        const write = fbDb.collection('users').doc(user.uid).set({ blob: safeBlob, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+        // The write promise can also hang indefinitely if a request never resolves
+        // (blocked network, misconfigured rules) — surface that as an error instead of
+        // leaving the UI stuck on "Syncing…" with no way to tell something's wrong.
+        const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error('Sync timed out — check your connection, or that the Firestore rules have been published.')), 15000));
+        Promise.race([write, timeout])
+          .then(()=>{ if(!stale) setSyncState('synced'); })
+          .catch(e=>{ if(!stale){ setError(e.message); setSyncState('error'); } });
+      }catch(e){ if(!stale){ setError(e.message); setSyncState('error'); } }
     }, 1200);
     return () => { stale = true; clearTimeout(t); };
   }, [blob, user?.uid]);
