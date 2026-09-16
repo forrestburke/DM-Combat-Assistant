@@ -120,6 +120,8 @@
   .axes-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
+  .scene-elements-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; align-items:start;}
+  @media (max-width:900px){ .scene-elements-row{grid-template-columns:1fr;} }
   .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
   .axis-card.axis-locked{border-style:dashed;}
   .icon-btn.lock-active{color:var(--amber);}
@@ -1985,7 +1987,7 @@ function SceneFieldsStrip({scene, onChange, onGenerate}){
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="axis-card" style={{marginTop:12}}>
+    <div className="axis-card">
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
         <div className="axis-eyebrow" style={{marginBottom:0, cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
           <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
@@ -2018,7 +2020,7 @@ function MapElementsStrip({scene}){
   const elements = useMemo(()=>suggestMapElements(scene), [scene]);
   const [open, setOpen] = useState(true);
   return (
-    <div className="axis-card" style={{marginTop:12}}>
+    <div className="axis-card">
       <div className="axis-eyebrow" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
         <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
         <Icon name="map" size={14} style={{color:'var(--arcane)'}}/>
@@ -2159,8 +2161,10 @@ function AxesStrip({axes, monsters, scene, onSuggest, onSceneChange, onGenerate,
         <HazardCell hazard={axes.hazardOrClock} customHazards={customHazards} onApply={onApplyHazard} onSaveCustom={onSaveCustomHazard} onRemoveCustom={onRemoveCustomHazard}
           locked={!!locked?.hazard} onToggleLock={()=>onToggleLock('hazard')}/>
       </div>
-      <MapElementsStrip scene={scene}/>
-      <SceneFieldsStrip scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
+      <div className="scene-elements-row">
+        <SceneFieldsStrip scene={scene} onChange={onSceneChange} onGenerate={onGenerate}/>
+        <MapElementsStrip scene={scene}/>
+      </div>
     </div>
   );
 }
