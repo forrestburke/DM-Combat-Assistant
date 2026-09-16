@@ -310,10 +310,10 @@
   .posture-chip{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; white-space:nowrap; }
   .init-label{display:flex; align-items:center; gap:5px; flex-shrink:0;}
   .init-label span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
-  .hp-exact-row{display:flex; align-items:center; gap:7px; margin:10px 0; flex-wrap:wrap;}
-  .hp-exact-label{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
   .hp-exact-sep{color:var(--parchment-faint);}
-  .hp-exact-hint{font-size:11px; color:var(--parchment-faint);}
+  .hp-block{display:flex; flex-direction:column; gap:7px;}
+  .hp-block-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .hp-exact-inline{display:flex; align-items:center; gap:5px; flex-shrink:0;}
   .chevron{ color:var(--parchment-faint); transition:transform .15s; flex-shrink:0; }
   .chevron.open{ transform:rotate(90deg); }
 
@@ -2545,6 +2545,10 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
                 <span style={{color:'var(--parchment-faint)'}}>ft</span>
               </span>
             </span>
+            <span className="ac-badge" title="Initiative — click to edit">
+              <Icon name="zap" size={14}/>
+              <input className="ac-input wide" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
+            </span>
             <button className={"action-btn ally"+(isAlly?" active":"")} onClick={()=>onToggleTeam(monster.id)} aria-label={isAlly ? `Mark ${monster.name} as enemy` : `Mark ${monster.name} as ally`} title={isAlly ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}><Icon name="userplus" size={17}/></button>
             <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
             <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
@@ -2561,17 +2565,24 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>{ const n=Math.max(0, Number(e.target.value)||0); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label={`${monster.name} mob size`}/>
             <button className="stepper" onClick={()=>{ const n=(monster.mobCount||1)+1; onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Increase mob size">+</button>
           </div>
-        ) : <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>}
+        ) : (
+          <div className="hp-block">
+            <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>
+            <div className="hp-block-row">
+              <label className="hp-exact-inline" title="Set exact current/max HP">
+                <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
+                <span className="hp-exact-sep">/</span>
+                <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
+              </label>
+              <label className="init-label" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
+                <span>Adjust</span>
+                <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
+              </label>
+            </div>
+          </div>
+        )}
         <div className="mcard-meta-row">
-          <label className="init-label" title="Initiative">
-            <span>Init</span>
-            <input className="init-input" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
-          </label>
-          {!monster.isMob && <label className="init-label wide" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
-            <span>HP Adjust</span>
-            <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-              onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
-          </label>}
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
         </div>
         <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
@@ -2579,13 +2590,6 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
 
       {expanded && (
         <div className="mcard-body" onClick={e=>e.stopPropagation()}>
-          <div className="hp-exact-row">
-            <span className="hp-exact-label">HP</span>
-            <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
-            <span className="hp-exact-sep">/</span>
-            <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
-            <span className="hp-exact-hint">exact totals — use ±HP above for quick damage/healing</span>
-          </div>
           <AbilityRow monster={monster}/>
           {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0 || monster.immunities?.length > 0) && (
             <div style={{display:'flex', flexDirection:'column', gap:4, marginBottom:10}}>
