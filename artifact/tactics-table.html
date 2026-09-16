@@ -3289,7 +3289,7 @@ function App(){
     updateActive(enc=>({...enc, party:enc.party.map(p=> p.id===id ? {...p, active: p.active===false ? true : false} : p),
       round:{...enc.round, activeCombatantId: enc.round.activeCombatantId===id ? null : enc.round.activeCombatantId}}));
   }
-  function addMonster(monster){ updateActive(enc=>({...enc, round:{...enc.round, monsters:[...enc.round.monsters, monster]}})); expand(monster.id); }
+  function addMonster(monster){ updateActive(enc=>({...enc, round:{...enc.round, monsters:[...enc.round.monsters, monster]}})); }
   function removeMonster(id){
     updateActive(enc=>{
       const monsters = enc.round.monsters.filter(m=>m.id!==id);
