@@ -161,7 +161,7 @@
   .init-chip.ally .init-num{ background:var(--moss); color:var(--ink); }
   .init-chip.ally.active{ background:var(--moss-soft); border-color:var(--moss); color:var(--parchment); box-shadow:0 0 16px rgba(143,232,90,.3); }
   .team-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; cursor:pointer; border:none; padding:0; display:inline-block; vertical-align:middle; }
-  .mcard-name-input{ font-size:17px; font-weight:600; color:var(--parchment); flex:1; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; }
+  .mcard-name-input{ font-size:17px; font-weight:600; color:var(--parchment); flex:1; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; resize:none; overflow:hidden; white-space:pre-wrap; word-break:break-word; line-height:1.3; }
   .mcard-name-input:focus{ outline:1px solid var(--arcane); background:var(--ink); border-radius:2px; padding:0 4px; }
   .mcard-type-input{ font-size:12.5px; color:var(--parchment-faint); flex:1 1 auto; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; }
   .mcard-type-input:focus{ outline:1px solid var(--arcane); background:var(--ink); border-radius:2px; padding:0 4px; }
@@ -288,7 +288,7 @@
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
   .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
 
-  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; margin-top:16px; align-items:start;}
+  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, 300px); gap:16px; margin-top:16px; align-items:start;}
   @media (max-width:620px){ .monster-grid{grid-template-columns:1fr;} }
   .mcard{padding:0; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
   .mcard:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(0,0,0,.65); border-color:var(--parchment-faint); z-index:5; }
@@ -441,7 +441,7 @@
 <div id="root"></div>
 
 <script type="text/babel" data-presets="react">
-const {useState, useEffect, useMemo, useRef} = React;
+const {useState, useEffect, useLayoutEffect, useMemo, useRef} = React;
 
 /* ---------- cloud sync (Firebase) ---------- */
 const firebaseConfig = {
@@ -2497,6 +2497,13 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
     if(deltaVal.trim() !== '' && !Number.isNaN(n) && n !== 0) onDelta(monster.id, n);
     setDeltaVal('');
   }
+  const nameRef = useRef(null);
+  useLayoutEffect(()=>{
+    const el = nameRef.current;
+    if(!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, [monster.name]);
 
   return (
     <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "")} onClick={onToggleExpand} title={expanded ? 'Click to collapse' : 'Click to expand'}>
@@ -2505,8 +2512,10 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
       <div className="mcard-head">
         <div className="mcard-head-top">
           <Icon name="chevron" size={16} className={"chevron" + (expanded ? " open" : "")}/>
-          <input
+          <textarea
+            ref={nameRef}
             className="mcard-name-input"
+            rows={1}
             value={monster.name}
             onChange={e=>onSetStats(monster.id, {name: e.target.value})}
             onClick={e=>e.stopPropagation()}
