@@ -301,6 +301,7 @@
   .mcard-head-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding-left:24px;}
   .mcard-senses{font-size:11.5px; color:var(--parchment-faint); margin:2px 0 0 24px;}
   .mcard-head-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-left:auto;}
+  .mcard-action-btns{display:flex; align-items:center; gap:8px; flex-shrink:0;}
   .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0; flex:1; min-width:0;}
   .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin:0; flex:1 1 auto; min-width:0;}
   .mcard-body{padding:0 14px 13px;}
@@ -2539,9 +2540,11 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
               <Icon name="zap" size={14}/>
               <input className="ac-input wide" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
             </span>
-            <button className={"action-btn ally"+(isAlly?" active":"")} onClick={()=>onToggleTeam(monster.id)} aria-label={isAlly ? `Mark ${monster.name} as enemy` : `Mark ${monster.name} as ally`} title={isAlly ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}><Icon name="userplus" size={17}/></button>
-            <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
-            <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
+            <div className="mcard-action-btns">
+              <button className={"action-btn ally"+(isAlly?" active":"")} onClick={()=>onToggleTeam(monster.id)} aria-label={isAlly ? `Mark ${monster.name} as enemy` : `Mark ${monster.name} as ally`} title={isAlly ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}><Icon name="userplus" size={17}/></button>
+              <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
+              <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
+            </div>
           </div>
         </div>
         {senses.length>0 && <p className="mcard-senses">{senses.join(' · ')}</p>}
