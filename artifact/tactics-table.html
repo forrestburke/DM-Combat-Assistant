@@ -288,9 +288,9 @@
   .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
   .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
 
-  .monster-grid{display:grid; grid-template-columns:repeat(auto-fill, 300px); gap:16px; margin-top:16px; align-items:stretch;}
-  @media (max-width:620px){ .monster-grid{grid-template-columns:1fr;} }
-  .mcard{padding:0; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+  .monster-grid{column-count:3; column-gap:16px; margin-top:16px;}
+  @media (max-width:900px){ .monster-grid{column-count:1;} }
+  .mcard{padding:0; margin-bottom:16px; break-inside:avoid; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
   .mcard:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(0,0,0,.65); border-color:var(--parchment-faint); z-index:5; }
   .mcard:hover .corner{ filter:brightness(1.4); }
   .mcard.defeated{opacity:.4;}
