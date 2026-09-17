@@ -280,6 +280,13 @@
   .action-btn.remove:hover{ border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); box-shadow:var(--glow-blood); }
   .action-btn.apply{ width:30px; height:30px; border-color:rgba(46,230,201,.4); color:var(--arcane); }
   .action-btn.apply:hover{ border-color:var(--arcane); background:var(--arcane-soft); }
+
+  .mcard-lookup-btn{
+    display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;
+    border:1.5px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
+    border-radius:3px; transition:border-color .15s, color .15s, background .15s;
+  }
+  .mcard-lookup-btn:hover{ color:var(--arcane); border-color:var(--arcane); background:var(--arcane-soft); }
   .hp-delta{ width:64px; text-align:center; }
   .hp-delta.wide{ width:100%; }
 
@@ -2527,6 +2534,15 @@ function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, 
             onClick={e=>e.stopPropagation()}
             aria-label="Monster name"
           />
+          <a
+            className="mcard-lookup-btn"
+            href={`https://www.dndbeyond.com/monsters?filter-search=${encodeURIComponent(monster.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e=>e.stopPropagation()}
+            title={`Look up "${monster.name}" stat block on D&D Beyond`}
+            aria-label={`Look up ${monster.name} stat block online`}
+          ><Icon name="link" size={13}/></a>
           {isAlly && <span className="ally-badge">Ally</span>}
           <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
         </div>
