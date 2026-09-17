@@ -461,8 +461,13 @@
 
   .player-view-wrap{ max-width:760px; margin:0 auto; padding:32px 20px 60px; }
   .player-view-msg{ margin-top:60px; text-align:center; color:var(--parchment-dim); font-size:15px; }
+  .player-view-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
   .player-view-title{ font-size:22px; font-weight:700; margin:0 0 2px; color:var(--parchment); }
-  .player-view-round{ font-size:13px; color:var(--parchment-dim); margin:0 0 18px; }
+  .player-view-round{ font-size:13px; color:var(--parchment-dim); margin:0; }
+  .player-view-note-wrap{ margin-top:10px; }
+  .player-view-note{ width:100%; height:44px; min-height:44px; font-family:inherit; font-size:12.5px; resize:vertical; }
+  .player-view-note-status{ display:block; font-size:11px; color:var(--parchment-faint); margin-top:4px; }
+  .player-view-note-status.error{ color:var(--blood-text); }
   .player-view-track{ display:flex; flex-direction:column; gap:10px; }
   .player-view-card{ padding:14px 16px; border:1.5px solid var(--line); transition:border-color .15s, box-shadow .15s; }
   .player-view-card.active{ border-color:var(--c); box-shadow:0 0 0 2px var(--c); }
@@ -608,7 +613,9 @@ function usePlayerShare(uid, snapshot, enabled){
     const t = setTimeout(() => {
       try{
         const safeSnapshot = JSON.parse(JSON.stringify(snapshot));
-        const write = fbDb.collection('shared').doc(uid).set({ ...safeSnapshot, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        // merge:true — and never including `notes` in the payload — so this periodic
+        // republish never clobbers the player-editable notes written straight to Firestore.
+        const write = fbDb.collection('shared').doc(uid).set({ ...safeSnapshot, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
         // Same hang guard as the main cloud sync write — without it, a blocked write
         // (bad rules, dropped connection) leaves the status stuck on "Publishing…" forever.
         const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error('Publish timed out — check your connection, or that the Firestore rules have been published.')), 15000));
@@ -3426,8 +3433,52 @@ function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
   );
 }
 
+/**
+ * Free-text scouting notes players jot down about a monster (a vulnerability,
+ * an AC they've inferred, whatever they've figured out) — written straight to
+ * the public shared doc's `notes` map, which Firestore rules allow anonymous
+ * writers to touch and nothing else. Local state only syncs from the remote
+ * value while the field isn't focused, so an incoming snapshot never stomps
+ * on what a player is mid-typing.
+ */
+function MonsterNoteField({uid, monsterId, remoteValue}){
+  const [value, setValue] = useState(remoteValue || '');
+  const [focused, setFocused] = useState(false);
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | error
+
+  useEffect(()=>{ if(!focused) setValue(remoteValue || ''); }, [remoteValue, focused]);
+
+  useEffect(()=>{
+    if(!focused || !fbDb) return;
+    if(value === (remoteValue || '')) return;
+    setSaveState('saving');
+    const t = setTimeout(()=>{
+      fbDb.collection('shared').doc(uid).set({ notes: {[monsterId]: value} }, {merge:true})
+        .then(()=> setSaveState('idle'))
+        .catch(()=> setSaveState('error'));
+    }, 900);
+    return ()=>clearTimeout(t);
+  }, [value, focused, uid, monsterId]);
+
+  return (
+    <div className="player-view-note-wrap">
+      <textarea
+        className="text-input player-view-note"
+        placeholder="Add a note — a vulnerability, the AC you've figured out, anything else your party's learned…"
+        value={value}
+        onFocus={()=>setFocused(true)}
+        onBlur={()=>setFocused(false)}
+        onChange={e=>setValue(e.target.value)}
+      />
+      {saveState==='saving' && <span className="player-view-note-status">Saving…</span>}
+      {saveState==='error' && <span className="player-view-note-status error">Couldn't save — check your connection and try again.</span>}
+    </div>
+  );
+}
+
 /** Read-only page players open via a shared link — no sign-in, no DM controls. */
 function PlayerView({uid}){
+  const [theme, toggleTheme] = useTheme();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | ok | missing | error
 
@@ -3440,16 +3491,27 @@ function PlayerView({uid}){
     return unsub;
   }, [uid]);
 
+  const themeToggle = (
+    <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
+      <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
+    </button>
+  );
+
   if(status==='loading') return <div className="player-view-wrap"><p className="player-view-msg">Loading…</p></div>;
-  if(status==='missing') return <div className="player-view-wrap"><p className="player-view-msg">This link isn't active right now — ask your DM to turn on Player View.</p></div>;
-  if(status==='error') return <div className="player-view-wrap"><p className="player-view-msg">Couldn't connect. Check your internet connection and try reloading.</p></div>;
+  if(status==='missing') return <div className="player-view-wrap"><div className="player-view-header">{themeToggle}</div><p className="player-view-msg">This link isn't active right now — ask your DM to turn on Player View.</p></div>;
+  if(status==='error') return <div className="player-view-wrap"><div className="player-view-header">{themeToggle}</div><p className="player-view-msg">Couldn't connect. Check your internet connection and try reloading.</p></div>;
 
   const activeId = data.round?.activeCombatantId;
   const partyById = new Map((data.party || []).map(p=>[p.id, p]));
   return (
     <div className="player-view-wrap">
-      <h1 className="player-view-title">{data.encounterName || 'Encounter'}</h1>
-      <p className="player-view-round">Round {data.round?.roundNumber ?? 1}</p>
+      <div className="player-view-header">
+        <div>
+          <h1 className="player-view-title">{data.encounterName || 'Encounter'}</h1>
+          <p className="player-view-round">Round {data.round?.roundNumber ?? 1}</p>
+        </div>
+        {themeToggle}
+      </div>
 
       {data.order?.length > 0 && (
         <div className="player-view-track">
@@ -3474,6 +3536,7 @@ function PlayerView({uid}){
                     {conditions.map(cond=><span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>)}
                   </div>
                 )}
+                {c.kind==='monster' && <MonsterNoteField uid={uid} monsterId={c.id} remoteValue={data.notes?.[c.id]}/>}
               </div>
             );
           })}

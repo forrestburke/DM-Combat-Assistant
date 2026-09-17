@@ -12,11 +12,17 @@ service cloud.firestore {
     // Player View: a DM can publish a stripped-down, read-only snapshot of the
     // current turn order (party + initiative order, no monster stats/tactics)
     // for players to view without signing in. Anyone can read it — that's the
-    // point, it's a link shared with players — but only the owning DM can
-    // write or clear it.
+    // point, it's a link shared with players.
     match /shared/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Only the owning DM can create the doc, delete it, or fully rewrite it.
+      allow create, delete: if request.auth != null && request.auth.uid == userId;
+      // The DM can update anything. An anonymous player (no sign-in) can only
+      // ever touch the `notes` map — shared scouting notes players jot down
+      // about a monster (AC they've inferred, a vulnerability, etc.) — never
+      // the round/order/party data the DM publishes.
+      allow update: if (request.auth != null && request.auth.uid == userId)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes']) && request.resource.data.notes is map);
     }
   }
 }
