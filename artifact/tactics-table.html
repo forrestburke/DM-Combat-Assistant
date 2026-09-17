@@ -3350,6 +3350,29 @@ function App(){
   useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
   useEffect(()=>{ saveCustomHazards(customHazards); }, [customHazards]);
 
+  // Any input/textarea: select its full contents on focus so typing immediately replaces the value.
+  // Enter in a single-line <input> commits the value by blurring, without adding newlines to <textarea> fields.
+  useEffect(()=>{
+    function handleFocusIn(e){
+      const el = e.target;
+      if((el.tagName==='INPUT' || el.tagName==='TEXTAREA') && el.type!=='checkbox' && el.type!=='radio'){
+        el.select();
+      }
+    }
+    function handleKeyDown(e){
+      if(e.key==='Enter' && e.target.tagName==='INPUT' && e.target.type!=='checkbox' && e.target.type!=='radio'){
+        e.preventDefault();
+        e.target.blur();
+      }
+    }
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('keydown', handleKeyDown);
+    return ()=>{
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const cloudBlob = useMemo(()=>({store, customMonsters, customHazards}), [store, customMonsters, customHazards]);
   const applyRemoteBlob = React.useCallback(remote=>{
     if(!remote) return;
