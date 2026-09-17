@@ -458,6 +458,18 @@
 
   .main-grid{display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start;}
   @media (max-width:900px){ .main-grid{grid-template-columns:1fr;} }
+
+  .player-view-wrap{ max-width:760px; margin:0 auto; padding:32px 20px 60px; }
+  .player-view-msg{ margin-top:60px; text-align:center; color:var(--parchment-dim); font-size:15px; }
+  .player-view-title{ font-size:22px; font-weight:700; margin:0 0 2px; color:var(--parchment); }
+  .player-view-round{ font-size:13px; color:var(--parchment-dim); margin:0 0 18px; }
+  .player-view-track{ margin-bottom:24px; padding-top:0; border-top:none; }
+  .player-view-track .init-chip{ gap:8px; padding:6px 12px; }
+  .player-view-party{ display:flex; flex-direction:column; gap:12px; }
+  .player-view-pc{ padding:14px 16px; }
+  .player-view-pc-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .player-view-pc-name{ font-size:15px; font-weight:600; color:var(--parchment); }
+  .player-view-conditions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
 </style>
 
 <div id="root"></div>
@@ -573,6 +585,39 @@ function useCloudSync(blob, onRemoteBlob){
   function signOut(){ fbAuth?.signOut(); setLinkSent(false); }
 
   return { user, authLoading, linkSent, syncState, error, sendSignInLink, signOut, available: !!fbAuth };
+}
+
+/**
+ * Player View: publishes a stripped-down, read-only snapshot (party stats +
+ * turn order only — no monster stats or tactics) to a public Firestore doc,
+ * so a DM can share a link that players open without signing in. One-way,
+ * debounced like the main cloud sync write; deletes the doc when disabled.
+ */
+function usePlayerShare(uid, snapshot, enabled){
+  const [state, setState] = useState('idle'); // idle | syncing | synced | error
+  const [error, setError] = useState(null);
+
+  useEffect(()=>{
+    if(!fbDb || !uid || !enabled) return;
+    setState('syncing');
+    let stale = false;
+    const t = setTimeout(() => {
+      try{
+        const safeSnapshot = JSON.parse(JSON.stringify(snapshot));
+        fbDb.collection('shared').doc(uid).set({ ...safeSnapshot, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+          .then(()=>{ if(!stale) setState('synced'); })
+          .catch(e=>{ if(!stale){ setError(e.message); setState('error'); } });
+      }catch(e){ if(!stale){ setError(e.message); setState('error'); } }
+    }, 800);
+    return () => { stale = true; clearTimeout(t); };
+  }, [uid, enabled, snapshot]);
+
+  useEffect(()=>{
+    if(!fbDb || !uid || enabled) return;
+    fbDb.collection('shared').doc(uid).delete().catch(()=>{});
+  }, [uid, enabled]);
+
+  return { state, error };
 }
 
 /* ---------- theme ---------- */
@@ -3332,6 +3377,109 @@ function CloudSyncControl({cloud, open, onToggleOpen}){
   );
 }
 
+function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  if(!cloud.available) return null;
+  const link = cloud.user ? `${window.location.origin}${window.location.pathname}?player=${cloud.user.uid}` : '';
+  const statusColor = share.state==='error' ? 'var(--blood)' : share.state==='syncing' ? 'var(--amber)' : 'var(--moss)';
+  function copyLink(){
+    navigator.clipboard?.writeText(link).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 1500); }).catch(()=>{});
+  }
+  return (
+    <div style={{position:'relative'}}>
+      <button className="btn" onClick={()=>setOpen(o=>!o)} title="Share a read-only turn-order link with your players">
+        <Icon name="link" size={15} style={{color: enabled && cloud.user ? statusColor : undefined}}/>Player View
+      </button>
+      {open && (
+        <div className="name-suggest-list" style={{width:300, padding:12}} onClick={e=>e.stopPropagation()}>
+          {!cloud.user ? (
+            <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:0}}>Sign in to Cloud Sync first — Player View shares your data through that same account.</p>
+          ) : (
+            <React.Fragment>
+              <label style={{display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'var(--parchment-dim)', marginBottom: enabled?10:0, cursor:'pointer'}}>
+                <input type="checkbox" checked={enabled} onChange={e=>onToggleEnabled(e.target.checked)}/>
+                Share this encounter's turn order
+              </label>
+              {enabled && (
+                <React.Fragment>
+                  <p style={{fontSize:11.5, color:statusColor, margin:'0 0 8px'}}>● {share.state==='syncing' ? 'Publishing…' : share.state==='error' ? 'Error publishing' : 'Live'}</p>
+                  {share.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 8px'}}>{share.error}</p>}
+                  <input className="text-input" readOnly value={link} style={{marginBottom:8, fontSize:11.5}}/>
+                  <button className="btn btn-arcane" style={{width:'100%'}} onClick={copyLink}>{copied ? 'Copied!' : 'Copy Link'}</button>
+                  <p style={{fontSize:11, color:'var(--parchment-faint)', margin:'8px 0 0'}}>Players see party HP/AC and the turn order — monster names and conditions only, no stats or tactics.</p>
+                </React.Fragment>
+              )}
+            </React.Fragment>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Read-only page players open via a shared link — no sign-in, no DM controls. */
+function PlayerView({uid}){
+  const [data, setData] = useState(null);
+  const [status, setStatus] = useState('loading'); // loading | ok | missing | error
+
+  useEffect(()=>{
+    if(!fbDb){ setStatus('error'); return; }
+    const unsub = fbDb.collection('shared').doc(uid).onSnapshot(
+      snap => { if(snap.exists){ setData(snap.data()); setStatus('ok'); } else { setStatus('missing'); } },
+      ()=> setStatus('error')
+    );
+    return unsub;
+  }, [uid]);
+
+  if(status==='loading') return <div className="player-view-wrap"><p className="player-view-msg">Loading…</p></div>;
+  if(status==='missing') return <div className="player-view-wrap"><p className="player-view-msg">This link isn't active right now — ask your DM to turn on Player View.</p></div>;
+  if(status==='error') return <div className="player-view-wrap"><p className="player-view-msg">Couldn't connect. Check your internet connection and try reloading.</p></div>;
+
+  const activeId = data.round?.activeCombatantId;
+  return (
+    <div className="player-view-wrap">
+      <h1 className="player-view-title">{data.encounterName || 'Encounter'}</h1>
+      <p className="player-view-round">Round {data.round?.roundNumber ?? 1}</p>
+
+      {data.order?.length > 0 && (
+        <div className="init-track player-view-track">
+          {data.order.map(c=>{
+            const chipClass = "init-chip"+(c.id===activeId?" active":"")+(c.kind==='pc'?" pc": c.team==='ally'?" ally":" monster");
+            return (
+              <span key={c.id} className={chipClass}>
+                {c.name}
+                {c.kind==='monster' && c.conditions?.length > 0 && c.conditions.map(cond=>(
+                  <span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>
+                ))}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {data.party?.length > 0 && (
+        <div className="player-view-party">
+          {data.party.map(p=>(
+            <div className="plate player-view-pc" key={p.id}>
+              <div className="player-view-pc-head">
+                <span className="player-view-pc-name">{p.name}</span>
+                <span className="ac-badge" title="Armor Class"><Icon name="shield" size={13}/>{p.ac}</span>
+              </div>
+              <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
+              {p.conditions?.length > 0 && (
+                <div className="player-view-conditions">
+                  {p.conditions.map(c=><span key={c} className="condition-chip active" style={{'--c':CONDITION_COLORS[c]}}>{c}</span>)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [theme, toggleTheme] = useTheme();
   const [store, setStore] = useState(loadEncounterStore);
@@ -3382,6 +3530,8 @@ function App(){
   }, []);
   const cloud = useCloudSync(cloudBlob, applyRemoteBlob);
   const [syncPanelOpen, setSyncPanelOpen] = useState(false);
+  const [shareEnabled, setShareEnabled] = useState(()=>{ try{ return localStorage.getItem('tactics-table-share-enabled')==='1'; }catch(e){ return false; } });
+  useEffect(()=>{ try{ localStorage.setItem('tactics-table-share-enabled', shareEnabled?'1':'0'); }catch(e){} }, [shareEnabled]);
 
   const encounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
   function updateActive(fn){ setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===s.activeId ? fn(e) : e)})); }
@@ -3582,6 +3732,17 @@ function App(){
   const activeMonster = activeCombatant?.kind === 'monster' ? encounter.round.monsters.find(m=>m.id===activeCombatant.id) : undefined;
   const activeParty = encounter.party.filter(p=>p.active !== false);
 
+  const playerSnapshot = useMemo(()=>({
+    encounterName: encounter.name,
+    round: { roundNumber: encounter.round.roundNumber, activeCombatantId: encounter.round.activeCombatantId },
+    order: turnOrder.map(c=> c.kind==='monster'
+      ? { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: encounter.round.monsters.find(m=>m.id===c.id)?.conditions || [] }
+      : { id:c.id, name:c.name, kind:'pc' }
+    ),
+    party: activeParty.map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[] })),
+  }), [encounter, turnOrder, activeParty]);
+  const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
+
   return (
     <React.Fragment>
       <div className="topbar">
@@ -3595,6 +3756,7 @@ function App(){
               <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
             </button>
             <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
+            <PlayerShareControl cloud={cloud} enabled={shareEnabled} onToggleEnabled={setShareEnabled} share={playerShare}/>
             <HowToUseSection/>
             <button className="btn" onClick={()=>setDataModalMode('export')} title="Copy every encounter, custom monster, and custom hazard on this device as one block of text"><Icon name="download" size={15}/>Export Data</button>
             <button className="btn" onClick={()=>setDataModalMode('import')} title="Paste back a previous export, overwriting what's on this device"><Icon name="upload" size={15}/>Import Data</button>
@@ -3640,7 +3802,8 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+const playerUid = new URLSearchParams(window.location.search).get('player');
+ReactDOM.createRoot(document.getElementById('root')).render(playerUid ? <PlayerView uid={playerUid}/> : <App/>);
 </script>
 
 </body></html>

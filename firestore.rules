@@ -8,5 +8,15 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Player View: a DM can publish a stripped-down, read-only snapshot of the
+    // current turn order (party + initiative order, no monster stats/tactics)
+    // for players to view without signing in. Anyone can read it — that's the
+    // point, it's a link shared with players — but only the owning DM can
+    // write or clear it.
+    match /shared/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
