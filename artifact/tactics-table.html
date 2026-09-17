@@ -463,12 +463,15 @@
   .player-view-msg{ margin-top:60px; text-align:center; color:var(--parchment-dim); font-size:15px; }
   .player-view-title{ font-size:22px; font-weight:700; margin:0 0 2px; color:var(--parchment); }
   .player-view-round{ font-size:13px; color:var(--parchment-dim); margin:0 0 18px; }
-  .player-view-track{ margin-bottom:24px; padding-top:0; border-top:none; }
-  .player-view-track .init-chip{ gap:8px; padding:6px 12px; }
-  .player-view-party{ display:flex; flex-direction:column; gap:12px; }
-  .player-view-pc{ padding:14px 16px; }
-  .player-view-pc-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .player-view-pc-name{ font-size:15px; font-weight:600; color:var(--parchment); }
+  .player-view-track{ display:flex; flex-direction:column; gap:10px; }
+  .player-view-card{ padding:14px 16px; border:1.5px solid var(--line); transition:border-color .15s, box-shadow .15s; }
+  .player-view-card.active{ border-color:var(--c); box-shadow:0 0 0 2px var(--c); }
+  .player-view-card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .player-view-card-name{ font-size:15px; font-weight:600; color:var(--parchment); display:flex; align-items:center; gap:8px; }
+  .player-view-card-kind{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:2px 7px; border-radius:10px; }
+  .player-view-card-kind.pc{ background:var(--arcane-soft); color:var(--arcane); }
+  .player-view-card-kind.ally{ background:var(--moss-soft); color:var(--moss); }
+  .player-view-card-kind.monster{ background:var(--blood-soft); color:var(--blood-text); }
   .player-view-conditions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
 </style>
 
@@ -600,12 +603,17 @@ function usePlayerShare(uid, snapshot, enabled){
   useEffect(()=>{
     if(!fbDb || !uid || !enabled) return;
     setState('syncing');
+    setError(null); // clear any stale error from a previous failed attempt, or it lingers under "Live" forever
     let stale = false;
     const t = setTimeout(() => {
       try{
         const safeSnapshot = JSON.parse(JSON.stringify(snapshot));
-        fbDb.collection('shared').doc(uid).set({ ...safeSnapshot, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-          .then(()=>{ if(!stale) setState('synced'); })
+        const write = fbDb.collection('shared').doc(uid).set({ ...safeSnapshot, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        // Same hang guard as the main cloud sync write — without it, a blocked write
+        // (bad rules, dropped connection) leaves the status stuck on "Publishing…" forever.
+        const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error('Publish timed out — check your connection, or that the Firestore rules have been published.')), 15000));
+        Promise.race([write, timeout])
+          .then(()=>{ if(!stale){ setState('synced'); setError(null); } })
           .catch(e=>{ if(!stale){ setError(e.message); setState('error'); } });
       }catch(e){ if(!stale){ setError(e.message); setState('error'); } }
     }, 800);
@@ -3437,43 +3445,38 @@ function PlayerView({uid}){
   if(status==='error') return <div className="player-view-wrap"><p className="player-view-msg">Couldn't connect. Check your internet connection and try reloading.</p></div>;
 
   const activeId = data.round?.activeCombatantId;
+  const partyById = new Map((data.party || []).map(p=>[p.id, p]));
   return (
     <div className="player-view-wrap">
       <h1 className="player-view-title">{data.encounterName || 'Encounter'}</h1>
       <p className="player-view-round">Round {data.round?.roundNumber ?? 1}</p>
 
       {data.order?.length > 0 && (
-        <div className="init-track player-view-track">
+        <div className="player-view-track">
           {data.order.map(c=>{
-            const chipClass = "init-chip"+(c.id===activeId?" active":"")+(c.kind==='pc'?" pc": c.team==='ally'?" ally":" monster");
+            const pc = c.kind==='pc' ? partyById.get(c.id) : null;
+            const isActive = c.id === activeId;
+            const kindClass = c.kind==='pc' ? 'pc' : c.team==='ally' ? 'ally' : 'monster';
+            const kindLabel = c.kind==='pc' ? 'PC' : c.team==='ally' ? 'Ally' : 'Monster';
+            const conditions = pc ? pc.conditions : c.conditions;
             return (
-              <span key={c.id} className={chipClass}>
-                {c.name}
-                {c.kind==='monster' && c.conditions?.length > 0 && c.conditions.map(cond=>(
-                  <span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>
-                ))}
-              </span>
+              <div key={c.id} className={"plate player-view-card"+(isActive?" active":"")} style={isActive?{'--c': kindClass==='pc' ? 'var(--arcane)' : kindClass==='ally' ? 'var(--moss)' : 'var(--blood)'}:undefined}>
+                <div className="player-view-card-head">
+                  <span className="player-view-card-name">
+                    {c.name}
+                    <span className={"player-view-card-kind "+kindClass}>{kindLabel}</span>
+                  </span>
+                  {pc && <span className="ac-badge" title="Armor Class"><Icon name="shield" size={13}/>{pc.ac}</span>}
+                </div>
+                {pc && <HpBar current={pc.hpCurrent} max={pc.hpMax} height={8}/>}
+                {conditions?.length > 0 && (
+                  <div className="player-view-conditions">
+                    {conditions.map(cond=><span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>)}
+                  </div>
+                )}
+              </div>
             );
           })}
-        </div>
-      )}
-
-      {data.party?.length > 0 && (
-        <div className="player-view-party">
-          {data.party.map(p=>(
-            <div className="plate player-view-pc" key={p.id}>
-              <div className="player-view-pc-head">
-                <span className="player-view-pc-name">{p.name}</span>
-                <span className="ac-badge" title="Armor Class"><Icon name="shield" size={13}/>{p.ac}</span>
-              </div>
-              <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
-              {p.conditions?.length > 0 && (
-                <div className="player-view-conditions">
-                  {p.conditions.map(c=><span key={c} className="condition-chip active" style={{'--c':CONDITION_COLORS[c]}}>{c}</span>)}
-                </div>
-              )}
-            </div>
-          ))}
         </div>
       )}
     </div>
