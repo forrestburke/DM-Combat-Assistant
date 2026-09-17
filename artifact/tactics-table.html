@@ -3417,7 +3417,7 @@ function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
             <React.Fragment>
               <label style={{display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'var(--parchment-dim)', marginBottom: enabled?10:0, cursor:'pointer'}}>
                 <input type="checkbox" checked={enabled} onChange={e=>onToggleEnabled(e.target.checked)}/>
-                Share this encounter's turn order
+                Enabled
               </label>
               {enabled && (
                 <React.Fragment>
@@ -3467,7 +3467,7 @@ function MonsterNoteField({uid, monsterId, remoteValue}){
     <div className="player-view-note-wrap">
       <textarea
         className="text-input player-view-note"
-        placeholder="Add a note — a vulnerability, the AC you've figured out, anything else your party's learned…"
+        placeholder="Add a note…"
         value={value}
         onFocus={()=>setFocused(true)}
         onBlur={()=>setFocused(false)}
@@ -3539,7 +3539,7 @@ function PlayerView({uid}){
                     {conditions.map(cond=><span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>)}
                   </div>
                 )}
-                {c.kind==='monster' && <MonsterNoteField uid={uid} monsterId={c.id} remoteValue={data.notes?.[c.id]}/>}
+                <MonsterNoteField uid={uid} monsterId={c.id} remoteValue={data.notes?.[c.id]}/>
               </div>
             );
           })}
@@ -3801,15 +3801,24 @@ function App(){
   const activeMonster = activeCombatant?.kind === 'monster' ? encounter.round.monsters.find(m=>m.id===activeCombatant.id) : undefined;
   const activeParty = encounter.party.filter(p=>p.active !== false);
 
-  const playerSnapshot = useMemo(()=>({
-    encounterName: encounter.name,
-    round: { roundNumber: encounter.round.roundNumber, activeCombatantId: encounter.round.activeCombatantId },
-    order: turnOrder.map(c=> c.kind==='monster'
-      ? { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: encounter.round.monsters.find(m=>m.id===c.id)?.conditions || [] }
-      : { id:c.id, name:c.name, kind:'pc' }
-    ),
-    party: activeParty.map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[] })),
-  }), [encounter, turnOrder, activeParty]);
+  // Recomputes order/party from `encounter` directly rather than depending on the
+  // `turnOrder`/`activeParty` variables above — those are fresh array references on
+  // every render regardless of whether the encounter actually changed, which used to
+  // make this object change identity (and re-trigger the publish effect) on every
+  // unrelated re-render, leaving Player View's status stuck on "Publishing…".
+  const playerSnapshot = useMemo(()=>{
+    const order = getTurnOrder(encounter);
+    const party = encounter.party.filter(p=>p.active !== false);
+    return {
+      encounterName: encounter.name,
+      round: { roundNumber: encounter.round.roundNumber, activeCombatantId: encounter.round.activeCombatantId },
+      order: order.map(c=> c.kind==='monster'
+        ? { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: encounter.round.monsters.find(m=>m.id===c.id)?.conditions || [] }
+        : { id:c.id, name:c.name, kind:'pc' }
+      ),
+      party: party.map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[] })),
+    };
+  }, [encounter]);
   const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
 
   return (
