@@ -158,11 +158,21 @@
   .init-chip.active{ background:var(--blood-soft); border-color:var(--blood); color:var(--parchment); box-shadow:var(--glow-blood); }
   .init-num{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 4px; border-radius:50%; background:var(--line); color:var(--parchment); font-size:11px; font-weight:700; }
   .init-chip.active .init-num{ background:var(--blood); color:var(--ink); }
+  .init-num-input{
+    width:26px; height:20px; padding:0; border:none; border-radius:50%; background:var(--line); color:var(--parchment);
+    font-size:11px; font-weight:700; font-family:inherit; text-align:center; -moz-appearance:textfield;
+  }
+  .init-num-input::-webkit-outer-spin-button, .init-num-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .init-num-input:hover, .init-num-input:focus{ background:var(--panel-raised); outline:1px solid var(--arcane); }
+  .init-chip.active .init-num-input{ background:var(--blood); color:var(--ink); }
+  .init-chip.active .init-num-input:hover, .init-chip.active .init-num-input:focus{ background:var(--blood); outline:1px solid var(--ink); }
   .init-input{ width:36px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px; }
   .init-label.wide{ flex:1 1 auto; min-width:110px; }
   .init-label.wide span{ white-space:nowrap; }
   .init-chip.ally{ border-color:rgba(143,232,90,.4); }
   .init-chip.ally .init-num{ background:var(--moss); color:var(--ink); }
+  .init-chip.ally .init-num-input{ background:var(--moss); color:var(--ink); }
+  .init-chip.ally .init-num-input:hover, .init-chip.ally .init-num-input:focus{ background:var(--moss); outline:1px solid var(--ink); }
   .init-chip.ally.active{ background:var(--moss-soft); border-color:var(--moss); color:var(--parchment); box-shadow:0 0 16px rgba(143,232,90,.3); }
   .team-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; cursor:pointer; border:none; padding:0; display:inline-block; vertical-align:middle; }
   .mcard-name-input{ font-size:17px; font-weight:600; color:var(--parchment); flex:1; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; resize:none; overflow:hidden; white-space:pre-wrap; word-break:break-word; line-height:1.3; }
@@ -2369,7 +2379,7 @@ function MobSavePanel({monster, onSetStats}){
     </div>
   );
 }
-function RoundTracker({round, order, party, onNextTurn, onPrevTurn, onPrevRound, onNextRound, onReset, onRemoveMonster, onToggleTeam}){
+function RoundTracker({round, order, party, onNextTurn, onPrevTurn, onPrevRound, onNextRound, onReset, onRemoveMonster, onToggleTeam, onSetInitiative}){
   const active = order.find(c=>c.id===round.activeCombatantId) ?? order[0];
   return (
     <div className="roundbar">
@@ -2394,7 +2404,15 @@ function RoundTracker({round, order, party, onNextTurn, onPrevTurn, onPrevRound,
             const chipClass = "init-chip"+(c.id===active?.id?" active":"")+(c.kind==='pc'?" pc": c.team==='ally'?" ally":" monster");
             return (
               <span key={c.id} className={chipClass}>
-                <span className="init-num mono">{c.initiative}</span>
+                <input
+                  className="init-num-input mono"
+                  type="number"
+                  value={c.initiative}
+                  onClick={e=>e.stopPropagation()}
+                  onChange={e=>onSetInitiative(c.kind, c.id, e.target.value)}
+                  aria-label={`${c.name} initiative`}
+                  title="Edit initiative"
+                />
                 {c.kind==='monster' && (
                   <button
                     className="team-dot"
@@ -3576,7 +3594,7 @@ function App(){
           <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
           <MapElementsStrip scene={encounter.scene}/>
         </div>
-        <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam}/>
+        <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam} onSetInitiative={setInitiative}/>
         <div className="main-grid">
           <div className="stack">
             <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onSetLevel={setPartyLevel} onSetAttackBonus={setPartyAttackBonus} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)} onToggleActive={togglePartyActive}/>
