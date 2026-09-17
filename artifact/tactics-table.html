@@ -370,7 +370,10 @@
   .condition-chip.add{color:var(--parchment-faint); border-style:dashed;}
   .condition-chip.pickable:hover{border-color:var(--c); background:color-mix(in srgb, var(--c) 16%, transparent); color:var(--c);}
   .condition-dot{width:7px; height:7px; border-radius:50%; background:var(--c); flex-shrink:0;}
-  .condition-picker{display:flex; flex-wrap:wrap; gap:5px; position:absolute; top:100%; left:0; margin-top:4px; padding:8px; background:var(--panel); border:1px solid var(--line); z-index:5; width:max-content; max-width:260px;}
+  /* "+ Condition" is the last element in a card, so opening this downward has nowhere to go but
+     into whatever card sits below it in the column/list. Opening upward instead overlaps this
+     same card's own content above (HP bar, etc.) rather than spilling into an unrelated neighbor. */
+  .condition-picker{display:flex; flex-wrap:wrap; gap:5px; position:absolute; bottom:100%; left:0; margin-bottom:4px; padding:8px; background:var(--panel); border:1px solid var(--line); box-shadow:0 8px 24px -8px rgba(0,0,0,.5); z-index:5; width:max-content; max-width:260px;}
   .my-monsters-list{display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow-y:auto; padding-right:2px;}
   .browse-results{display:flex; flex-direction:column; gap:3px; max-height:280px; overflow-y:auto; padding-right:2px;}
   .browse-row{display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left; padding:6px 9px; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);}
