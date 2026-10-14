@@ -1,7 +1,81 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}
+  /* ===== polish for retained components ===== */
+  [id^="prep-"]{ scroll-margin-top:150px; }
+  .addmonster{ display:block; }
+  .tab-row{ display:inline-flex; gap:4px; padding:4px; border:1px solid var(--line); background:var(--panel-raised); border-radius:10px; margin-bottom:14px; }
+  .tab-btn{ flex:none; padding:7px 14px; font-size:14px; font-weight:600; border:none; background:transparent; color:var(--parchment-dim); border-radius:7px; display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+  .tab-btn:hover{ color:var(--parchment); }
+  .tab-btn.active{ background:var(--panel); color:var(--parchment); box-shadow:0 1px 2px rgba(0,0,0,.25); border:none; }
+  .abl-grid{ border-radius:10px; overflow:hidden; border:1px solid var(--line-soft); }
+  .abl-cell{ padding:8px 2px; }
+  .abl-cell .k{ font-size:11px; }
+  .abl-cell .v{ font-size:14px; }
+  .abl-roll-result{ font-size:14px; border-radius:0 8px 8px 0; }
+  .condition-chip{ font-size:12.5px; padding:4px 11px; }
+  .condition-picker{ border-radius:12px; padding:10px; max-width:300px; }
+  .section-label{ margin:18px 0 8px; }
+  .section-label span{ font-size:12px; letter-spacing:.06em; }
+  .attack-row{ font-size:14.5px; padding:7px 0; border-bottom:1px solid var(--line-soft); }
+  .attack-row:last-of-type{ border-bottom:none; }
+  .attack-stats{ font-size:13px; }
+  .callout p{ font-size:14px; }
+  .multiattack-detail{ font-size:13.5px; border-radius:0 8px 8px 0; }
+  .multiattack-desc{ font-size:12.5px; }
+  .spell-row{ font-size:14px; padding:3px 0; }
+  .posture-row{ gap:8px; }
+  .posture-btn{ border-radius:8px; padding:10px 6px; font-size:14px; }
+  .posture-detail{ border-radius:10px; padding:12px 14px; }
+  .posture-detail p{ font-size:14px; }
+  .axis-live-context{ border-radius:10px; }
+  .axis-live-context p{ font-size:13.5px; }
+  .trait-block{ border-radius:10px; padding:12px 14px; }
+  .trait-block p{ font-size:14px; }
+  .trait-block .lbl{ font-size:12px; letter-spacing:.06em; }
+  .tag{ font-size:12px; padding:2px 9px; }
+  .mob-attack{ border-radius:10px; }
+  .mob-attack-hint{ font-size:13px; }
+  .name-suggest-list{ border-radius:10px; }
+  .name-suggest-row{ border-radius:8px; padding:8px 10px; }
+  .name-suggest-name{ font-size:14.5px; }
+  .name-suggest-meta{ font-size:12.5px; }
+  .browse-row{ border-radius:8px; }
+  .browse-row-name{ font-size:14px; }
+  .browse-row-meta{ font-size:12.5px; }
+  .error-box{ border-radius:8px; }
+  .upload-drop{ border-radius:10px; }
+  .modal{ border-radius:16px; }
+  .modal-head{ padding:16px 20px; }
+  .modal-head h2{ font-size:17px; letter-spacing:0; }
+  .modal-body{ padding:18px 20px; }
+  .modal-foot{ padding:14px 20px; }
+  textarea{ border-radius:8px; }
+  .monster-add .hint, .hint{ font-size:13px; color:var(--parchment-faint); }
+  select.text-input{ padding-right:8px; }
+  .player-view-card{ border-radius:var(--radius); }
+  .player-view-wrap{ font-size:15px; }
+  @media (max-width:760px){
+    .topbar-inner{ flex-wrap:wrap; gap:10px; padding:10px 14px; }
+    .brand{ flex:1; }
+    .brand h1{ font-size:18px; }
+    .mode-switch{ order:3; width:100%; }
+    .mode-btn{ flex:1; justify-content:center; }
+    .btn .lbl{ display:none; }
+    .shell{ padding:16px 14px 50px; }
+    .tabsbar{ padding:0 14px 8px; }
+    .setup-card{ padding:16px; }
+    .focus-head, .focus-section{ padding-left:18px; padding-right:18px; }
+    .hp-big-num{ font-size:38px; }
+    .turnbar{ padding:14px 16px; gap:14px; }
+    .turnbar-actions{ margin-left:0; width:100%; }
+    .turnbar-actions .btn-primary{ flex:1; }
+    .stat-fields{ width:100%; gap:6px; }
+    .stat-field input{ width:50px; }
+    .row-actions{ margin-left:0; }
+  }
+</style></head><body>
 <title>Tactics Table</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
@@ -11,331 +85,366 @@
 
 <style>
   :root{
-    --ink:#100e0a;
-    --panel:#17130d;
-    --panel-raised:#1e1810;
-    --line:#342b1c;
-    --line-soft:#241e14;
-    --parchment:#ded1b3;
-    --parchment-dim:#93876c;
-    --parchment-faint:#5f5744;
-    --blood:#ff4d4a;
-    --blood-soft:rgba(255,77,74,.18);
-    --blood-text:#ff8f8c;
-    --amber:#ffb627;
-    --amber-soft:rgba(255,182,39,.18);
-    --amber-text:#ffd166;
-    --arcane:#2ee6c9;
-    --arcane-soft:rgba(46,230,201,.16);
-    --arcane-text:#7ff5e3;
-    --moss:#8fe85a;
-    --moss-soft:rgba(143,232,90,.2);
-    --grain: rgba(255,255,255,.012);
-    --veil: rgba(6,5,3,.78);
-    --glow-blood: 0 0 16px rgba(255,77,74,.35);
-    --glow-arcane: 0 0 16px rgba(46,230,201,.3);
-    --glow-moss: 0 0 16px rgba(143,232,90,.35);
+    --ink:#0d0f13;
+    --panel:#151821;
+    --panel-raised:#1c202b;
+    --line:#2a2f3c;
+    --line-soft:#202431;
+    --parchment:#eceef4;
+    --parchment-dim:#a2a8b8;
+    --parchment-faint:#7c8397;
+    --blood:#f4635f;
+    --blood-soft:rgba(244,99,95,.16);
+    --blood-text:#ff9e9b;
+    --amber:#f6b24c;
+    --amber-soft:rgba(246,178,76,.16);
+    --amber-text:#ffd48f;
+    --arcane:#3ad8c2;
+    --arcane-soft:rgba(58,216,194,.14);
+    --arcane-text:#8ae9dc;
+    --moss:#7fdc62;
+    --moss-soft:rgba(127,220,98,.16);
+    --accent:#8193ff;
+    --accent-soft:rgba(129,147,255,.16);
+    --accent-text:#b4c0ff;
+    --accent-ink:#0d0f13;
+    --grain:transparent;
+    --veil:rgba(5,6,9,.72);
+    --radius:12px;
+    --radius-sm:8px;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.55);
+    --glow-blood: 0 0 0 1px var(--blood), 0 0 22px rgba(244,99,95,.28);
+    --glow-arcane: 0 0 0 1px var(--arcane), 0 0 22px rgba(58,216,194,.25);
+    --glow-moss: 0 0 0 1px var(--moss), 0 0 22px rgba(127,220,98,.28);
   }
   :root[data-theme="light"]{
-    --ink:#f1ead9;
-    --panel:#fdfaf3;
-    --panel-raised:#f4ecd9;
-    --line:#d9cba3;
-    --line-soft:#e7dcbe;
-    --parchment:#2c2415;
-    --parchment-dim:#5c5236;
-    --parchment-faint:#8a7d5c;
-    --blood:#d81e1e;
-    --blood-soft:rgba(216,30,30,.14);
-    --blood-text:#a11616;
-    --amber:#c47f00;
-    --amber-soft:rgba(196,127,0,.14);
-    --amber-text:#8f5c00;
-    --arcane:#0d9488;
-    --arcane-soft:rgba(13,148,136,.14);
-    --arcane-text:#0a6b62;
-    --moss:#4d8a1f;
-    --moss-soft:rgba(77,138,31,.16);
-    --grain: rgba(0,0,0,.02);
-    --veil: rgba(30,24,10,.5);
-    --glow-blood: 0 0 14px rgba(216,30,30,.22);
-    --glow-arcane: 0 0 14px rgba(13,148,136,.2);
-    --glow-moss: 0 0 14px rgba(77,138,31,.22);
+    --ink:#f3f4f8;
+    --panel:#ffffff;
+    --panel-raised:#f1f3f8;
+    --line:#dcdfe8;
+    --line-soft:#e8ebf2;
+    --parchment:#171b26;
+    --parchment-dim:#4f566a;
+    --parchment-faint:#7a8196;
+    --blood:#d6393a;
+    --blood-soft:rgba(214,57,58,.1);
+    --blood-text:#b02a2b;
+    --amber:#c27a05;
+    --amber-soft:rgba(194,122,5,.12);
+    --amber-text:#8a5603;
+    --arcane:#0f9488;
+    --arcane-soft:rgba(15,148,136,.1);
+    --arcane-text:#0a6d64;
+    --moss:#3f8f2a;
+    --moss-soft:rgba(63,143,42,.12);
+    --accent:#4f5fe0;
+    --accent-soft:rgba(79,95,224,.1);
+    --accent-text:#3a49c4;
+    --accent-ink:#ffffff;
+    --veil:rgba(20,24,38,.45);
+    --shadow:0 1px 2px rgba(20,24,38,.06), 0 10px 28px -16px rgba(20,24,38,.2);
+    --glow-blood: 0 0 0 1px var(--blood), 0 0 18px rgba(214,57,58,.2);
+    --glow-arcane: 0 0 0 1px var(--arcane), 0 0 18px rgba(15,148,136,.2);
+    --glow-moss: 0 0 0 1px var(--moss), 0 0 18px rgba(63,143,42,.2);
   }
 
   *{box-sizing:border-box;}
   body{
-    background:
-      repeating-linear-gradient(135deg, var(--grain) 0px, var(--grain) 1px, transparent 1px, transparent 3px),
-      var(--ink);
+    background:var(--ink);
     color:var(--parchment);
-    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    font-family:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size:15px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3,.display{ font-family:'Cinzel', Georgia, serif; text-wrap:balance; }
-  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace;}
-  .eyebrow{ font-size:12.5px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; }
-  ::selection{ background:var(--blood-soft); color:var(--parchment); }
+  h1,h2,h3,.display{ font-family:inherit; text-wrap:balance; }
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{ font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  ::selection{ background:var(--accent-soft); color:var(--parchment); }
   ::-webkit-scrollbar{width:10px;height:10px;}
-  ::-webkit-scrollbar-track{background:var(--panel);}
-  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px;}
-  button{font-family:inherit;cursor:pointer;}
-  button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
-    outline:2px solid var(--arcane); outline-offset:1px;
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
+  button{font-family:inherit; cursor:pointer;}
+  button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
   }
   @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
 
-  .shell{max-width:1680px; margin:0 auto; padding:1px 20px 40px;}
+  .shell{max-width:1240px; margin:0 auto; padding:22px 20px 60px;}
   .topbar{
     position:sticky; top:0; z-index:20;
-    background:var(--ink);
+    background:color-mix(in srgb, var(--ink) 88%, transparent);
+    backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
-    box-shadow:0 10px 24px -12px rgba(0,0,0,.6);
-    padding:16px 20px 14px;
   }
-  .topbar-inner{max-width:1680px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
-  .brand{display:flex; align-items:center; gap:12px;}
-  .brand h1{font-size:21px; font-weight:600; letter-spacing:.02em; margin:0; color:var(--parchment);}
-  .brand p{margin:2px 0 0; font-size:14px; color:var(--parchment-dim);}
-  .topbar-actions{display:flex; align-items:center; gap:8px;}
+  .topbar-inner{max-width:1240px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .brand h1{font-family:'Cinzel', Georgia, serif; font-size:20px; font-weight:700; letter-spacing:.02em; margin:0; color:var(--parchment); white-space:nowrap;}
+  .topbar-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
 
   .btn{
-    display:inline-flex; align-items:center; gap:6px;
-    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
-    padding:7px 12px; font-size:13.5px; font-weight:500; letter-spacing:.02em;
-    border-radius:2px; transition:border-color .15s, color .15s, background .15s;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment);
+    padding:7px 14px; font-size:14px; font-weight:500;
+    border-radius:var(--radius-sm); transition:border-color .15s, background .15s, filter .15s, transform .05s;
   }
-  .btn:hover{color:var(--parchment); border-color:var(--parchment-faint);}
-  .btn-arcane{border-color:rgba(79,168,154,.4); color:var(--arcane); background:var(--arcane-soft);}
-  .btn-arcane:hover{border-color:var(--arcane); background:rgba(79,168,154,.24);}
-  .btn-blood{border-color:rgba(178,60,55,.45); color:var(--blood-text); background:var(--blood-soft);}
-  .btn-blood:hover{border-color:var(--blood); background:rgba(178,60,55,.24);}
-  .btn[disabled]{opacity:.35; cursor:not-allowed;}
+  .btn:hover{border-color:var(--parchment-faint);}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{border-color:var(--accent); background:var(--accent); color:var(--accent-ink); font-weight:600;}
+  .btn-primary:hover{border-color:var(--accent); filter:brightness(1.1);}
+  .btn-lg{min-height:46px; padding:10px 22px; font-size:16px; border-radius:10px;}
+  .btn-sm{min-height:30px; padding:4px 10px; font-size:13px;}
+  .btn-arcane{border-color:color-mix(in srgb, var(--arcane) 45%, transparent); color:var(--arcane-text); background:var(--arcane-soft);}
+  .btn-arcane:hover{border-color:var(--arcane);}
+  .btn-blood{border-color:color-mix(in srgb, var(--blood) 45%, transparent); color:var(--blood-text); background:var(--blood-soft);}
+  .btn-blood:hover{border-color:var(--blood);}
+  .btn-moss{border-color:color-mix(in srgb, var(--moss) 45%, transparent); color:var(--moss); background:var(--moss-soft);}
+  .btn-moss:hover{border-color:var(--moss);}
+  .btn-ghost{background:transparent; border-color:transparent; color:var(--parchment-dim);}
+  .btn-ghost:hover{background:var(--panel-raised); color:var(--parchment); border-color:var(--line);}
+  .btn.icon-only{padding:0; width:36px;}
+  .btn[disabled]{opacity:.4; cursor:not-allowed;}
   .icon-toggle{
-    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
-    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); border-radius:2px;
+    display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px;
+    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); border-radius:var(--radius-sm);
   }
   .icon-toggle:hover{ color:var(--parchment); border-color:var(--parchment-faint); }
 
-  /* axes strip — top of page */
-  .axes-strip{ margin:18px 0; }
-  .axes-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
-  .axes-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
+  /* ===== surfaces ===== */
+  .card, .plate, .axis-card{ position:relative; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); }
+  .card{ box-shadow:var(--shadow); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px 0; flex-wrap:wrap; }
+  .card-title{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .card-title h2{ font-size:18px; font-weight:650; margin:0; color:var(--parchment); }
+  .card-sub{ font-size:14px; color:var(--parchment-dim); margin:3px 0 0; }
+  .card-body{ padding:14px 20px 20px; }
+  .plate-head{ display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line-soft); }
+  .plate-head h2{font-size:15px; font-weight:600; margin:0; color:var(--parchment);}
+  .corner{ display:none; }
+  .stack > * + *{margin-top:16px;}
+
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:2px 10px; border-radius:999px; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); white-space:nowrap; }
+  .pill-accent{ background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 40%, transparent); color:var(--accent-text); }
+  .pill-moss{ background:var(--moss-soft); border-color:color-mix(in srgb, var(--moss) 40%, transparent); color:var(--moss); }
+  .pill-blood{ background:var(--blood-soft); border-color:color-mix(in srgb, var(--blood) 40%, transparent); color:var(--blood-text); }
+  .pill-arcane{ background:var(--arcane-soft); border-color:color-mix(in srgb, var(--arcane) 40%, transparent); color:var(--arcane-text); }
+  .pill-amber{ background:var(--amber-soft); border-color:color-mix(in srgb, var(--amber) 40%, transparent); color:var(--amber-text); }
+  .link-btn{ background:none; border:none; padding:0; color:var(--accent-text); font-size:13.5px; text-decoration:underline; text-underline-offset:3px; }
+  .link-btn:hover{ filter:brightness(1.15); }
+  .muted{ color:var(--parchment-dim); }
+  .empty{ text-align:center; padding:36px 20px; color:var(--parchment-dim); }
+  .empty h3{ font-size:17px; color:var(--parchment); margin:10px 0 4px; }
+  .empty p{ margin:0 auto; max-width:380px; font-size:14.5px; }
+
+  .collapsible-head{ width:100%; display:flex; align-items:center; gap:10px; padding:16px 20px; background:none; border:none; color:var(--parchment); text-align:left; font-size:17px; font-weight:650; border-radius:var(--radius); }
+  .collapsible-head:hover{ background:var(--panel-raised); }
+  .collapsible-hint{ flex:1; min-width:0; color:var(--parchment-dim); font-size:14px; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .collapsible-body{ padding:6px 20px 20px; border-top:1px solid var(--line-soft); }
+
+  /* ===== top bar pieces ===== */
+  .mode-switch{ display:inline-flex; padding:4px; gap:2px; border:1px solid var(--line); background:var(--panel); border-radius:999px; }
+  .mode-btn{ display:inline-flex; align-items:center; gap:8px; border:none; background:transparent; color:var(--parchment-dim); padding:8px 18px; border-radius:999px; font-size:14.5px; font-weight:600; transition:background .15s, color .15s; }
+  .mode-btn:hover{ color:var(--parchment); }
+  .mode-btn.active{ background:var(--accent); color:var(--accent-ink); }
+  .menu-wrap{ position:relative; }
+  .menu-veil{ position:fixed; inset:0; z-index:40; }
+  .menu, .popover{ position:absolute; right:0; top:calc(100% + 8px); z-index:41; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow), 0 24px 48px -20px rgba(0,0,0,.55); }
+  .menu{ min-width:250px; padding:6px; display:flex; flex-direction:column; }
+  .popover{ width:min(330px, calc(100vw - 32px)); padding:16px; }
+  .menu-item{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:10px 11px; border:none; background:none; color:var(--parchment); font-size:14.5px; border-radius:8px; }
+  .menu-item:hover{ background:var(--panel-raised); }
+  .menu-item svg{ color:var(--parchment-dim); flex-shrink:0; }
+  .menu-sep{ height:1px; background:var(--line-soft); margin:5px 4px; }
+  .tabsbar{ max-width:1240px; margin:0 auto; padding:0 20px 10px; display:flex; align-items:center; gap:6px; overflow-x:auto; }
+  .etab{ display:flex; align-items:center; gap:4px; flex-shrink:0; padding:5px 6px 5px 14px; border:1px solid transparent; border-radius:999px; color:var(--parchment-dim); cursor:pointer; font-size:14px; font-weight:500; }
+  .etab:hover{ background:var(--panel-raised); }
+  .etab.active{ background:var(--panel-raised); border-color:var(--line); color:var(--parchment); font-weight:600; }
+  .etab input{ background:var(--ink); border:1px solid var(--accent); border-radius:6px; color:var(--parchment); font:inherit; font-size:14px; padding:2px 6px; width:150px; }
+  .etab-btn{ display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:none; border-radius:50%; background:none; color:var(--parchment-faint); padding:0; }
+  .etab-btn:hover{ background:var(--line); color:var(--parchment); }
+  .etab-add{ border:1px dashed var(--line); width:30px; height:30px; flex-shrink:0; }
+
+  /* ===== prep mode ===== */
+  .prep{ display:flex; flex-direction:column; gap:18px; }
+  .setup-card{ display:flex; align-items:center; gap:22px; padding:20px 22px; flex-wrap:wrap; }
+  .setup-card h2{ font-size:20px; font-weight:700; margin:0 0 3px; }
+  .setup-intro{ flex:1 1 220px; min-width:200px; }
+  .steps{ display:flex; gap:10px; flex-wrap:wrap; }
+  .step{ display:flex; align-items:center; gap:10px; padding:7px 16px 7px 7px; border:1px solid var(--line); border-radius:999px; background:var(--panel-raised); color:var(--parchment); font-size:14px; font-weight:600; text-align:left; }
+  .step:hover{ border-color:var(--parchment-faint); }
+  .step-num{ width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700; background:var(--line); color:var(--parchment-dim); flex-shrink:0; }
+  .step.done .step-num{ background:var(--moss); color:#0d0f13; }
+  .step small{ display:block; color:var(--parchment-dim); font-size:12.5px; font-weight:400; }
+  .prep-grid{ display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:18px; align-items:start; }
+  @media (max-width:1000px){ .prep-grid{ grid-template-columns:1fr; } }
+  .roster{ display:flex; flex-direction:column; gap:10px; }
+  .roster-row{ border:1px solid var(--line); border-radius:10px; background:var(--panel-raised); }
+  .roster-row.absent{ opacity:.55; }
+  .roster-main{ display:flex; align-items:center; gap:10px; padding:10px 12px; flex-wrap:wrap; }
+  .roster-name{ order:1; flex:1 1 160px; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .roster-main > .iconbtn:first-child{ order:0; }
+  .inline-input{ background:transparent; border:1px solid transparent; border-radius:6px; color:inherit; font:inherit; padding:3px 6px; width:100%; min-width:0; }
+  .inline-input:hover{ border-color:var(--line); }
+  .inline-input:focus{ border-color:var(--accent); background:var(--ink); outline:none; }
+  .roster-name .inline-input.title{ font-weight:650; font-size:16px; color:var(--parchment); }
+  .roster-name .inline-input.sub{ color:var(--parchment-dim); font-size:13px; }
+  .stat-fields{ order:3; flex:1 0 100%; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .stat-field{ display:flex; flex-direction:column; gap:3px; }
+  .stat-field > span{ font-size:11px; font-weight:600; color:var(--parchment-faint); text-transform:uppercase; letter-spacing:.05em; text-align:center; }
+  .stat-field input{ width:62px; text-align:center; padding:6px 4px; border:1px solid var(--line); background:var(--ink); border-radius:8px; color:var(--parchment); font:inherit; font-size:14.5px; }
+  .row-actions{ order:2; display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .row-expand{ border-top:1px solid var(--line-soft); padding:14px 14px 16px; background:var(--panel); border-radius:0 0 10px 10px; }
+  .iconbtn{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:1px solid transparent; border-radius:8px; background:none; color:var(--parchment-dim); padding:0; }
+  .iconbtn:hover{ background:var(--panel); border-color:var(--line); color:var(--parchment); }
+  .iconbtn.danger:hover{ color:var(--blood-text); border-color:color-mix(in srgb, var(--blood) 50%, transparent); background:var(--blood-soft); }
+  .iconbtn.on{ color:var(--moss); background:var(--moss-soft); border-color:color-mix(in srgb, var(--moss) 45%, transparent); }
+  .team-toggle{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; flex-shrink:0; }
+  .team-toggle button{ border:none; background:none; color:var(--parchment-dim); padding:4px 11px; font-size:12.5px; font-weight:600; }
+  .team-toggle button.on-enemy{ background:var(--blood-soft); color:var(--blood-text); }
+  .team-toggle button.on-ally{ background:var(--moss-soft); color:var(--moss); }
+
+  /* ===== run mode ===== */
+  .turnbar{ display:flex; align-items:center; gap:22px; padding:16px 22px; flex-wrap:wrap; margin-bottom:18px; }
+  .turnbar-round b{ display:block; font-size:34px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+  .turnbar-label{ display:block; font-size:11.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:3px; }
+  .turnbar-now{ flex:1 1 220px; min-width:200px; }
+  .turnbar-now b{ display:flex; align-items:center; gap:10px; font-size:24px; font-weight:700; line-height:1.15; }
+  .turnbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap; }
+  .kind-dot{ width:10px; height:10px; border-radius:50%; background:var(--c, var(--line)); flex-shrink:0; }
+  .plan-strip{ margin-bottom:18px; }
+  .plan-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; padding:2px 20px 18px; }
+  @media (max-width:900px){ .plan-grid{ grid-template-columns:1fr; } }
+  .plan-item{ border-left:3px solid var(--c); padding:2px 0 2px 12px; }
+  .plan-item b{ display:block; font-size:15px; }
+  .plan-item small{ display:block; color:var(--parchment-faint); font-size:11.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px; }
+  .plan-item p{ margin:4px 0 0; font-size:13.5px; color:var(--parchment-dim); line-height:1.5; }
+  .run{ display:grid; grid-template-columns:340px minmax(0,1fr); gap:18px; align-items:start; }
+  @media (max-width:960px){ .run{ grid-template-columns:1fr; } }
+  .rail{ padding:8px; display:flex; flex-direction:column; gap:4px; }
+  .rail-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 8px 6px; }
+  .rail-head h2{ font-size:13px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--parchment-faint); margin:0; }
+  .rail-row{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:11px; align-items:center; padding:10px 12px 10px 10px; border-radius:10px; border:1px solid transparent; cursor:pointer; position:relative; }
+  .rail-row:hover{ background:var(--panel-raised); }
+  .rail-row.selected{ background:var(--panel-raised); border-color:var(--line); }
+  .rail-row.active{ background:color-mix(in srgb, var(--c) 13%, var(--panel)); border-color:var(--c); box-shadow:0 0 0 1px var(--c); }
+  .rail-row.active.selected{ background:color-mix(in srgb, var(--c) 18%, var(--panel)); }
+  .rail-init{ width:40px; height:36px; text-align:center; border-radius:9px; border:1px solid var(--line); background:var(--ink); color:var(--parchment); font-weight:700; font-size:15px; font-family:'IBM Plex Mono', monospace; padding:0; }
+  .rail-init:hover{ border-color:var(--parchment-faint); }
+  .rail-row.active .rail-init{ background:var(--c); border-color:var(--c); color:#0d0f13; }
+  .rail-name{ display:flex; align-items:center; gap:8px; font-weight:650; font-size:15.5px; min-width:0; }
+  .rail-name span.t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rail-turn{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--c); flex-shrink:0; }
+  .rail-meta{ display:flex; align-items:center; gap:9px; margin-top:6px; min-height:16px; }
+  .rail-hp{ height:6px; flex:1; background:var(--line-soft); border-radius:99px; overflow:hidden; min-width:40px; }
+  .rail-hp > div{ height:100%; border-radius:99px; transition:width .25s ease; }
+  .rail-hp-num{ font-size:12.5px; color:var(--parchment-dim); font-family:'IBM Plex Mono', monospace; white-space:nowrap; }
+  .rail-hp-num.down{ color:var(--blood-text); font-weight:700; }
+  .cond-dots{ display:flex; gap:3px; }
+  .cond-dots i{ width:8px; height:8px; border-radius:50%; background:var(--c); display:block; }
+  .rail-section{ padding:10px 10px 4px; }
+  .rail-defeated{ display:flex; align-items:center; gap:8px; padding:6px 8px; font-size:14px; color:var(--parchment-dim); }
+  .rail-defeated .t{ flex:1; text-decoration:line-through; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .focus{ overflow:hidden; }
+  .focus.is-active{ border-color:var(--c); box-shadow:var(--shadow), 0 0 0 1px var(--c); }
+  .focus-head{ padding:22px 24px 18px; display:flex; gap:18px; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; }
+  .focus-name{ font-size:28px; font-weight:700; margin:0; line-height:1.15; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .focus-sub{ color:var(--parchment-dim); font-size:15px; margin:5px 0 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .focus-stats{ display:flex; gap:10px; }
+  .big-stat{ min-width:70px; padding:9px 12px 8px; border:1px solid var(--line); border-radius:10px; background:var(--panel-raised); text-align:center; }
+  .big-stat b{ display:block; font-size:23px; font-weight:700; line-height:1.1; }
+  .big-stat span{ display:block; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--parchment-faint); margin-top:2px; }
+  .focus-section{ padding:18px 24px; border-top:1px solid var(--line-soft); }
+  .focus-section-title{ font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--parchment-faint); margin:0 0 10px; }
+  .focus-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .focus .condition-row{ margin-top:0; }
+  .focus .condition-picker{ bottom:auto; top:100%; margin:6px 0 0; }
+  .hp-panel{ display:flex; flex-direction:column; gap:12px; }
+  .hp-big{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .hp-big-num{ font-size:44px; font-weight:700; line-height:1; }
+  .hp-big-max{ font-size:18px; color:var(--parchment-dim); }
+  .hp-meter{ height:14px; background:var(--line-soft); border-radius:99px; overflow:hidden; }
+  .hp-meter > div{ height:100%; border-radius:99px; transition:width .25s ease; }
+  .hp-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .hp-actions .amount{ width:130px; font-size:17px; padding:9px 12px; text-align:center; }
+  .hp-edit{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .hp-edit .text-input{ width:84px; text-align:center; }
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin:0 0 16px; }
+  .tab{ padding:10px 16px; border:none; background:none; color:var(--parchment-dim); font-weight:600; font-size:15px; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab:hover{ color:var(--parchment); }
+  .tab.active{ color:var(--parchment); border-bottom-color:var(--accent); }
+  .detail-quick{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:14px; color:var(--parchment-dim); }
+  .lookup-btn{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--accent-text); text-decoration:none; }
+  .lookup-btn:hover{ text-decoration:underline; }
+
+  /* ===== shared form bits ===== */
+  .axes-strip{ margin:0; }
+  .axes-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:10px; flex-wrap:wrap;}
+  .axes-head h2{font-size:15px; font-weight:600; margin:0; color:var(--parchment); display:flex; align-items:center; gap:7px;}
   .axes-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   @media (max-width:900px){ .axes-grid{grid-template-columns:1fr;} }
-  .scene-elements-row{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 18px; align-items:start;}
-  @media (max-width:900px){ .scene-elements-row{grid-template-columns:1fr;} }
-  .axis-card{position:relative; background:var(--panel); border:1px solid var(--line); padding:12px 14px;}
+  .axis-card{padding:14px 16px; background:var(--panel-raised);}
   .axis-card.axis-locked{border-style:dashed;}
   .icon-btn.lock-active{color:var(--amber);}
   .icon-btn[disabled]{opacity:.35; cursor:not-allowed;}
-  .axis-eyebrow{display:flex; align-items:center; gap:5px; margin-bottom:4px;}
-  .axis-title{font-size:15px; font-weight:600; color:var(--parchment); margin:0;}
-  .axis-desc{font-size:13.5px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
-  .axis-note{font-size:13px; margin-top:6px; line-height:1.5; font-style:italic; padding-left:8px; border-left:2px solid var(--c, var(--line));}
-  .axis-badge{font-size:12px; padding:2px 8px; border:1px solid var(--c, var(--line)); color:var(--c, var(--parchment-dim)); flex-shrink:0;}
+  .axis-eyebrow{display:flex; align-items:center; gap:5px; margin-bottom:6px;}
+  .axis-title{font-size:15.5px; font-weight:650; color:var(--parchment); margin:0;}
+  .axis-desc{font-size:14px; color:var(--parchment-dim); margin-top:4px; line-height:1.5;}
+  .axis-note{font-size:13.5px; margin-top:8px; line-height:1.5; font-style:normal; padding-left:10px; border-left:2px solid var(--c, var(--line));}
+  .axis-badge{font-size:12px; padding:2px 9px; border:1px solid var(--c, var(--line)); color:var(--c, var(--parchment-dim)); border-radius:999px; flex-shrink:0;}
 
-  /* round tracker */
-  .roundbar{
-    background:var(--panel); border:1px solid var(--line); padding:12px 16px; margin:0 0 18px;
-  }
-  .roundbar-top{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-  .roundbar-stats{display:flex; align-items:center; gap:22px;}
-  .stat-label{font-size:12px; color:var(--parchment-faint); letter-spacing:.1em; text-transform:uppercase; margin:0 0 2px;}
-  .stat-value{font-size:26px; font-weight:600; line-height:1; margin:0; font-variant-numeric:tabular-nums;}
-  .stat-divider{width:1px; height:28px; background:var(--line);}
-  .active-name{font-size:17px; font-weight:600; color:var(--blood); margin:0; font-family:'Cinzel',serif;}
-  .roundbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
-
-  .init-track{ display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--line-soft); }
-  .init-chip{
-    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:500; padding:5px 10px 5px 6px;
-    border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); border-radius:20px;
-  }
-  .init-chip.pc{ border-color:rgba(46,230,201,.3); }
-  .init-chip.monster{ border-color:rgba(255,77,74,.3); }
-  .init-chip-remove{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; margin-left:-1px; padding:0; border:none; background:none; color:var(--parchment-faint); border-radius:50%; flex-shrink:0; }
-  .init-chip-remove:hover{ background:var(--blood-soft); color:var(--blood-text); }
-  .init-chip.active{ background:var(--blood-soft); border-color:var(--blood); color:var(--parchment); box-shadow:var(--glow-blood); }
-  .init-num{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 4px; border-radius:50%; background:var(--line); color:var(--parchment); font-size:11px; font-weight:700; }
-  .init-chip.active .init-num{ background:var(--blood); color:var(--ink); }
-  .init-num-input{
-    width:26px; height:20px; padding:0; border:none; border-radius:50%; background:var(--line); color:var(--parchment);
-    font-size:11px; font-weight:700; font-family:inherit; text-align:center; -moz-appearance:textfield;
-  }
-  .init-num-input::-webkit-outer-spin-button, .init-num-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-  .init-num-input:hover, .init-num-input:focus{ background:var(--panel-raised); outline:1px solid var(--arcane); }
-  .init-chip.active .init-num-input{ background:var(--blood); color:var(--ink); }
-  .init-chip.active .init-num-input:hover, .init-chip.active .init-num-input:focus{ background:var(--blood); outline:1px solid var(--ink); }
-  .init-input{ width:36px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px; }
+  .init-input{ width:44px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:14px; text-align:center; padding:4px; border-radius:8px; }
   .init-label.wide{ flex:1 1 auto; min-width:110px; }
   .init-label.wide span{ white-space:nowrap; }
-  .init-chip.ally{ border-color:rgba(143,232,90,.4); }
-  .init-chip.ally .init-num{ background:var(--moss); color:var(--ink); }
-  .init-chip.ally .init-num-input{ background:var(--moss); color:var(--ink); }
-  .init-chip.ally .init-num-input:hover, .init-chip.ally .init-num-input:focus{ background:var(--moss); outline:1px solid var(--ink); }
-  .init-chip.ally.active{ background:var(--moss-soft); border-color:var(--moss); color:var(--parchment); box-shadow:0 0 16px rgba(143,232,90,.3); }
-  .team-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; cursor:pointer; border:none; padding:0; display:inline-block; vertical-align:middle; }
-  .mcard-name-input{ font-size:17px; font-weight:600; color:var(--parchment); flex:1; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; resize:none; overflow:hidden; white-space:pre-wrap; word-break:break-word; line-height:1.3; }
-  .mcard-name-input:focus{ outline:1px solid var(--arcane); background:var(--ink); border-radius:2px; padding:0 4px; }
-  .mcard-type-input{ font-size:12.5px; color:var(--parchment-faint); flex:1 1 auto; min-width:0; background:transparent; border:none; padding:0; font-family:inherit; }
-  .mcard-type-input:focus{ outline:1px solid var(--arcane); background:var(--ink); border-radius:2px; padding:0 4px; }
-  .ally-badge{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--moss); background:var(--moss-soft); border:1px solid rgba(143,232,90,.4); border-radius:20px; padding:2px 7px; flex-shrink:0; }
-  .ally-banner{ display:flex; align-items:center; gap:8px; padding:7px 12px; margin-bottom:8px; background:var(--moss-soft); border:1px solid rgba(143,232,90,.25); border-radius:6px; font-size:11.5px; color:var(--moss); }
+  .ally-badge{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--moss); background:var(--moss-soft); border:1px solid color-mix(in srgb, var(--moss) 40%, transparent); border-radius:999px; padding:2px 9px; flex-shrink:0; }
+  .ally-banner{ display:flex; align-items:center; gap:8px; padding:9px 12px; margin-bottom:10px; background:var(--moss-soft); border:1px solid color-mix(in srgb, var(--moss) 30%, transparent); border-radius:8px; font-size:13.5px; color:var(--moss); }
 
-  /* generic plate / card */
-  .plate{ position:relative; background:var(--panel); border:1px solid var(--line); }
-  .plate-head{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--line-soft); }
-  .plate-head h2{font-size:14.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:0; color:var(--parchment);}
-  .corner{position:absolute; width:9px; height:9px; pointer-events:none;}
-  .corner-tl{top:-1px; left:-1px; border-top:1.5px solid var(--c, var(--line)); border-left:1.5px solid var(--c, var(--line));}
-  .corner-tr{top:-1px; right:-1px; border-top:1.5px solid var(--c, var(--line)); border-right:1.5px solid var(--c, var(--line));}
-  .corner-bl{bottom:-1px; left:-1px; border-bottom:1.5px solid var(--c, var(--line)); border-left:1.5px solid var(--c, var(--line));}
-  .corner-br{bottom:-1px; right:-1px; border-bottom:1.5px solid var(--c, var(--line)); border-right:1.5px solid var(--c, var(--line));}
-
-  .stack > * + *{margin-top:16px;}
-
-  /* party */
-  .party-row{padding:10px 14px; border-bottom:1px solid var(--line-soft);}
-  .party-row:last-child{border-bottom:none;}
-  .party-row-head{display:flex; align-items:flex-start; gap:8px;}
-  .party-row-dim{flex:1; min-width:0; transition:opacity .15s;}
-  .party-row.absent .party-row-dim{opacity:.4;}
-  .absent-toggle-btn{
-    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; height:22px; margin-top:1px;
-    font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
-    color:var(--parchment-faint); background:var(--panel-raised); border:1px solid var(--line);
-    border-radius:20px; padding:0 8px; transition:color .15s, border-color .15s, background .15s;
-  }
-  .absent-toggle-btn:hover{ color:var(--amber-text); border-color:var(--amber); }
-  .absent-toggle-btn.active{ color:var(--amber-text); background:var(--amber-soft); border-color:var(--amber); }
-  .party-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
-  .party-identity{display:flex; flex-direction:column; gap:2px; min-width:0;}
-  .party-name-row{display:flex; align-items:center; gap:6px; min-width:0; flex-wrap:wrap;}
-  .party-name{font-weight:600; color:var(--parchment); font-size:15px;}
-  .party-role-row{display:flex; align-items:center; gap:6px;}
-  .party-role{font-size:12px; color:var(--parchment-faint);}
-  .party-stat{display:flex; align-items:center; gap:4px; flex-shrink:0;}
-  .party-stat span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
-  .party-stat input{width:30px; background:var(--ink); border:1px solid var(--line); color:inherit; font-family:inherit; font-size:12.5px; text-align:center; padding:2px; border-radius:3px;}
-  .party-priority{font-size:13px; color:var(--amber-text); font-style:italic; margin-top:5px; line-height:1.4;}
   .link-icon{color:var(--parchment-faint); flex-shrink:0; display:inline-flex;}
   .link-icon:hover{color:var(--arcane);}
-  .icon-btn{color:var(--parchment-faint); background:none; border:none; padding:2px; display:inline-flex;}
+  .icon-btn{color:var(--parchment-faint); background:none; border:none; padding:3px; display:inline-flex; border-radius:6px;}
   .icon-btn:hover{color:var(--blood);}
 
   .disclosure{ border-top:1px solid var(--line-soft); }
   .disclosure-toggle{
     width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
-    padding:9px; font-size:13px; color:var(--parchment-dim); background:none; border:none;
+    padding:10px; font-size:14px; color:var(--parchment-dim); background:none; border:none; border-radius:8px;
   }
   .disclosure-toggle:hover{ color:var(--parchment); }
-  .disclosure-body{ padding:0 14px 12px; display:flex; flex-direction:column; gap:6px; }
+  .disclosure-body{ padding:0 0 4px; display:flex; flex-direction:column; gap:8px; }
 
   .field{padding:9px 14px;}
-  .field label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:4px;}
+  .field label{display:block; font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint); margin-bottom:4px;}
   .text-input{
     width:100%; background:var(--ink); border:1px solid var(--line); color:var(--parchment);
-    font-size:13.5px; padding:6px 8px; font-family:inherit;
+    font-size:14.5px; padding:8px 11px; font-family:inherit; border-radius:8px;
   }
+  .text-input:focus{ border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
   .text-input::placeholder{color:var(--parchment-faint);}
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
   input[type=number]{ -moz-appearance:textfield; }
   .add-btn{
-    display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--arcane); background:var(--arcane-soft);
-    color:var(--arcane); font-size:13px; font-weight:600; padding:7px; transition:background .15s;
+    display:flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--accent); background:var(--accent); border-radius:8px;
+    color:var(--accent-ink); font-size:14px; font-weight:600; padding:9px 16px; transition:filter .15s;
   }
-  .add-btn:hover{background:rgba(79,168,154,.24);}
+  .add-btn:hover{filter:brightness(1.1);}
   .add-btn[disabled]{opacity:.35; cursor:not-allowed;}
 
-  /* hp bar */
-  .hp-row{display:flex; flex-direction:column; gap:6px; margin-top:7px;}
-  .hp-row-sub{display:flex; align-items:center; gap:8px;}
-  .hp-bar-wrap{display:flex; align-items:center; gap:6px; width:100%;}
-  .hp-end-label{font-size:11px; font-weight:700; flex-shrink:0; min-width:18px; color:var(--parchment-dim);}
+  /* hp bar (compact, used by player view) */
+  .hp-bar-wrap{display:flex; align-items:center; gap:8px; width:100%;}
+  .hp-end-label{font-size:12px; font-weight:700; flex-shrink:0; min-width:18px; color:var(--parchment-dim);}
   .hp-end-label.left{text-align:right;}
   .hp-end-label.right{text-align:left; color:var(--parchment-faint);}
-  .hp-track{flex:1; min-width:0; height:6px; background:var(--line-soft); position:relative; overflow:hidden;}
-  .hp-fill{height:100%; transition:width .25s ease;}
-  .hp-track::after{
-    content:''; position:absolute; inset:0;
-    background:repeating-linear-gradient(90deg, rgba(0,0,0,.3) 0 1px, transparent 1px 8%);
-    pointer-events:none;
-  }
-  .hp-text{font-size:12.5px; color:var(--parchment-dim); width:52px; text-align:right; flex-shrink:0;}
+  .hp-track{flex:1; min-width:0; height:8px; background:var(--line-soft); position:relative; overflow:hidden; border-radius:99px;}
+  .hp-fill{height:100%; transition:width .25s ease; border-radius:99px;}
   .stepper{
-    display:flex; align-items:center; justify-content:center; width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; font-size:16px;
     border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim); flex-shrink:0;
     transition:border-color .15s, color .15s;
   }
-  .stepper:hover.dmg{border-color:var(--blood); color:var(--blood-text);}
-  .stepper:hover.heal{border-color:var(--moss); color:#a9c684;}
-
-  .ac-input{ width:34px; background:transparent; border:none; color:inherit; font-family:inherit; font-size:inherit; padding:0; text-align:left; }
-  .ac-input.wide{ width:42px; font-size:14px; font-weight:600; }
-  .ac-input:focus{ outline:1px solid var(--arcane); }
-  .hp-num{ width:46px; text-align:center; padding:3px 2px; }
-
-  .action-btn{
-    display:flex; align-items:center; justify-content:center; width:32px; height:32px; flex-shrink:0;
-    border:1.5px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
-    border-radius:3px; transition:border-color .15s, color .15s, background .15s;
-  }
-  .action-btn.defeat{ border-color:rgba(255,182,39,.35); }
-  .action-btn.defeat:hover{ color:var(--amber-text); border-color:var(--amber); background:var(--amber-soft); }
-  .action-btn.defeat.active{ background:var(--line-soft); border-color:var(--parchment-faint); color:var(--parchment); }
-  .action-btn.ally{ border-color:rgba(143,232,90,.35); }
-  .action-btn.ally:hover{ color:var(--moss); border-color:var(--moss); background:var(--moss-soft); }
-  .action-btn.ally.active{ background:var(--moss-soft); border-color:var(--moss); color:var(--moss); }
-  .action-btn.remove{ border-color:rgba(255,77,74,.35); color:var(--blood-text); }
-  .action-btn.remove:hover{ border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); box-shadow:var(--glow-blood); }
-  .action-btn.apply{ width:30px; height:30px; border-color:rgba(46,230,201,.4); color:var(--arcane); }
-  .action-btn.apply:hover{ border-color:var(--arcane); background:var(--arcane-soft); }
-
-  .mcard-lookup-btn{
-    display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;
-    border:1.5px solid var(--line); background:var(--panel-raised); color:var(--parchment-dim);
-    border-radius:3px; transition:border-color .15s, color .15s, background .15s;
-  }
-  .mcard-lookup-btn:hover{ color:var(--arcane); border-color:var(--arcane); background:var(--arcane-soft); }
-  .hp-delta{ width:64px; text-align:center; }
-  .hp-delta.wide{ width:100%; }
-
-  /* scene */
-  .monster-add{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; border:1px dashed var(--line); background:var(--panel); padding:12px 14px; }
-  .monster-add .grow{flex:1; min-width:220px;}
-  .monster-add .hint{font-size:12px; color:var(--parchment-faint); margin-top:4px;}
-  .monster-add .qty{width:52px; text-align:center;}
-  .monster-add .add-btn{border-color:var(--blood); background:var(--blood-soft); color:var(--blood-text); padding:7px 14px;}
-  .monster-add .add-btn:hover{background:rgba(178,60,55,.24);}
-  .monster-add-row{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%;}
-
-  .monster-grid{column-width:280px; column-count:3; column-gap:16px; margin-top:16px;}
-  .mcard{padding:0; margin-bottom:16px; break-inside:avoid; transition:opacity .2s, transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
-  .mcard:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -14px rgba(0,0,0,.65); border-color:var(--parchment-faint); z-index:5; }
-  .mcard.active-turn{ border-color:var(--c); box-shadow:0 0 0 1.5px var(--c), var(--glow); }
-  .mcard.active-turn:hover{ border-color:var(--c); box-shadow:0 0 0 1.5px var(--c), var(--glow), 0 14px 30px -14px rgba(0,0,0,.65); }
-  .mcard:hover .corner{ filter:brightness(1.4); }
-  .mcard.defeated{opacity:.4;}
-  .mcard.defeated:hover{ transform:none; box-shadow:none; }
-  .mcard-head{display:flex; flex-direction:column; gap:6px; padding:12px 14px; cursor:pointer;}
-  .mcard-head:hover{ background:var(--panel-raised); }
-  .mcard-head-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-  .mcard-head-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding-left:24px;}
-  .mcard-senses{font-size:11.5px; color:var(--parchment-faint); margin:2px 0 0 24px;}
-  .mcard-head-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-left:auto;}
-  .mcard-action-btns{display:flex; align-items:center; gap:8px; flex-shrink:0;}
-  .mcard-name{font-size:17px; font-weight:600; color:var(--parchment); margin:0; flex:1; min-width:0;}
-  .mcard-type{font-size:12.5px; color:var(--parchment-faint); margin:0; flex:1 1 auto; min-width:0;}
-  .mcard-body{padding:0 14px 13px;}
-  .ac-badge{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--parchment-dim); flex-shrink:0;}
-  .mcard-collapsed-meta{ display:flex; flex-direction:column; gap:7px; padding:0 14px 12px; }
-  .posture-chip{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; white-space:nowrap; }
-  .init-label{display:flex; align-items:center; gap:5px; flex-shrink:0;}
-  .init-label span{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
-  .hp-exact-sep{color:var(--parchment-faint);}
-  .hp-block{display:flex; flex-direction:column; gap:7px;}
-  .hp-block-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
-  .hp-exact-inline{display:flex; align-items:center; gap:5px; flex-shrink:0;}
+  .stepper:hover{border-color:var(--parchment-faint); color:var(--parchment);}
+  .ac-badge{display:flex; align-items:center; gap:5px; font-size:14px; color:var(--parchment-dim); flex-shrink:0;}
+  .posture-chip{ font-size:12px; font-weight:600; padding:2px 10px; border-radius:999px; border:1px solid var(--c); color:var(--c); background:var(--c-soft); flex-shrink:0; white-space:nowrap; }
+  .init-label{display:flex; align-items:center; gap:6px; flex-shrink:0;}
+  .init-label span{font-size:11.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--parchment-faint);}
   .chevron{ color:var(--parchment-faint); transition:transform .15s; flex-shrink:0; }
   .chevron.open{ transform:rotate(90deg); }
 
@@ -459,8 +568,6 @@
   .tab-btn{ flex:1; padding:7px; font-size:13px; font-weight:600; border:1px solid var(--line); background:var(--panel-raised); color:var(--parchment-faint); display:inline-flex; align-items:center; justify-content:center; gap:5px; }
   .tab-btn.active{ border-color:var(--arcane); background:var(--arcane-soft); color:var(--arcane); }
 
-  .main-grid{display:grid; grid-template-columns:280px 1fr; gap:16px; align-items:start;}
-  @media (max-width:900px){ .main-grid{grid-template-columns:1fr;} }
 
   .player-view-wrap{ max-width:760px; margin:0 auto; padding:32px 20px 60px; }
   .player-view-msg{ margin-top:60px; text-align:center; color:var(--parchment-dim); font-size:15px; }
@@ -693,6 +800,8 @@ function Icon({name, size=18, style, className}) {
     case 'moon': return <svg {...c}><path d="M20 14.5 A8.5 8.5 0 1 1 9.5 4 A7 7 0 0 0 20 14.5 Z"/></svg>;
     case 'photo': return <svg {...c}><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M3 17 L9 12 L13 15 L16 12.5 L21 16.5"/></svg>;
     case 'cloud': return <svg {...c}><path d="M7 18 A4.5 4.5 0 0 1 7.5 9.1 A6 6 0 0 1 19 10.5 A4 4 0 0 1 18.5 18 Z"/></svg>;
+    case 'dots': return <svg {...c} fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>;
+    case 'help': return <svg {...c}><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5 A2.6 2.6 0 0 1 14.6 10.3 C14.6 12.2 12 12.3 12 14.2"/><circle cx="12" cy="17.2" r=".8" fill="currentColor" stroke="none"/></svg>;
     default: return null;
   }
 }
@@ -1915,10 +2024,27 @@ const POSTURE_META = { A:{label:'Offensive', color:'var(--blood)', soft:'var(--b
 function computeAutoPosture(m){ if(m.hpMax<=0) return m.activePosture; const pct = m.hpCurrent/m.hpMax; if(pct<=0.3) return 'B'; return m.activePosture==='B' ? 'A' : m.activePosture; }
 
 /** Combined PC + monster turn order, sorted by initiative (highest first). Defeated monsters are dropped; PCs always stay in the order. */
-function getTurnOrder(encounter){
+function getTurnOrder(encounter, includeDefeated=false){
   const pcs = encounter.party.filter(p=>p.active !== false).map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, kind:'pc' }));
-  const mons = encounter.round.monsters.filter(m=>!m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, kind:'monster', team: m.team || 'enemy' }));
+  const mons = encounter.round.monsters.filter(m=>includeDefeated || !m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, kind:'monster', team: m.team || 'enemy' }));
   return [...pcs, ...mons].sort((a,b)=> b.initiative - a.initiative);
+}
+/** Whose turn it is. If the stored active combatant has since dropped out of the order (defeated, removed, absent),
+ * carry on from where they sat in the full initiative order instead of snapping back to the top. */
+function resolveActiveId(encounter){
+  const order = getTurnOrder(encounter);
+  if(order.length === 0) return null;
+  const id = encounter.round.activeCombatantId;
+  if(order.some(c=>c.id===id)) return id;
+  const full = getTurnOrder(encounter, true);
+  const idx = full.findIndex(c=>c.id===id);
+  if(idx >= 0){
+    for(let k=1; k<=full.length; k++){
+      const c = full[(idx+k) % full.length];
+      if(order.some(o=>o.id===c.id)) return c.id;
+    }
+  }
+  return order[0].id;
 }
 const STORAGE_KEY = 'tactics-table-encounter-v2';
 
@@ -1963,157 +2089,6 @@ function AddPartyMemberForm({onAdd, onDone}){
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
       <input className="text-input" value={link} onChange={e=>setLink(e.target.value)} placeholder="D&D Beyond link (optional)"/>
       <button className="add-btn" disabled={!name.trim()} onClick={submit} title="Add this character to the party"><Icon name="userplus" size={16}/>Add PC</button>
-    </div>
-  );
-}
-
-function PartyRow({p, onDelta, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition, onToggleActive}){
-  const [deltaVal, setDeltaVal] = useState('');
-  const isAbsent = p.active === false;
-  function applyDelta(){
-    const n = Number(deltaVal);
-    if(deltaVal.trim() !== '' && !Number.isNaN(n) && n !== 0) onDelta(p.id, n);
-    setDeltaVal('');
-  }
-  return (
-    <div className={"party-row"+(isAbsent?" absent":"")}>
-      <div className="party-row-head">
-        <div className="party-row-dim">
-          <div className="party-top">
-            <div className="party-identity">
-              <div className="party-name-row">
-                <span className="party-name">{p.name}</span>
-                <label className="party-stat" title="Character level — used for the encounter difficulty rating">
-                  <span>Lvl</span>
-                  <input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onSetLevel(p.id, Math.max(1, Math.min(20, Number(e.target.value)||1)))} aria-label={`${p.name} level`}/>
-                </label>
-              </div>
-              <div className="party-role-row">
-                <span className="party-role">{p.species ? `${p.species} ${p.role}` : p.role}</span>
-                {p.referenceLink && <a className="link-icon" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="D&D Beyond sheet"><Icon name="link" size={14}/></a>}
-              </div>
-            </div>
-            <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto'}}>
-              <label className="init-label" title="Initiative">
-                <span>Init</span>
-                <input className="init-input" type="number" value={p.initiative ?? 10} onChange={e=>onSetInitiative(p.id, e.target.value)} aria-label={`${p.name} initiative`}/>
-              </label>
-              <button className="icon-btn" onClick={()=>onRemove(p.id)} aria-label={`Remove ${p.name}`} title="Permanently delete this character"><Icon name="trash" size={15}/></button>
-            </div>
-          </div>
-        </div>
-        <button
-          className={"absent-toggle-btn"+(isAbsent?" active":"")}
-          onClick={()=>onToggleActive(p.id)}
-          aria-label={isAbsent ? `Mark ${p.name} present` : `Mark ${p.name} absent`}
-          title={isAbsent ? 'Absent this session — click to bring them back into the initiative tracker' : "Player absent this session? Click to pull them out of the initiative tracker without deleting their sheet"}
-        >{isAbsent ? 'Absent' : <Icon name="userminus" size={13}/>}</button>
-      </div>
-      <div className="party-row-dim">
-        <div className="hp-row">
-          <HpBar current={p.hpCurrent} max={p.hpMax} height={8}/>
-          <div className="hp-row-sub">
-            <label className="init-label wide" title="Damage or heal this character — type a negative number to damage, a positive number to heal, then press Enter to apply">
-              <span>HP Adjust</span>
-              <input className="text-input hp-delta wide" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-                onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8 or 5" aria-label={`Apply HP change to ${p.name} — press Enter to apply`}/>
-            </label>
-            <label className="party-stat" title="Armor Class">
-              <span>AC</span>
-              <input type="number" value={p.ac} onChange={e=>onSetAc(p.id, Number(e.target.value)||0)} aria-label={`${p.name} armor class`}/>
-            </label>
-            <label className="party-stat" title="Total attack bonus — autofills the Attack Roll panel on mobs when this PC is picked">
-              <span>Atk</span>
-              <input type="number" value={p.attackBonus ?? 5} onChange={e=>onSetAttackBonus(p.id, Number(e.target.value)||0)} aria-label={`${p.name} attack bonus`}/>
-            </label>
-          </div>
-        </div>
-        <p className="party-priority">{p.tacticalPriority}</p>
-        <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
-      </div>
-    </div>
-  );
-}
-
-function PartyContent({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition, onToggleActive}){
-  const [showAdd, setShowAdd] = useState(false);
-  return (
-    <React.Fragment>
-      {party.map(p=><PartyRow key={p.id} p={p} onDelta={onDelta} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onSetAttackBonus={onSetAttackBonus} onToggleCondition={onToggleCondition} onToggleActive={onToggleActive}/>)}
-      <div className="disclosure">
-        <button className="disclosure-toggle" onClick={()=>setShowAdd(v=>!v)} title={showAdd ? 'Cancel adding a party member' : 'Open the form to add a new party member'}>
-          <Icon name="userplus" size={15}/> {showAdd ? 'Cancel' : 'Add PC'}
-        </button>
-        {showAdd && <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>}
-      </div>
-    </React.Fragment>
-  );
-}
-
-function PartyPanel({party, onDelta, onAdd, onRemove, onSetInitiative, onSetAc, onSetLevel, onSetAttackBonus, onToggleCondition, onToggleActive}){
-  return (
-    <div className="plate">
-      <div className="corner corner-tl"/><div className="corner corner-tr"/><div className="corner corner-bl"/><div className="corner corner-br"/>
-      <div className="plate-head"><Icon name="party" size={18} style={{color:'var(--arcane)'}}/><h2>Party</h2></div>
-      <PartyContent party={party} onDelta={onDelta} onAdd={onAdd} onRemove={onRemove} onSetInitiative={onSetInitiative} onSetAc={onSetAc} onSetLevel={onSetLevel} onSetAttackBonus={onSetAttackBonus} onToggleCondition={onToggleCondition} onToggleActive={onToggleActive}/>
-    </div>
-  );
-}
-
-function SceneFieldsStrip({scene, onChange, onGenerate}){
-  const fields = [
-    ['environment','Environment','e.g. flooded cellar, mountain pass, city rooftops'],
-    ['terrain','Terrain','e.g. difficult terrain, chokepoints, cover'],
-    ['combatSituation','Combat Situation','e.g. ambush, escort, defend the door'],
-    ['timeOfDay','Time of Day','e.g. dusk, midnight, high noon'],
-  ];
-  const [open, setOpen] = useState(true);
-
-  return (
-    <div className="axis-card">
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:8}}>
-        <div className="axis-eyebrow" style={{marginBottom:0, cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
-          <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
-          <Icon name="scroll" size={14} style={{color:'var(--amber)'}}/>
-          <span className="eyebrow" style={{color:'var(--amber)'}}>Scene Notes</span>
-        </div>
-      </div>
-
-      {open && (
-        <>
-          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:10, marginTop:10}}>
-            {fields.map(([key,label,placeholder])=>(
-              <div key={key}>
-                <label style={{display:'block', fontSize:11.5, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'var(--parchment-faint)', marginBottom:4}}>{label}</label>
-                <textarea className="text-input" style={{height:46, minHeight:46, fontFamily:'inherit', fontSize:13.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
-              </div>
-            ))}
-          </div>
-          <button className="add-btn" style={{marginTop:12, borderColor:'var(--blood)', background:'var(--blood-soft)', color:'var(--blood-text)'}} onClick={onGenerate} title="Draft Win Condition, Battlefield Optimizer, and Hazard/Clock from this scene text and the current roster">
-            <Icon name="sparkles" size={16}/>Draft Axes from Scene
-          </button>
-          <p style={{fontSize:12, color:'var(--parchment-faint)', marginTop:6}}>Drafts the axes above from this scene text and whatever's currently in the fight — doesn't add monsters itself.</p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function MapElementsStrip({scene}){
-  const elements = useMemo(()=>suggestMapElements(scene), [scene]);
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="axis-card">
-      <div className="axis-eyebrow" style={{cursor:'pointer'}} onClick={()=>setOpen(v=>!v)}>
-        <Icon name="chevron" size={14} className={"chevron"+(open?" open":"")} style={{color:'var(--parchment-faint)'}}/>
-        <Icon name="map" size={14} style={{color:'var(--arcane)'}}/>
-        <span className="eyebrow" style={{color:'var(--arcane)'}}>Recommended Map Elements</span>
-      </div>
-      {open && (
-        <ul style={{margin:'6px 0 0', paddingLeft:0, listStyle:'none', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', columnGap:20}}>
-          {elements.map(el=><li key={el} style={{fontSize:13, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:6, marginTop:3}}><span style={{color:'var(--parchment-faint)'}}>–</span><span>{el}</span></li>)}
-        </ul>
-      )}
     </div>
   );
 }
@@ -2248,20 +2223,6 @@ function AxesStrip({axes, monsters, scene, onSuggest, onRollCombatMenu, onRollWi
   );
 }
 
-function DifficultyStat({party, monsters}){
-  const result = React.useMemo(()=>computeEncounterDifficulty(party, monsters), [party, monsters]);
-  if(!result) return null;
-  const tooltip = result.tier === 'Unknown' ? result.reason :
-    `Monster XP total: ${result.totalXp.toLocaleString()} (2024 DMG — no multiplier, allies excluded). `+
-    `Party budget — Low ${result.thresholds.low.toLocaleString()} · Moderate ${result.thresholds.moderate.toLocaleString()} · High ${result.thresholds.high.toLocaleString()}.`+
-    (result.unknownCount ? ` (${result.unknownCount} monster${result.unknownCount>1?'s':''} without CR excluded.)` : '');
-  return (
-    <React.Fragment>
-      <div className="stat-divider"/>
-      <div title={tooltip}><p className="stat-label">Difficulty</p><p className="stat-value" style={{color:DIFFICULTY_COLOR[result.tier]}}>{result.tier}</p></div>
-    </React.Fragment>
-  );
-}
 function RollModeSelect({value, onChange, title}){
   return (
     <select className="text-input" style={{width:112, flexShrink:0}} value={value} onChange={e=>onChange(e.target.value)} title={title}>
@@ -2442,64 +2403,6 @@ function MobSavePanel({monster, onSetStats}){
     </div>
   );
 }
-function RoundTracker({round, order, party, onNextTurn, onPrevTurn, onPrevRound, onNextRound, onReset, onRemoveMonster, onToggleTeam, onSetInitiative}){
-  const active = order.find(c=>c.id===round.activeCombatantId) ?? order[0];
-  return (
-    <div className="roundbar">
-      <div className="roundbar-top">
-        <div className="roundbar-stats">
-          <div><p className="stat-label">Round</p><p className="stat-value mono">{round.roundNumber}</p></div>
-          <div className="stat-divider"/>
-          <div><p className="stat-label">Active</p><p className="active-name">{active ? active.name : '—'}</p></div>
-          <DifficultyStat party={party} monsters={round.monsters}/>
-        </div>
-        <div className="roundbar-actions">
-          <button className="btn" onClick={onReset}><Icon name="reset" size={15}/>Reset</button>
-          <button className="btn" onClick={onPrevRound}><Icon name="chevron" size={15} style={{transform:'scaleX(-1)'}}/>Previous Round</button>
-          <button className="btn" onClick={onPrevTurn}><Icon name="chevron" size={15} style={{transform:'scaleX(-1)'}}/>Previous Turn</button>
-          <button className="btn btn-arcane" onClick={onNextTurn}><Icon name="chevron" size={15}/>Next Turn</button>
-          <button className="btn btn-blood" onClick={onNextRound}><Icon name="skip" size={15}/>Next Round</button>
-        </div>
-      </div>
-      {order.length > 0 && (
-        <div className="init-track">
-          {order.map(c=>{
-            const chipClass = "init-chip"+(c.id===active?.id?" active":"")+(c.kind==='pc'?" pc": c.team==='ally'?" ally":" monster");
-            return (
-              <span key={c.id} className={chipClass}>
-                <input
-                  className="init-num-input mono"
-                  type="number"
-                  value={c.initiative}
-                  onClick={e=>e.stopPropagation()}
-                  onChange={e=>onSetInitiative(c.kind, c.id, e.target.value)}
-                  aria-label={`${c.name} initiative`}
-                  title="Edit initiative"
-                />
-                {c.kind==='monster' && (
-                  <button
-                    className="team-dot"
-                    style={{background: c.team==='ally' ? 'var(--moss)' : 'var(--blood)'}}
-                    onClick={e=>{e.stopPropagation(); onToggleTeam(c.id);}}
-                    aria-label={`Toggle ${c.name} team (currently ${c.team})`}
-                    title={c.team==='ally' ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}
-                  />
-                )}
-                {c.name}
-                {c.kind==='monster' && (
-                  <button className="init-chip-remove" onClick={()=>onRemoveMonster(c.id)} aria-label={`Remove ${c.name} from combat`} title="Remove from combat">
-                    <Icon name="x" size={11}/>
-                  </button>
-                )}
-              </span>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function PostureDetail({posture, color}){
   return (
     <div className="posture-detail" style={{'--c':color}}>
@@ -2572,241 +2475,6 @@ function AbilityRow({monster}){
   );
 }
 
-function MonsterCard({monster, isActiveTurn, expanded, onToggleExpand, onDelta, onPosture, onToggleDefeated, onRemove, onSetStats, onToggleTeam, traitTriggers, axes, onToggleCondition, party, onDamageParty}){
-  const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
-  const meta = POSTURE_META[monster.activePosture];
-  const isAlly = monster.team === 'ally';
-  const isCurrentTurn = isActiveTurn && !monster.isDefeated;
-  const cornerColor = isCurrentTurn ? (isAlly ? 'var(--moss)' : 'var(--blood)') : 'var(--line)';
-  const matchedTriggers = traitTriggers.filter(t=>{
-    const c = t.creatureName.toLowerCase();
-    return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
-  });
-  const {senses, other: otherPassives} = splitSensesFromPassives(monster.passives);
-  const [deltaVal, setDeltaVal] = useState('');
-  function applyDelta(){
-    const n = Number(deltaVal);
-    if(deltaVal.trim() !== '' && !Number.isNaN(n) && n !== 0) onDelta(monster.id, n);
-    setDeltaVal('');
-  }
-  const nameRef = useRef(null);
-  useLayoutEffect(()=>{
-    const el = nameRef.current;
-    if(!el) return;
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-  }, [monster.name]);
-
-  return (
-    <div className={"plate mcard" + (monster.isDefeated ? " defeated" : "") + (isCurrentTurn ? " active-turn" : "")}
-      style={isCurrentTurn ? {'--c':cornerColor, '--glow': isAlly ? 'var(--glow-moss)' : 'var(--glow-blood)'} : undefined}
-      onClick={onToggleExpand} title={expanded ? 'Click to collapse' : 'Click to expand'}>
-      <div className="corner corner-tl" style={{'--c':cornerColor}}/><div className="corner corner-tr" style={{'--c':cornerColor}}/>
-      <div className="corner corner-bl" style={{'--c':cornerColor}}/><div className="corner corner-br" style={{'--c':cornerColor}}/>
-      <div className="mcard-head">
-        <div className="mcard-head-top">
-          <Icon name="chevron" size={16} className={"chevron" + (expanded ? " open" : "")}/>
-          <textarea
-            ref={nameRef}
-            className="mcard-name-input"
-            rows={1}
-            value={monster.name}
-            onChange={e=>onSetStats(monster.id, {name: e.target.value})}
-            onClick={e=>e.stopPropagation()}
-            aria-label="Monster name"
-          />
-          <a
-            className="mcard-lookup-btn"
-            href={`https://www.dndbeyond.com/monsters?filter-search=${encodeURIComponent(monster.name)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e=>e.stopPropagation()}
-            title={`Look up "${monster.name}" stat block on D&D Beyond`}
-            aria-label={`Look up ${monster.name} stat block online`}
-          ><Icon name="link" size={13}/></a>
-          {isAlly && <span className="ally-badge">Ally</span>}
-          <span className="posture-chip" style={{'--c':meta.color, '--c-soft':meta.soft}} title={`Currently on Posture ${monster.activePosture}: ${meta.label} — click A, B, or C below to switch`}>{monster.activePosture} · {meta.label}</span>
-        </div>
-        <div className="mcard-head-bottom">
-          <input
-            className="mcard-type-input"
-            value={monster.baseType}
-            onChange={e=>onSetStats(monster.id, {baseType: e.target.value})}
-            onClick={e=>e.stopPropagation()}
-            aria-label="Creature type and size"
-            title="Edit creature type / size"
-          />
-          <div className="mcard-head-actions" onClick={e=>e.stopPropagation()}>
-            <span className="ac-badge" title="Armor Class — click to edit">
-              <Icon name="shield" size={14}/>
-              <input className="ac-input wide" type="number" value={monster.ac} onChange={e=>onSetStats(monster.id, {ac: Number(e.target.value)||0})} aria-label={`${monster.name} armor class`} title="Armor Class"/>
-            </span>
-            <span className="ac-badge" title="Speed">
-              <Icon name="speed" size={14} style={{marginRight:1}}/>
-              <span style={{display:'flex', alignItems:'baseline', gap:1}}>
-                <input className="ac-input" style={{width:30}} type="number" value={monster.speed} onChange={e=>onSetStats(monster.id, {speed: Number(e.target.value)||0})} aria-label={`${monster.name} speed`}/>
-                <span style={{color:'var(--parchment-faint)'}}>ft</span>
-              </span>
-            </span>
-            <span className="ac-badge" title="Initiative — click to edit">
-              <Icon name="zap" size={14}/>
-              <input className="ac-input wide" type="number" value={monster.initiative ?? 10} onChange={e=>onSetStats(monster.id, {initiative: Number(e.target.value)||0})} aria-label={`${monster.name} initiative`}/>
-            </span>
-            <div className="mcard-action-btns">
-              <button className={"action-btn ally"+(isAlly?" active":"")} onClick={()=>onToggleTeam(monster.id)} aria-label={isAlly ? `Mark ${monster.name} as enemy` : `Mark ${monster.name} as ally`} title={isAlly ? 'Ally — click to mark as enemy' : 'Enemy — click to mark as ally'}><Icon name="userplus" size={17}/></button>
-              <button className={"action-btn defeat"+(monster.isDefeated?" active":"")} onClick={()=>onToggleDefeated(monster.id)} aria-label="Toggle defeated" title="Mark defeated / alive"><Icon name="skull" size={17}/></button>
-              <button className="action-btn remove" onClick={()=>onRemove(monster.id)} aria-label={`Remove ${monster.name} from combat`} title="Remove from combat"><Icon name="trash" size={17}/></button>
-            </div>
-          </div>
-        </div>
-        {senses.length>0 && <p className="mcard-senses">{senses.join(' · ')}</p>}
-      </div>
-
-      <div className="mcard-collapsed-meta" onClick={e=>e.stopPropagation()}>
-        {monster.isMob ? (
-          <div className="mob-count-row">
-            <span className="mob-count-label">Still alive</span>
-            <button className="stepper" onClick={()=>{ const n=Math.max(0,(monster.mobCount||1)-1); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Decrease mob size">−</button>
-            <input className="init-input" type="number" value={monster.mobCount ?? 1} onChange={e=>{ const n=Math.max(0, Number(e.target.value)||0); onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label={`${monster.name} mob size`}/>
-            <button className="stepper" onClick={()=>{ const n=(monster.mobCount||1)+1; onSetStats(monster.id, {mobCount:n, mobHpPool:n*(monster.hpMax||0)}); }} aria-label="Increase mob size">+</button>
-          </div>
-        ) : (
-          <div className="hp-block">
-            <HpBar current={monster.hpCurrent} max={monster.hpMax} height={8}/>
-            <div className="hp-block-row">
-              <label className="hp-exact-inline" title="Set exact current/max HP">
-                <input className="text-input hp-num" type="number" value={monster.hpCurrent} onChange={e=>onSetStats(monster.id, {hpCurrent: Number(e.target.value)||0})} aria-label={`Set ${monster.name} current HP`}/>
-                <span className="hp-exact-sep">/</span>
-                <input className="text-input hp-num" type="number" value={monster.hpMax} onChange={e=>onSetStats(monster.id, {hpMax: Math.max(1, Number(e.target.value)||1)})} aria-label={`Set ${monster.name} max HP`}/>
-              </label>
-              <label className="init-label" title="Damage or heal this monster — type a negative number to damage, a positive number to heal, then press Enter to apply">
-                <span>Adjust</span>
-                <input className="text-input hp-delta" type="number" value={deltaVal} onChange={e=>setDeltaVal(e.target.value)}
-                  onKeyDown={e=>{ if(e.key==='Enter') applyDelta(); }} placeholder="-8" aria-label={`Apply HP change to ${monster.name} — press Enter to apply`}/>
-              </label>
-            </div>
-          </div>
-        )}
-        <ConditionRow conditions={monster.conditions} onToggle={c=>onToggleCondition(monster.id, c)}/>
-      </div>
-
-      {expanded && (
-        <div className="mcard-body" onClick={e=>e.stopPropagation()}>
-          <AbilityRow monster={monster}/>
-          {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0 || monster.immunities?.length > 0) && (
-            <div style={{display:'flex', flexDirection:'column', gap:4, marginBottom:10}}>
-              {monster.immunities?.length > 0 && (
-                <div className="callout" style={{marginTop:0}}>
-                  <Icon name="shield" size={15} style={{color:'var(--moss)'}}/>
-                  <p><b style={{color:'var(--moss)'}}>Immune to </b>{monster.immunities.join(', ')}</p>
-                </div>
-              )}
-              {monster.resistances?.length > 0 && (
-                <div className="callout" style={{marginTop:0}}>
-                  <Icon name="shield" size={15} style={{color:'var(--arcane)'}}/>
-                  <p><b style={{color:'var(--arcane-text)'}}>Resistant to </b>{monster.resistances.join(', ')}</p>
-                </div>
-              )}
-              {monster.vulnerabilities?.length > 0 && (
-                <div className="callout" style={{marginTop:0}}>
-                  <Icon name="alert" size={15} style={{color:'var(--blood)'}}/>
-                  <p><b style={{color:'var(--blood-text)'}}>Vulnerable to </b>{monster.vulnerabilities.join(', ')}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {monster.isMob && party && party.length > 0 && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
-          {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
-
-          {isAlly && (
-            <div className="ally-banner">
-              <span style={{fontSize:16}}>🤝</span>
-              <span><b>Allied combatant</b> — postures below describe tactics against enemies, not the party.</span>
-            </div>
-          )}
-          <div className="posture-row">
-            {['A','B','C'].map(key=>{
-              const active = monster.activePosture===key; const m = POSTURE_META[key];
-              return <button key={key} className={"posture-btn"+(active?" active":"")} style={{'--c':m.color,'--c-soft':m.soft}} onClick={()=>onPosture(monster.id,key)} title={`Switch to Posture ${key}: ${m.label}`}>{key} · {m.label}</button>;
-            })}
-          </div>
-          <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
-          {monster.activePosture==='C' && axes && (
-            <div className="axis-live-context">
-              <p><b>Right now — Win Condition:</b> {axes.winCondition?.title}</p>
-              <p><b>Right now — Hazard/Clock:</b> {axes.hazardOrClock?.title} <span className="mono">(count {axes.hazardOrClock?.initiativeCount})</span> — {axes.hazardOrClock?.triggerEffect}</p>
-            </div>
-          )}
-
-          <div className="section-label">
-            <Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span>
-            {monster.multiattack && <span className="multiattack-badge" title="Has a Multiattack action — see the breakdown below.">Multiattack</span>}
-          </div>
-          {(()=>{
-            if(!monster.multiattack) return null;
-            const maText = typeof monster.multiattack === 'string'
-              ? monster.multiattack
-              : monster.traitDetails?.find(t=>/^multiattack$/i.test(t.name))?.description;
-            if(maText){
-              const bd = parseMultiattackBreakdown(maText, monster.attacks.map(a=>a.name));
-              if(!bd || (!bd.total && !bd.parts.length && !bd.options.length)) return <p className="multiattack-detail">{maText}</p>;
-              const breakdownLabel = bd.parts.length
-                ? bd.parts.map(p=>`${p.count}× ${p.name}`).join('  +  ')
-                : bd.options.length
-                  ? bd.options.join(' or ')
-                  : '';
-              const label = bd.total
-                ? <span><b>{bd.total} attacks</b>{breakdownLabel ? <span style={{color:'var(--parchment-faint)'}}> · </span> : ''}{breakdownLabel}</span>
-                : <span>{breakdownLabel}</span>;
-              return <div className="multiattack-detail"><div>{label}</div><div className="multiattack-desc">{maText}</div></div>;
-            }
-            /* boolean true — no description text; derive from attacks list */
-            if(monster.attacks && monster.attacks.length > 1){
-              const names = monster.attacks.map(a=>a.name).join(', ');
-              return <p className="multiattack-detail" title="Multiattack — exact sequence not specified; check the stat block">Uses multiple attacks — {monster.attacks.length} options: <b>{names}</b></p>;
-            }
-            return null;
-          })()}
-          {monster.attacks.map(a=>(
-            <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
-          ))}
-
-          {monster.spellcasting && (
-            <>
-              <div className="section-label"><Icon name="scroll" size={14} style={{color:'var(--parchment-faint)'}}/><span>Spells</span>
-                {(monster.spellcasting.ability || monster.spellcasting.dc) && (
-                  <span className="spell-meta mono">{[monster.spellcasting.ability, monster.spellcasting.dc?`DC ${monster.spellcasting.dc}`:null].filter(Boolean).join(' · ')}</span>
-                )}
-              </div>
-              {monster.spellcasting.lists.map(l=>(
-                <div className="spell-row" key={l.freq}><span className="spell-freq">{l.freq}</span><span className="spell-names">{l.spells.join(', ')}</span></div>
-              ))}
-            </>
-          )}
-
-          <div className="callout reaction"><Icon name="zap" size={15}/><p>{monster.reactionCue}</p></div>
-          {otherPassives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{otherPassives.join(' · ')}</p></div>}
-
-          {(monster.traitDetails?.length > 0 || matchedTriggers.length > 0) && (
-            <div className="trait-block">
-              <span className="lbl">Traits &amp; Triggers</span>
-              {monster.traitDetails?.map(t=>(
-                <p key={t.name}><b>{t.name}. </b>{t.description}</p>
-              ))}
-              {matchedTriggers.map(t=>(
-                <p key={t.id}><b>{t.name}. </b>When {t.triggerCondition.toLowerCase()} — {t.mechanicalEffect}
-                  <span className="trigger-dc mono">{t.formulaOrDC}</span>
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 const TRANSCRIBE_PROMPT = `Please transcribe this D&D 5e monster stat block image into the exact markdown format below. Use official rules text where you can read it; if something is illegible or not shown in the image, infer a sensible tactical option consistent with the monster's abilities rather than leaving it blank. Output ONLY the filled-in block, no extra commentary. Output the result inside a markdown code block.
 
 FORMATTING RULES — do not deviate from these, even if it feels more natural to:
@@ -2869,7 +2537,6 @@ FORMATTING RULES — do not deviate from these, even if it feels more natural to
 - Tags: comma, separated`;
 
 function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
-  const [collapsed, setCollapsed] = useState(false);
   const [name, setName] = useState(''); const [count, setCount] = useState('1');
   const [ac, setAc] = useState(''); const [hp, setHp] = useState(''); const [speed, setSpeed] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -2978,16 +2645,10 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
   }
 
   return (
-    <div className="plate">
-      <div className="plate-head" style={{cursor:'pointer'}} onClick={()=>setCollapsed(v=>!v)}>
-        <Icon name="chevron" size={15} className={"chevron"+(!collapsed?" open":"")}/>
-        <Icon name="swords" size={17} style={{color:'var(--blood)'}}/>
-        <h2 style={{flex:1}}>Add Monster</h2>
-      </div>
-      {!collapsed && <div style={{padding:'12px 14px'}}>
+    <div className="addmonster">
       <div className="tab-row">
-        <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')} title="Add a monster by name, matched against the SRD compendium and your saved monsters">Quick Add</button>
-        <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')} title="Add a monster by pasting a full stat block in markdown format">Paste Stat Block</button>
+        <button className={"tab-btn"+(mode==='quick'?' active':'')} onClick={()=>setMode('quick')} title="Add a monster by name, matched against the SRD compendium and your saved monsters">Search &amp; add</button>
+        <button className={"tab-btn"+(mode==='paste'?' active':'')} onClick={()=>setMode('paste')} title="Add a monster by pasting a full stat block in markdown format">Paste a stat block</button>
       </div>
 
       {mode === 'quick' && (
@@ -2999,7 +2660,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
                 onFocus={()=>setSuggestOpen(true)}
                 onBlur={()=>setTimeout(()=>setSuggestOpen(false), 120)}
                 onKeyDown={e=>{ if(e.key==='Escape') setSuggestOpen(false); if(e.key==='Enter' && nameSuggestions.length) pickNameSuggestion(nameSuggestions[0]); }}
-                placeholder="Monster name…" title="Type to search the SRD compendium and your saved monsters"/>
+                placeholder="Type a monster name, e.g. goblin or owlbear…" title="Type to search the SRD compendium and your saved monsters"/>
               {suggestOpen && nameSuggestions.length > 0 && (
                 <div className="name-suggest-list">
                   {nameSuggestions.map(m=>(
@@ -3015,17 +2676,17 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
               <span style={{fontSize:11.5, color:'var(--parchment-faint)', whiteSpace:'nowrap'}}>{asMob?'Size':'Qty'}</span>
               <input id="qty-input" className="text-input qty" value={count} onChange={e=>setCount(e.target.value)} aria-label={asMob?'Mob size':'Quantity'} title={asMob?'How many identical creatures make up this mob (2-50)':'How many copies to add (1-12)'}/>
             </label>
-            <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd} title="Add this monster to the encounter"><Icon name="swords" size={16}/>Add</button>
+            <button className="add-btn" style={{flexShrink:0}} disabled={!name.trim()} onClick={handleQuickAdd} title="Add this monster to the encounter"><Icon name="plus" size={16}/>Add</button>
           </div>
           <label style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--parchment-dim)', cursor:'pointer'}} title="Instead of adding separate cards, group them into one mob card with a headcount and a Mob Attack resolver that works out the to-hit number and statistical average against one target at once">
             <input type="checkbox" checked={asMob} onChange={e=>{ setAsMob(e.target.checked); if(e.target.checked && Number(count)<=1) setCount('10'); }}/>
-            Add as a mob (one card, resolves all attacks against a target at once)
+            Add as a mob — one entry for a whole group, with shared attack and save tools
           </label>
           <p className="hint" style={{margin:0}}>{name.trim()===''?'Matches SRD + your saved monsters — autofills AC/HP/Speed/attacks/posture.':match?`Matched: ${match.name} (${match.baseType}${match.cr!=null?`, CR ${crLabel(match.cr)}`:''})${customMonsters.some(c=>c.name===match.name)?' — from your library':''}`:'No match — set stats manually below.'}</p>
 
           <div>
             <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setBrowseOpen(v=>!v)} title="Browse the compendium by Type, CR, Environment, or Size instead of typing a name">
-              <Icon name="scroll" size={14}/> {browseOpen ? 'Hide Browse' : 'Browse Compendium'} ({srdMonsters.length})
+              <Icon name="scroll" size={14}/> {browseOpen ? 'Hide the list' : 'Browse all monsters'} ({srdMonsters.length})
             </button>
             {browseOpen && (
               <div style={{marginTop:8, border:'1px solid var(--line)', padding:10, background:'var(--panel)'}}>
@@ -3064,7 +2725,7 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
           </div>
 
           <div>
-            <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setShowAdvanced(v=>!v)} title="Override AC, HP, or Speed before adding, instead of using the matched values">{showAdvanced?'Hide manual stats':'Manual stats (AC / HP / Speed)'}</button>
+            <button className="disclosure-toggle" style={{width:'auto', padding:'6px 10px', border:'1px solid var(--line)'}} onClick={()=>setShowAdvanced(v=>!v)} title="Override AC, HP, or Speed before adding, instead of using the matched values">{showAdvanced?'Hide custom stats':'Use custom AC / HP / Speed'}</button>
             {showAdvanced && (
               <div style={{display:'flex', gap:8, marginTop:8}}>
                 <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:70}} title="Override Armor Class"/>
@@ -3118,7 +2779,6 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
         </div>
       )}
 
-      </div>}
     </div>
   );
 }
@@ -3193,6 +2853,7 @@ function ImportModal({onClose, onImport}){
 }
 
 const ENCOUNTERS_KEY = 'tactics-table-encounters-v1';
+const MODE_KEY = 'tactics-table-mode-v2';
 function blankEncounter(name){
   return {
     id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name,
@@ -3221,175 +2882,44 @@ function loadEncounterStore(){
   return { encounters:[sampleEncounter], activeId: sampleEncounter.id };
 }
 
-function HowToUseSection(){
-  const [open, setOpen] = useState(false);
-  const sections = [
-    {
-      title: 'Encounters & Tabs',
-      body: [
-        'Each tab is a separate encounter with its own party, monsters, axes, and round tracker. Add one with "+", duplicate/delete from a tab\'s own controls, double-click to rename. Your party carries over into new tabs automatically.',
-      ],
-    },
-    {
-      title: 'Rules & Compendium',
-      body: [
-        "This tool runs on the 2024 revision of D&D 5e — the 2024 Player's Handbook / Dungeon Master's Guide / Monster Manual rules (also called \"5.5e\" or \"One D&D\"), not the 2014 rules. Encounter Difficulty math, Multiattack behavior, and condition text all follow the 2024 versions.",
-        "The monster compendium (328 creatures) is built from the free 2024 SRD (System Reference Document) — the open-license subset of the Monster Manual that Wizards of the Coast publishes under Creative Commons (CC BY 4.0). It's a real slice of the official rules, but not the whole book — if a specific monster isn't in the SRD, it won't be in Quick Add or Browse Compendium; use Paste Stat Block for anything outside it.",
-      ],
-    },
-    {
-      title: 'Axes & Scene',
-      body: [
-        "These three cards exist to push a fight past \"monsters stand still and trade hits until someone hits 0\": Win Condition names what actually ends the encounter — which isn't always \"kill everyone\", see its morale/retreat note — Battlefield Optimizer is one concrete terrain feature worth fighting over, and Hazard/Clock is a ticking complication that escalates the longer the fight runs.",
-        '"Roll Combat Menu" rolls a fresh Win Condition + Battlefield Optimizer together; "Suggest from Roster" drafts both from the current monsters instead. Lock any axis — including Hazard/Clock — to protect it from rolls and suggestions.',
-        'Scene Notes (Environment, Terrain, Situation, Time) are freeform prompts, not required fields — jot down whatever you already know about the fight. They drive two things below them: the Recommended Map Elements list (terrain/cover ideas matched to keywords in what you typed), and "Draft Axes from Scene", which rewrites the three axis cards above from that text plus whoever is currently in the fight.',
-      ],
-    },
-    {
-      title: 'Party & Round Tracker',
-      body: [
-        '"Add PC" sets AC/HP/role/level. Level drives the Encounter Difficulty rating (2024 DMG Low/Moderate/High vs. total enemy XP — no monster-count multiplier, allies excluded). Atk only autofills the To-Hit Bonus in a mob\'s PC → Mob Attack Roll.',
-        'Player missing this session? Click the small pill button at the top-right of their row to mark them Absent — the rest of that PC\'s row dims so the pill (now reading "Absent") is the one clearly clickable thing left. They drop out of the initiative strip and the Difficulty calculation without deleting their sheet; click the pill again to bring them right back.',
-        'The initiative strip merges PCs and monsters — Next/Previous Turn and Round navigate it, Reset returns to round 1. Type a signed number into any HP box and press Enter to apply it.',
-      ],
-    },
-    {
-      title: 'Adding Monsters',
-      body: [
-        'Quick Add autocompletes against the SRD compendium and My Monsters, autofilling stats; Qty adds multiples, and "Manual stats" overrides AC/HP/Speed. Check "Add as a mob" to share one HP pool with the Mob Attack/Save tools instead of tracking each one individually.',
-        'Paste Stat Block covers homebrew or book monsters — "Copy Transcription Prompt" hands you a ready-made prompt for turning a photo of a stat block into this format via any AI chat.',
-      ],
-    },
-    {
-      title: 'Monster Cards',
-      body: [
-        'Click anywhere on a card to expand or collapse it — header controls and the expanded body stay clickable without toggling it shut. AC, Speed, Initiative, name, and type are all editable inline.',
-        'The handshake icon toggles ally/enemy; ally cards get a green badge and are excluded from Difficulty math. A "Multiattack" badge only appears for a genuine Multiattack action, with the real breakdown shown once expanded — not just because a monster has more than one attack listed.',
-        'Expanding a card shows its full stat block: ability scores, with each save\'s real total modifier underneath (proficient ones highlighted). Click any ability score to roll a check, or any save to roll that save — an instant d20 + modifier, no menu and no DC to enter, since whoever called for the roll already has one to compare it to. Below that: Postures (A/B/C), traits, and any matching Trait Trigger. Skull toggles defeated; trash removes it from the fight.',
-      ],
-    },
-    {
-      title: 'Mob Rules',
-      body: [
-        'A mob card shows a live count instead of individual HP — expand it for two statistical (no dice rolled) resolvers: Mob Attack Roll (either direction) and Mob Save, both reporting expected average outcomes.',
-      ],
-    },
-    {
-      title: 'Library & Data',
-      body: [
-        'My Monsters holds everything you\'ve saved, searchable once it grows past 8 entries. Export Data copies every encounter plus your libraries as one block of text — paste it back with Import Data to restore or move devices, since nothing syncs automatically. Import Markdown is a separate, legacy path for one raw-markdown encounter.',
-      ],
-    },
-    {
-      title: 'Theme',
-      body: [
-        'The sun/moon icon in the top-right switches between dark and light parchment themes.',
-      ],
-    },
-  ];
-  return (
-    <React.Fragment>
-      <button className="btn" onClick={()=>setOpen(true)} title="Open a quick guide to this page's features">
-        <Icon name="scroll" size={15}/>How to Use This Page
-      </button>
-      {open && (
-        <div className="modal-veil" onClick={()=>setOpen(false)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-head">
-              <h2><Icon name="scroll" size={17} style={{color:'var(--moss, var(--arcane))'}}/>How to Use This Page</h2>
-              <button className="modal-close" onClick={()=>setOpen(false)} aria-label="Close" title="Close"><Icon name="x" size={18}/></button>
-            </div>
-            <div className="modal-body">
-              {sections.map(s=>(
-                <div key={s.title} style={{marginBottom:14}}>
-                  <p style={{fontSize:13, fontWeight:700, color:'var(--parchment)', margin:'0 0 4px'}}>{s.title}</p>
-                  {s.body.map((p,i)=>(
-                    <p key={i} style={{fontSize:12.5, color:'var(--parchment-dim)', lineHeight:1.5, margin:'0 0 5px'}}>{p}</p>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </React.Fragment>
-  );
-}
-
-function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
-  return (
-    <div style={{display:'flex', alignItems:'center', gap:6, overflowX:'auto', padding:'10px 20px 0', maxWidth:1680, margin:'0 auto'}}>
-      {encounters.map(e=>{
-        const isActive = e.id===activeId;
-        const isRenaming = renamingId===e.id;
-        return (
-          <div key={e.id}
-            style={{display:'flex', alignItems:'center', gap:6, flexShrink:0, padding:'6px 6px 6px 10px', cursor: isRenaming?'default':'pointer',
-              border:'1px solid var(--line)', borderBottom: isActive ? '2px solid var(--blood)' : '1px solid var(--line)',
-              background: isActive ? 'var(--panel)' : 'var(--panel-raised)'}}
-            onClick={()=>!isRenaming && onSelect(e.id)}
-            onDoubleClick={()=>onRenameStart(e.id, e.name)}
-            title="Click to switch, double-click to rename">
-            {isRenaming ? (
-              <input autoFocus value={renameValue} onChange={ev=>onRenameChange(ev.target.value)}
-                onClick={ev=>ev.stopPropagation()}
-                onBlur={()=>onRenameCommit(e.id)}
-                onKeyDown={ev=>{ if(ev.key==='Enter') onRenameCommit(e.id); if(ev.key==='Escape') onRenameCommit(e.id, true); }}
-                style={{background:'var(--ink)', border:'1px solid var(--arcane)', color:'var(--parchment)', fontSize:13.5, padding:'2px 5px', width:130}}/>
-            ) : (
-              <span className="mono" style={{fontSize:13.5, fontWeight: isActive?600:500, color: isActive?'var(--parchment)':'var(--parchment-dim)'}}>{e.name}</span>
-            )}
-            {!isRenaming && (
-              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDuplicate(e.id);}} aria-label={`Duplicate ${e.name}`} title="Duplicate this encounter">
-                <Icon name="copy" size={14}/>
-              </button>
-            )}
-            {!isRenaming && encounters.length>1 && (
-              <button className="icon-btn" style={{padding:0}} onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`} title="Delete this encounter"><Icon name="x" size={14}/></button>
-            )}
-          </div>
-        );
-      })}
-      <button className="icon-btn" style={{border:'1px dashed var(--line)', padding:'6px 9px', flexShrink:0}} onClick={onAdd} aria-label="New encounter" title="New encounter">
-        <Icon name="plus" size={16}/>
-      </button>
-    </div>
-  );
-}
-
 function CloudSyncControl({cloud, open, onToggleOpen}){
   const [email, setEmail] = useState('');
   if(!cloud.available){
-    return <button className="icon-toggle" disabled title="Cloud sync unavailable — Firebase failed to load"><Icon name="cloud" size={17}/></button>;
+    return <button className="btn" disabled title="Cloud sync unavailable — Firebase failed to load"><Icon name="cloud" size={16}/><span className="lbl">Sync</span></button>;
   }
   const statusColor = cloud.syncState==='error' ? 'var(--blood)' : cloud.syncState==='syncing' ? 'var(--amber)' : cloud.user ? 'var(--moss)' : 'var(--parchment-faint)';
   const statusLabel = cloud.authLoading ? 'Checking sign-in…' : !cloud.user ? 'Not signed in' : cloud.syncState==='syncing' ? 'Syncing…' : cloud.syncState==='error' ? 'Sync error' : 'Synced';
+  const buttonLabel = cloud.authLoading ? 'Sync' : !cloud.user ? 'Sign in' : statusLabel;
   function submit(){ if(email.trim()) cloud.sendSignInLink(email.trim()); }
   return (
-    <div style={{position:'relative'}}>
-      <button className="btn" onClick={onToggleOpen} title={statusLabel}>
-        <Icon name="cloud" size={15} style={{color:statusColor}}/>{cloud.user ? cloud.user.email : 'Sync'}
+    <div className="menu-wrap">
+      <button className="btn" onClick={onToggleOpen} title={statusLabel} aria-expanded={open}>
+        <Icon name="cloud" size={16} style={{color:statusColor}}/><span className="lbl">{buttonLabel}</span>
       </button>
       {open && (
-        <div className="name-suggest-list" style={{width:260, padding:12}} onClick={e=>e.stopPropagation()}>
-          {cloud.user ? (
-            <React.Fragment>
-              <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:'0 0 8px'}}>Signed in as <b style={{color:'var(--parchment)'}}>{cloud.user.email}</b></p>
-              <p style={{fontSize:11.5, color:statusColor, margin:'0 0 10px'}}>● {statusLabel}</p>
-              {cloud.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 10px'}}>{cloud.error}</p>}
-              <button className="btn btn-blood" style={{width:'100%'}} onClick={cloud.signOut}>Sign Out</button>
-            </React.Fragment>
-          ) : cloud.linkSent ? (
-            <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:0}}>Check your email for a sign-in link. Opening it — on this device or any other — signs that device in and syncs your data.</p>
-          ) : (
-            <React.Fragment>
-              <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:'0 0 8px'}}>Sign in to sync your encounters and monster library across devices.</p>
-              <input className="text-input" style={{marginBottom:8}} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" onKeyDown={e=>{if(e.key==='Enter') submit();}}/>
-              {cloud.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 8px'}}>{cloud.error}</p>}
-              <button className="btn btn-arcane" style={{width:'100%'}} disabled={!email.trim()} onClick={submit}>Send Sign-in Link</button>
-            </React.Fragment>
-          )}
-        </div>
+        <React.Fragment>
+          <div className="menu-veil" onClick={onToggleOpen}/>
+          <div className="popover" onClick={e=>e.stopPropagation()}>
+            <p style={{fontSize:15, fontWeight:650, margin:'0 0 4px'}}>Sync across devices</p>
+            {cloud.user ? (
+              <React.Fragment>
+                <p style={{fontSize:14, color:'var(--parchment-dim)', margin:'0 0 10px'}}>Signed in as <b style={{color:'var(--parchment)'}}>{cloud.user.email}</b></p>
+                <p style={{fontSize:13.5, color:statusColor, margin:'0 0 12px'}}>● {statusLabel}</p>
+                {cloud.error && <p style={{fontSize:13, color:'var(--blood-text)', margin:'0 0 10px'}}>{cloud.error}</p>}
+                <button className="btn" style={{width:'100%'}} onClick={cloud.signOut}>Sign out</button>
+              </React.Fragment>
+            ) : cloud.linkSent ? (
+              <p style={{fontSize:14, color:'var(--parchment-dim)', margin:0}}>Check your email for a sign-in link. Opening it — on this device or any other — signs that device in and syncs your data.</p>
+            ) : (
+              <React.Fragment>
+                <p style={{fontSize:14, color:'var(--parchment-dim)', margin:'0 0 12px'}}>Enter your email and we'll send a sign-in link. No password needed. Signing in also lets you share a link with your players.</p>
+                <input className="text-input" style={{marginBottom:10}} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" onKeyDown={e=>{if(e.key==='Enter') submit();}}/>
+                {cloud.error && <p style={{fontSize:13, color:'var(--blood-text)', margin:'0 0 10px'}}>{cloud.error}</p>}
+                <button className="btn btn-primary" style={{width:'100%'}} disabled={!email.trim()} onClick={submit}>Send sign-in link</button>
+              </React.Fragment>
+            )}
+          </div>
+        </React.Fragment>
       )}
     </div>
   );
@@ -3401,36 +2931,41 @@ function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
   if(!cloud.available) return null;
   const link = cloud.user ? `${window.location.origin}${window.location.pathname}?player=${cloud.user.uid}` : '';
   const statusColor = share.state==='error' ? 'var(--blood)' : share.state==='syncing' ? 'var(--amber)' : 'var(--moss)';
+  const live = enabled && !!cloud.user;
   function copyLink(){
     navigator.clipboard?.writeText(link).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 1500); }).catch(()=>{});
   }
   return (
-    <div style={{position:'relative'}}>
-      <button className="btn" onClick={()=>setOpen(o=>!o)} title="Share a read-only turn-order link with your players">
-        <Icon name="link" size={15} style={{color: enabled && cloud.user ? statusColor : undefined}}/>Player View
+    <div className="menu-wrap">
+      <button className="btn" onClick={()=>setOpen(o=>!o)} title="Give your players a live link to the turn order" aria-expanded={open}>
+        <Icon name="link" size={16} style={{color: live ? statusColor : undefined}}/><span className="lbl">Share</span>
       </button>
       {open && (
-        <div className="name-suggest-list" style={{width:300, padding:12}} onClick={e=>e.stopPropagation()}>
-          {!cloud.user ? (
-            <p style={{fontSize:12.5, color:'var(--parchment-dim)', margin:0}}>Sign in to Cloud Sync first — Player View shares your data through that same account.</p>
-          ) : (
-            <React.Fragment>
-              <label style={{display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'var(--parchment-dim)', marginBottom: enabled?10:0, cursor:'pointer'}}>
-                <input type="checkbox" checked={enabled} onChange={e=>onToggleEnabled(e.target.checked)}/>
-                Enabled
-              </label>
-              {enabled && (
-                <React.Fragment>
-                  <p style={{fontSize:11.5, color:statusColor, margin:'0 0 8px'}}>● {share.state==='syncing' ? 'Publishing…' : share.state==='error' ? 'Error publishing' : 'Live'}</p>
-                  {share.error && <p style={{fontSize:11.5, color:'var(--blood-text)', margin:'0 0 8px'}}>{share.error}</p>}
-                  <input className="text-input" readOnly value={link} style={{marginBottom:8, fontSize:11.5}}/>
-                  <button className="btn btn-arcane" style={{width:'100%'}} onClick={copyLink}>{copied ? 'Copied!' : 'Copy Link'}</button>
-                  <p style={{fontSize:11, color:'var(--parchment-faint)', margin:'8px 0 0'}}>Players see party HP/AC and the turn order — monster names and conditions only, no stats or tactics.</p>
-                </React.Fragment>
-              )}
-            </React.Fragment>
-          )}
-        </div>
+        <React.Fragment>
+          <div className="menu-veil" onClick={()=>setOpen(false)}/>
+          <div className="popover" onClick={e=>e.stopPropagation()}>
+            <p style={{fontSize:15, fontWeight:650, margin:'0 0 4px'}}>Share with your players</p>
+            {!cloud.user ? (
+              <p style={{fontSize:14, color:'var(--parchment-dim)', margin:0}}>Sign in with Sync first — the player link is shared through that same account.</p>
+            ) : (
+              <React.Fragment>
+                <p style={{fontSize:14, color:'var(--parchment-dim)', margin:'0 0 12px'}}>Players open a live page showing the turn order, their characters' hit points, and each monster's name and conditions — no stats or tactics.</p>
+                <label style={{display:'flex', alignItems:'center', gap:10, fontSize:14.5, fontWeight:500, marginBottom: enabled?12:0, cursor:'pointer'}}>
+                  <input type="checkbox" checked={enabled} onChange={e=>onToggleEnabled(e.target.checked)} style={{width:18, height:18}}/>
+                  Player link is on
+                </label>
+                {enabled && (
+                  <React.Fragment>
+                    <p style={{fontSize:13, color:statusColor, margin:'0 0 8px'}}>● {share.state==='syncing' ? 'Updating…' : share.state==='error' ? 'Could not update' : 'Live'}</p>
+                    {share.error && <p style={{fontSize:13, color:'var(--blood-text)', margin:'0 0 8px'}}>{share.error}</p>}
+                    <input className="text-input" readOnly value={link} style={{marginBottom:10, fontSize:12.5}}/>
+                    <button className="btn btn-primary" style={{width:'100%'}} onClick={copyLink}>{copied ? 'Copied!' : 'Copy link'}</button>
+                  </React.Fragment>
+                )}
+              </React.Fragment>
+            )}
+          </div>
+        </React.Fragment>
       )}
     </div>
   );
@@ -3549,6 +3084,810 @@ function PlayerView({uid}){
   );
 }
 
+/* ======================================================================
+   v2 layout: Prep / Run Combat modes
+   ====================================================================== */
+
+function kindColor(c){
+  if(c.kind === 'pc') return 'var(--arcane)';
+  return c.team === 'ally' ? 'var(--moss)' : 'var(--blood)';
+}
+function kindLabel(c){
+  if(c.kind === 'pc') return 'Player';
+  return c.team === 'ally' ? 'Ally' : 'Enemy';
+}
+
+function Card({icon, iconColor, title, subtitle, action, children, id}){
+  return (
+    <section className="card" id={id}>
+      <header className="card-head">
+        <div className="card-title">
+          {icon && <Icon name={icon} size={22} style={{color:iconColor}}/>}
+          <div><h2>{title}</h2>{subtitle && <p className="card-sub">{subtitle}</p>}</div>
+        </div>
+        {action}
+      </header>
+      <div className="card-body">{children}</div>
+    </section>
+  );
+}
+
+function Collapsible({icon, iconColor, title, hint, badge, defaultOpen=false, children, id}){
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="card" id={id}>
+      <button className="collapsible-head" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>
+        <Icon name="chevron" size={16} className={"chevron"+(open?" open":"")}/>
+        {icon && <Icon name={icon} size={20} style={{color:iconColor}}/>}
+        <span>{title}</span>
+        {badge && <span className="pill">{badge}</span>}
+        {hint && <span className="collapsible-hint">{hint}</span>}
+      </button>
+      {open && <div className="collapsible-body">{children}</div>}
+    </section>
+  );
+}
+
+function ModeSwitch({mode, onChange}){
+  return (
+    <div className="mode-switch" role="tablist" aria-label="Choose a view">
+      <button role="tab" aria-selected={mode==='prep'} className={"mode-btn"+(mode==='prep'?' active':'')} onClick={()=>onChange('prep')} title="Set up the party, monsters and scene">
+        <Icon name="clip" size={16}/>Prep
+      </button>
+      <button role="tab" aria-selected={mode==='run'} className={"mode-btn"+(mode==='run'?' active':'')} onClick={()=>onChange('run')} title="Run the fight: initiative, hit points and conditions">
+        <Icon name="swords" size={16}/>Run Combat
+      </button>
+    </div>
+  );
+}
+
+function MoreMenu({items, label='More', small}){
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="menu-wrap">
+      <button className={"btn btn-ghost icon-only"} onClick={()=>setOpen(v=>!v)} aria-haspopup="menu" aria-expanded={open} aria-label={label} title={label}>
+        <Icon name="dots" size={20}/>
+      </button>
+      {open && (
+        <React.Fragment>
+          <div className="menu-veil" onClick={()=>setOpen(false)}/>
+          <div className="menu" role="menu">
+            {items.map((it, i)=> it.sep
+              ? <div className="menu-sep" key={i}/>
+              : (
+                <button key={it.label} role="menuitem" className="menu-item" onClick={()=>{ setOpen(false); it.onClick(); }}>
+                  <Icon name={it.icon} size={17}/>{it.label}
+                </button>
+              )
+            )}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function DifficultyBadge({party, monsters}){
+  const result = useMemo(()=>computeEncounterDifficulty(party, monsters), [party, monsters]);
+  if(!result) return null;
+  const tooltip = result.tier === 'Unknown' ? result.reason :
+    `Monster XP total: ${result.totalXp.toLocaleString()} (2024 DMG — no multiplier, allies excluded). `+
+    `Party budget — Low ${result.thresholds.low.toLocaleString()} · Moderate ${result.thresholds.moderate.toLocaleString()} · High ${result.thresholds.high.toLocaleString()}.`+
+    (result.unknownCount ? ` (${result.unknownCount} monster${result.unknownCount>1?'s':''} without CR excluded.)` : '');
+  const cls = {Low:'pill-moss', Moderate:'pill-amber', High:'pill-blood'}[result.tier] || '';
+  return <span className={"pill "+cls} title={tooltip}>Difficulty: {result.tier}</span>;
+}
+
+function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
+  return (
+    <div className="tabsbar">
+      {encounters.map(e=>{
+        const isActive = e.id===activeId;
+        const isRenaming = renamingId===e.id;
+        return (
+          <div key={e.id} className={"etab"+(isActive?" active":"")} onClick={()=>!isRenaming && onSelect(e.id)} onDoubleClick={()=>onRenameStart(e.id, e.name)}
+            title="Click to switch, double-click to rename">
+            {isRenaming ? (
+              <input autoFocus value={renameValue} onChange={ev=>onRenameChange(ev.target.value)} onClick={ev=>ev.stopPropagation()}
+                onBlur={()=>onRenameCommit(e.id)}
+                onKeyDown={ev=>{ if(ev.key==='Enter') onRenameCommit(e.id); if(ev.key==='Escape') onRenameCommit(e.id, true); }}/>
+            ) : <span>{e.name}</span>}
+            {!isRenaming && (
+              <button className="etab-btn" onClick={ev=>{ev.stopPropagation(); onDuplicate(e.id);}} aria-label={`Duplicate ${e.name}`} title="Duplicate this encounter"><Icon name="copy" size={14}/></button>
+            )}
+            {!isRenaming && encounters.length>1 && (
+              <button className="etab-btn" onClick={ev=>{ev.stopPropagation(); onDelete(e.id);}} aria-label={`Delete ${e.name}`} title="Delete this encounter"><Icon name="x" size={14}/></button>
+            )}
+          </div>
+        );
+      })}
+      <button className="etab-btn etab-add" onClick={onAdd} aria-label="New encounter" title="New encounter"><Icon name="plus" size={16}/></button>
+    </div>
+  );
+}
+
+/* ---------- stat block (tabbed) ---------- */
+function MonsterActionsTab({monster, party, onSetStats, onDamageParty}){
+  return (
+    <div>
+      <div className="section-label" style={{marginTop:0}}>
+        <Icon name="blade" size={14} style={{color:'var(--parchment-faint)'}}/><span>Attacks</span>
+        {monster.multiattack && <span className="multiattack-badge" title="Has a Multiattack action — see the breakdown below.">Multiattack</span>}
+      </div>
+      {(()=>{
+        if(!monster.multiattack) return null;
+        const maText = typeof monster.multiattack === 'string'
+          ? monster.multiattack
+          : monster.traitDetails?.find(t=>/^multiattack$/i.test(t.name))?.description;
+        if(maText){
+          const bd = parseMultiattackBreakdown(maText, monster.attacks.map(a=>a.name));
+          if(!bd || (!bd.total && !bd.parts.length && !bd.options.length)) return <p className="multiattack-detail">{maText}</p>;
+          const breakdownLabel = bd.parts.length
+            ? bd.parts.map(p=>`${p.count}× ${p.name}`).join('  +  ')
+            : bd.options.length ? bd.options.join(' or ') : '';
+          const label = bd.total
+            ? <span><b>{bd.total} attacks</b>{breakdownLabel ? <span style={{color:'var(--parchment-faint)'}}> · </span> : ''}{breakdownLabel}</span>
+            : <span>{breakdownLabel}</span>;
+          return <div className="multiattack-detail"><div>{label}</div><div className="multiattack-desc">{maText}</div></div>;
+        }
+        if(monster.attacks && monster.attacks.length > 1){
+          const names = monster.attacks.map(a=>a.name).join(', ');
+          return <p className="multiattack-detail" title="Multiattack — exact sequence not specified; check the stat block">Uses multiple attacks — {monster.attacks.length} options: <b>{names}</b></p>;
+        }
+        return null;
+      })()}
+      {monster.attacks.map(a=>(
+        <div className="attack-row" key={a.name}><span className="attack-name">{a.name}</span><span className="attack-stats mono">{a.formula} · {a.damage}</span></div>
+      ))}
+
+      {monster.spellcasting && (
+        <React.Fragment>
+          <div className="section-label"><Icon name="scroll" size={14} style={{color:'var(--parchment-faint)'}}/><span>Spells</span>
+            {(monster.spellcasting.ability || monster.spellcasting.dc) && (
+              <span className="spell-meta mono">{[monster.spellcasting.ability, monster.spellcasting.dc?`DC ${monster.spellcasting.dc}`:null].filter(Boolean).join(' · ')}</span>
+            )}
+          </div>
+          {monster.spellcasting.lists.map(l=>(
+            <div className="spell-row" key={l.freq}><span className="spell-freq">{l.freq}</span><span className="spell-names">{l.spells.join(', ')}</span></div>
+          ))}
+        </React.Fragment>
+      )}
+
+      {monster.reactionCue && <div className="callout reaction"><Icon name="zap" size={15}/><p>{monster.reactionCue}</p></div>}
+
+      {monster.isMob && party && party.length > 0 && <AttackRollPanel monster={monster} party={party} onDamageParty={onDamageParty} onSetStats={onSetStats}/>}
+      {monster.isMob && <MobSavePanel monster={monster} onSetStats={onSetStats}/>}
+    </div>
+  );
+}
+
+function MonsterStatsTab({monster, traitTriggers, onSetStats}){
+  const {senses, other: otherPassives} = splitSensesFromPassives(monster.passives);
+  const matchedTriggers = (traitTriggers||[]).filter(t=>{
+    const c = t.creatureName.toLowerCase();
+    return monster.name.toLowerCase().includes(c) || monster.baseType.toLowerCase().includes(c) || c.includes(monster.baseType.toLowerCase());
+  });
+  return (
+    <div>
+      <div className="detail-quick">
+        <label className="init-label" title="Walking speed in feet">
+          <span>Speed</span>
+          <input className="init-input" type="number" value={monster.speed} onChange={e=>onSetStats(monster.id, {speed: Number(e.target.value)||0})} aria-label={`${monster.name} speed`}/>
+          <span>ft</span>
+        </label>
+        {senses.length>0 && <span>{senses.join(' · ')}</span>}
+      </div>
+      <AbilityRow monster={monster}/>
+      {(monster.resistances?.length > 0 || monster.vulnerabilities?.length > 0 || monster.immunities?.length > 0) && (
+        <div style={{display:'flex', flexDirection:'column', gap:6, marginBottom:10}}>
+          {monster.immunities?.length > 0 && (
+            <div className="callout" style={{marginTop:0}}>
+              <Icon name="shield" size={15} style={{color:'var(--moss)'}}/>
+              <p><b style={{color:'var(--moss)'}}>Immune to </b>{monster.immunities.join(', ')}</p>
+            </div>
+          )}
+          {monster.resistances?.length > 0 && (
+            <div className="callout" style={{marginTop:0}}>
+              <Icon name="shield" size={15} style={{color:'var(--arcane)'}}/>
+              <p><b style={{color:'var(--arcane-text)'}}>Resistant to </b>{monster.resistances.join(', ')}</p>
+            </div>
+          )}
+          {monster.vulnerabilities?.length > 0 && (
+            <div className="callout" style={{marginTop:0}}>
+              <Icon name="alert" size={15} style={{color:'var(--blood)'}}/>
+              <p><b style={{color:'var(--blood-text)'}}>Vulnerable to </b>{monster.vulnerabilities.join(', ')}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {otherPassives.length>0 && <div className="callout passive"><Icon name="crosshair" size={15}/><p>{otherPassives.join(' · ')}</p></div>}
+      {(monster.traitDetails?.length > 0 || matchedTriggers.length > 0) && (
+        <div className="trait-block">
+          <span className="lbl">Traits &amp; Triggers</span>
+          {monster.traitDetails?.map(t=>(
+            <p key={t.name}><b>{t.name}. </b>{t.description}</p>
+          ))}
+          {matchedTriggers.map(t=>(
+            <p key={t.id}><b>{t.name}. </b>When {t.triggerCondition.toLowerCase()} — {t.mechanicalEffect}
+              <span className="trigger-dc mono">{t.formulaOrDC}</span>
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonsterTacticsTab({monster, axes, onPosture}){
+  const postures = {A:monster.postureA, B:monster.postureB, C:monster.postureC};
+  const meta = POSTURE_META[monster.activePosture];
+  const isAlly = monster.team === 'ally';
+  return (
+    <div>
+      <p className="muted" style={{margin:'0 0 10px', fontSize:14}}>How this creature fights right now. It switches to <b>Defensive</b> on its own when badly hurt — or pick a posture yourself.</p>
+      {isAlly && (
+        <div className="ally-banner">
+          <span style={{fontSize:16}}>🤝</span>
+          <span><b>Allied combatant</b> — postures below describe tactics against enemies, not the party.</span>
+        </div>
+      )}
+      <div className="posture-row">
+        {['A','B','C'].map(key=>{
+          const active = monster.activePosture===key; const m = POSTURE_META[key];
+          return <button key={key} className={"posture-btn"+(active?" active":"")} style={{'--c':m.color,'--c-soft':m.soft}} onClick={()=>onPosture(monster.id,key)} title={`Switch to Posture ${key}: ${m.label}`}>{m.label}</button>;
+        })}
+      </div>
+      <PostureDetail posture={postures[monster.activePosture]} color={meta.color}/>
+      {monster.activePosture==='C' && axes && (
+        <div className="axis-live-context">
+          <p><b>Right now — Win Condition:</b> {axes.winCondition?.title}</p>
+          <p><b>Right now — Hazard/Clock:</b> {axes.hazardOrClock?.title} <span className="mono">(count {axes.hazardOrClock?.initiativeCount})</span> — {axes.hazardOrClock?.triggerEffect}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonsterDetails({monster, axes, traitTriggers, party, onPosture, onSetStats, onDamageParty, initialTab='actions'}){
+  const [tab, setTab] = useState(initialTab);
+  const tabs = [['actions','Actions'],['stats','Stats & abilities'],['tactics','Tactics']];
+  return (
+    <div>
+      <div className="tabs" role="tablist">
+        {tabs.map(([k,l])=>(
+          <button key={k} role="tab" aria-selected={tab===k} className={"tab"+(tab===k?" active":"")} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+      {tab==='actions' && <MonsterActionsTab monster={monster} party={party} onSetStats={onSetStats} onDamageParty={onDamageParty}/>}
+      {tab==='stats' && <MonsterStatsTab monster={monster} traitTriggers={traitTriggers} onSetStats={onSetStats}/>}
+      {tab==='tactics' && <MonsterTacticsTab monster={monster} axes={axes} onPosture={onPosture}/>}
+    </div>
+  );
+}
+
+/* ---------- PREP mode ---------- */
+function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
+  const absent = p.active === false;
+  function setHpMax(v){
+    const n = Math.max(1, Number(v)||1);
+    onChange(p.id, {hpMax:n, hpCurrent: (p.hpCurrent === p.hpMax || p.hpCurrent > n) ? n : p.hpCurrent});
+  }
+  return (
+    <div className={"roster-row"+(absent?" absent":"")}>
+      <div className="roster-main">
+        <div className="roster-name">
+          <input className="inline-input title" value={p.name} onChange={e=>onChange(p.id, {name:e.target.value})} aria-label="Character name"/>
+          <input className="inline-input sub" value={p.role||''} onChange={e=>onChange(p.id, {role:e.target.value})} aria-label="Class or role" placeholder="Class / role" title={p.species ? `${p.species} ${p.role}` : 'Class / role'}/>
+        </div>
+        <div className="stat-fields">
+          <label className="stat-field" title="Character level — used for the encounter difficulty rating"><span>Lvl</span><input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onChange(p.id, {level: Math.max(1, Math.min(20, Number(e.target.value)||1))})}/></label>
+          <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={p.ac} onChange={e=>onChange(p.id, {ac: Number(e.target.value)||0})}/></label>
+          <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={p.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>
+          <label className="stat-field" title="Total attack bonus — autofills the Attack Roll panel on mobs"><span>Atk</span><input type="number" value={p.attackBonus ?? 5} onChange={e=>onChange(p.id, {attackBonus: Number(e.target.value)||0})}/></label>
+          <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={p.initiative ?? 10} onChange={e=>onChange(p.id, {initiative: Number(e.target.value)||0})}/></label>
+        </div>
+        <div className="row-actions">
+          {p.referenceLink && <a className="iconbtn" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="Open character sheet" aria-label={`Open ${p.name}'s character sheet`}><Icon name="link" size={16}/></a>}
+          <button className={"iconbtn"+(absent?" on":"")} onClick={()=>onToggleActive(p.id)} aria-label={absent ? `Mark ${p.name} present` : `Mark ${p.name} absent`} title={absent ? 'Absent this session — click to bring them back into combat' : 'Player missing this session? Click to leave them out of combat without deleting their sheet'}>
+            <Icon name={absent ? 'userplus' : 'userminus'} size={17}/>
+          </button>
+          <button className="iconbtn danger" onClick={()=>onRemove(p.id)} aria-label={`Delete ${p.name}`} title="Delete this character"><Icon name="trash" size={17}/></button>
+        </div>
+      </div>
+      {absent && <div style={{padding:'0 14px 10px'}}><span className="pill pill-amber">Absent — not in combat</span></div>}
+    </div>
+  );
+}
+
+function PartyCard({party, onChange, onAdd, onRemove, onToggleActive}){
+  const [showAdd, setShowAdd] = useState(false);
+  const present = party.filter(p=>p.active !== false).length;
+  return (
+    <Card id="prep-party" icon="party" iconColor="var(--arcane)" title="Your party"
+      subtitle="The player characters in this fight."
+      action={<span className="pill pill-arcane">{present} in combat</span>}>
+      {party.length === 0 ? (
+        <div className="empty" style={{padding:'18px 0'}}><Icon name="party" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No players yet</h3><p>Add each player character so they appear in the initiative order.</p></div>
+      ) : (
+        <div className="roster">
+          {party.map(p=><PartyRosterRow key={p.id} p={p} onChange={onChange} onRemove={onRemove} onToggleActive={onToggleActive}/>)}
+        </div>
+      )}
+      <div style={{marginTop:14}}>
+        {showAdd ? (
+          <div className="roster-row" style={{padding:14}}>
+            <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>
+            <button className="btn btn-ghost btn-sm" style={{marginTop:6}} onClick={()=>setShowAdd(false)}>Cancel</button>
+          </div>
+        ) : (
+          <button className="btn" onClick={()=>setShowAdd(true)}><Icon name="userplus" size={16}/>Add a player</button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, axes, traitTriggers, party, onPosture, onDamageParty}){
+  const [open, setOpen] = useState(false);
+  const isAlly = m.team === 'ally';
+  function setHpMax(v){
+    const n = Math.max(1, Number(v)||1);
+    onSetStats(m.id, {hpMax:n, hpCurrent: (m.hpCurrent === m.hpMax || m.hpCurrent > n) ? n : m.hpCurrent});
+  }
+  function setMobCount(v){ const n = Math.max(0, Number(v)||0); onSetStats(m.id, {mobCount:n, mobHpPool:n*(m.hpMax||0)}); }
+  return (
+    <div className="roster-row">
+      <div className="roster-main">
+        <button className="iconbtn" onClick={()=>setOpen(v=>!v)} aria-expanded={open} aria-label={open ? `Hide ${m.name} stat block` : `Show ${m.name} stat block`} title={open ? 'Hide stat block' : 'Show stat block'}>
+          <Icon name="chevron" size={16} className={"chevron"+(open?" open":"")}/>
+        </button>
+        <div className="roster-name">
+          <input className="inline-input title" value={m.name} onChange={e=>onSetStats(m.id, {name:e.target.value})} aria-label="Monster name"/>
+          <input className="inline-input sub" value={m.baseType} onChange={e=>onSetStats(m.id, {baseType:e.target.value})} aria-label="Creature type and size" title="Edit creature type / size"/>
+        </div>
+        <div className="stat-fields">
+          <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={m.ac} onChange={e=>onSetStats(m.id, {ac: Number(e.target.value)||0})}/></label>
+          {m.isMob
+            ? <label className="stat-field" title="How many creatures are in this mob"><span>Count</span><input type="number" value={m.mobCount ?? 1} onChange={e=>setMobCount(e.target.value)}/></label>
+            : <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={m.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>}
+          <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={m.initiative ?? 10} onChange={e=>onSetStats(m.id, {initiative: Number(e.target.value)||0})}/></label>
+        </div>
+        <div className="row-actions">
+          <div className="team-toggle" role="group" aria-label={`${m.name} team`}>
+            <button className={!isAlly?'on-enemy':''} onClick={()=>isAlly && onToggleTeam(m.id)} aria-pressed={!isAlly}>Enemy</button>
+            <button className={isAlly?'on-ally':''} onClick={()=>!isAlly && onToggleTeam(m.id)} aria-pressed={isAlly}>Ally</button>
+          </div>
+          <button className="iconbtn danger" onClick={()=>onRemove(m.id)} aria-label={`Remove ${m.name}`} title="Remove from the encounter"><Icon name="trash" size={17}/></button>
+        </div>
+      </div>
+      {m.isDefeated && (
+        <div style={{padding:'0 14px 10px', display:'flex', gap:10, alignItems:'center'}}>
+          <span className="pill pill-blood">Defeated</span>
+          <button className="link-btn" onClick={()=>onRevive(m.id)}>Bring back</button>
+        </div>
+      )}
+      {open && (
+        <div className="row-expand">
+          <MonsterDetails monster={m} axes={axes} traitTriggers={traitTriggers} party={party} onPosture={onPosture} onSetStats={onSetStats} onDamageParty={onDamageParty}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SceneNotes({scene, onChange, onGenerate}){
+  const fields = [
+    ['environment','Environment','e.g. flooded cellar, mountain pass, city rooftops'],
+    ['terrain','Terrain','e.g. difficult terrain, chokepoints, cover'],
+    ['combatSituation','Combat situation','e.g. ambush, escort, defend the door'],
+    ['timeOfDay','Time of day','e.g. dusk, midnight, high noon'],
+  ];
+  const elements = useMemo(()=>suggestMapElements(scene), [scene]);
+  return (
+    <div style={{paddingTop:14}}>
+      <p className="muted" style={{margin:'0 0 14px', fontSize:14}}>Jot down what you already know. Everything here is optional — it just powers map ideas and the encounter plan below.</p>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px,1fr))', gap:12}}>
+        {fields.map(([key,label,placeholder])=>(
+          <div key={key} className="field" style={{padding:0}}>
+            <label>{label}</label>
+            <textarea className="text-input" style={{height:60, minHeight:60, fontFamily:'inherit', fontSize:14.5, resize:'vertical'}} value={scene[key]} onChange={e=>onChange({[key]:e.target.value})} placeholder={placeholder}/>
+          </div>
+        ))}
+      </div>
+      <div className="section-label" style={{marginTop:18}}><Icon name="map" size={15} style={{color:'var(--arcane)'}}/><span>Map ideas from your notes</span></div>
+      <ul style={{margin:0, padding:0, listStyle:'none', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px,1fr))', columnGap:24, rowGap:4}}>
+        {elements.map(el=><li key={el} style={{fontSize:14, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:8}}><span style={{color:'var(--parchment-faint)'}}>•</span><span>{el}</span></li>)}
+      </ul>
+      <button className="btn" style={{marginTop:16}} onClick={onGenerate} title="Draft the win condition, battlefield feature and hazard from this scene text and the monsters you've added">
+        <Icon name="sparkles" size={16}/>Draft the encounter plan from this scene
+      </button>
+    </div>
+  );
+}
+
+function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp}){
+  const monsters = encounter.round.monsters;
+  const presentParty = encounter.party.filter(p=>p.active !== false);
+  const sceneFilled = Object.values(encounter.scene||{}).some(v=>String(v||'').trim());
+  const go = id => ()=>document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'});
+  const steps = [
+    {id:'prep-party', n:1, label:'Add your party', sub: presentParty.length ? `${presentParty.length} player${presentParty.length>1?'s':''}` : 'No players yet', done: presentParty.length>0},
+    {id:'prep-monsters', n:2, label:'Add monsters', sub: monsters.length ? `${monsters.length} added` : 'None yet', done: monsters.length>0},
+    {id:'prep-scene', n:3, label:'Describe the scene', sub: sceneFilled ? 'Notes added' : 'Optional', done: sceneFilled},
+  ];
+  return (
+    <div className="prep">
+      <section className="card setup-card">
+        <div className="setup-intro">
+          <h2>Set up your encounter</h2>
+          <p className="muted" style={{margin:0, fontSize:14.5}}>Add your players and the monsters they'll face, then start combat. <button className="link-btn" onClick={onOpenHelp}>New here? Quick guide</button></p>
+        </div>
+        <div className="steps">
+          {steps.map(s=>(
+            <button key={s.id} className={"step"+(s.done?" done":"")} onClick={go(s.id)}>
+              <span className="step-num">{s.done ? <Icon name="check" size={15}/> : s.n}</span>
+              <span>{s.label}<small>{s.sub}</small></span>
+            </button>
+          ))}
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+          <DifficultyBadge party={encounter.party} monsters={monsters}/>
+          <button className="btn btn-primary btn-lg" onClick={onStart} disabled={!canStart} title={canStart ? 'Switch to Run Combat' : 'Add at least one player or monster first'}>
+            {inProgress ? 'Resume combat' : 'Start combat'}<Icon name="chevron" size={18}/>
+          </button>
+        </div>
+      </section>
+
+      <div className="prep-grid">
+        <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive}/>
+        <Card id="prep-monsters" icon="swords" iconColor="var(--blood)" title="Monsters"
+          subtitle="Search the 2024 SRD, or paste your own stat block."
+          action={monsters.length>0 && <span className="pill pill-blood">{monsters.length} in this fight</span>}>
+          <AddMonsterForm onAdd={onAddMonster} customMonsters={customMonsters} onSaveCustom={onSaveCustom} onRemoveCustom={onRemoveCustom}/>
+          {monsters.length === 0 ? (
+            <div className="empty" style={{padding:'22px 0 6px'}}><Icon name="swords" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No monsters yet</h3><p>Type a name above to add one. Try "goblin" or "owlbear".</p></div>
+          ) : (
+            <div className="roster" style={{marginTop:18}}>
+              {monsters.map(m=>(
+                <MonsterRosterRow key={m.id} m={m} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={presentParty}
+                  onSetStats={monsterHandlers.onSetStats} onToggleTeam={monsterHandlers.onToggleTeam} onRemove={monsterHandlers.onRemove} onRevive={monsterHandlers.onRevive}
+                  onPosture={monsterHandlers.onPosture} onDamageParty={monsterHandlers.onDamageParty}/>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Collapsible id="prep-scene" icon="map" iconColor="var(--amber)" title="Scene & map ideas" badge="Optional" hint="Where the fight happens">
+        <SceneNotes scene={encounter.scene} onChange={onSetScene} onGenerate={onGenerate}/>
+      </Collapsible>
+      <Collapsible id="prep-plan" icon="compass" iconColor="var(--amber)" title="Encounter plan" badge="Optional" hint="Win condition, battlefield feature and hazard — makes fights more than a damage race">
+        <div style={{paddingTop:14}}><AxesStrip {...axesProps}/></div>
+      </Collapsible>
+    </div>
+  );
+}
+
+/* ---------- RUN mode ---------- */
+function HpControls({current, max, onDelta, onSetExact}){
+  const [amount, setAmount] = useState('');
+  const [editing, setEditing] = useState(false);
+  const pct = clampPct(current, max);
+  const n = Number(amount);
+  const valid = amount.trim() !== '' && !Number.isNaN(n) && n > 0;
+  function apply(sign){ if(!valid) return; onDelta(sign * Math.abs(n)); setAmount(''); }
+  return (
+    <div className="hp-panel">
+      <div className="hp-big">
+        <span className="hp-big-num mono" style={{color:hpColor(pct)}}>{current}</span>
+        <span className="hp-big-max mono">/ {max} HP</span>
+        <button className="link-btn" style={{marginLeft:'auto'}} onClick={()=>setEditing(v=>!v)}>{editing ? 'Done' : 'Edit exact HP'}</button>
+      </div>
+      <div className="hp-meter" role="img" aria-label={`${current} of ${max} hit points`}><div style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>
+      {editing && (
+        <div className="hp-edit">
+          <label className="init-label"><span>Current</span><input className="text-input" type="number" value={current} onChange={e=>onSetExact({hpCurrent: Number(e.target.value)||0})}/></label>
+          <label className="init-label"><span>Max</span><input className="text-input" type="number" value={max} onChange={e=>onSetExact({hpMax: Math.max(1, Number(e.target.value)||1)})}/></label>
+        </div>
+      )}
+      <div className="hp-actions">
+        <input className="text-input amount" type="number" min="0" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') apply(-1); }} aria-label="Hit point amount — press Enter to apply as damage"/>
+        <button className="btn btn-blood" onClick={()=>apply(-1)} disabled={!valid}>Damage</button>
+        <button className="btn btn-moss" onClick={()=>apply(1)} disabled={!valid}>Heal</button>
+        <span className="muted" style={{fontSize:13}}>Type a number, then press Enter to deal damage.</span>
+      </div>
+    </div>
+  );
+}
+
+function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetStats, onToggleDefeated, onToggleTeam, onToggleCondition, onPosture, onDamageParty}){
+  const isAlly = m.team === 'ally';
+  const color = kindColor({kind:'monster', team:m.team});
+  return (
+    <section className={"card focus"+(isActive?" is-active":"")} style={{'--c':color}}>
+      <div className="focus-head">
+        <div style={{minWidth:0}}>
+          <h2 className="focus-name">
+            <span className="kind-dot" style={{'--c':color, width:14, height:14}}/>{m.name}
+            {isActive && <span className="pill pill-accent">Acting now</span>}
+            {isAlly && <span className="ally-badge">Ally</span>}
+            {m.isDefeated && <span className="pill pill-blood">Defeated</span>}
+          </h2>
+          <p className="focus-sub">
+            <span>{m.baseType}</span>
+            <a className="lookup-btn" href={`https://www.dndbeyond.com/monsters?filter-search=${encodeURIComponent(m.name)}`} target="_blank" rel="noopener noreferrer" title={`Look up "${m.name}" on D&D Beyond`}>
+              <Icon name="link" size={14}/>Look up stat block
+            </a>
+          </p>
+        </div>
+        <div className="focus-stats">
+          <div className="big-stat"><b>{m.ac}</b><span>AC</span></div>
+          <div className="big-stat"><b>{m.speed}</b><span>Speed ft</span></div>
+        </div>
+      </div>
+
+      <div className="focus-section">
+        <p className="focus-section-title">{m.isMob ? 'Mob' : 'Hit points'}</p>
+        {m.isMob ? (
+          <div className="focus-actions">
+            <span className="muted">Still alive</span>
+            <button className="stepper" onClick={()=>{ const n=Math.max(0,(m.mobCount||1)-1); onSetStats(m.id, {mobCount:n, mobHpPool:n*(m.hpMax||0)}); }} aria-label="One fewer creature">−</button>
+            <input className="init-input" type="number" value={m.mobCount ?? 1} onChange={e=>{ const n=Math.max(0, Number(e.target.value)||0); onSetStats(m.id, {mobCount:n, mobHpPool:n*(m.hpMax||0)}); }} aria-label={`${m.name} mob size`}/>
+            <button className="stepper" onClick={()=>{ const n=(m.mobCount||1)+1; onSetStats(m.id, {mobCount:n, mobHpPool:n*(m.hpMax||0)}); }} aria-label="One more creature">+</button>
+          </div>
+        ) : (
+          <HpControls current={m.hpCurrent} max={m.hpMax} onDelta={d=>onDelta(m.id, d)} onSetExact={patch=>onSetStats(m.id, patch)}/>
+        )}
+      </div>
+
+      <div className="focus-section">
+        <p className="focus-section-title">Conditions</p>
+        <ConditionRow conditions={m.conditions} onToggle={c=>onToggleCondition(m.id, c)}/>
+      </div>
+
+      <div className="focus-section">
+        <MonsterDetails key={m.id} monster={m} axes={axes} traitTriggers={traitTriggers} party={party} onPosture={onPosture} onSetStats={onSetStats} onDamageParty={onDamageParty}/>
+      </div>
+
+      <div className="focus-section">
+        <div className="focus-actions">
+          <button className="btn" onClick={()=>onToggleDefeated(m.id)}><Icon name="skull" size={16}/>{m.isDefeated ? 'Bring back' : 'Mark defeated'}</button>
+          <button className="btn" onClick={()=>onToggleTeam(m.id)}><Icon name="userplus" size={16}/>{isAlly ? 'Switch to enemy' : 'Switch to ally'}</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
+  const color = 'var(--arcane)';
+  return (
+    <section className={"card focus"+(isActive?" is-active":"")} style={{'--c':color}}>
+      <div className="focus-head">
+        <div style={{minWidth:0}}>
+          <h2 className="focus-name">
+            <span className="kind-dot" style={{'--c':color, width:14, height:14}}/>{p.name}
+            {isActive && <span className="pill pill-accent">Acting now</span>}
+          </h2>
+          <p className="focus-sub">
+            <span>{[p.species, p.role].filter(Boolean).join(' ')}{p.level ? ` · Level ${p.level}` : ''}</span>
+            {p.referenceLink && <a className="lookup-btn" href={p.referenceLink} target="_blank" rel="noopener noreferrer"><Icon name="link" size={14}/>Character sheet</a>}
+          </p>
+        </div>
+        <div className="focus-stats">
+          <div className="big-stat"><b>{p.ac}</b><span>AC</span></div>
+          <div className="big-stat"><b>{(p.attackBonus ?? 0) >= 0 ? '+' : ''}{p.attackBonus ?? 0}</b><span>Attack</span></div>
+        </div>
+      </div>
+      <div className="focus-section">
+        <p className="focus-section-title">Hit points</p>
+        <HpControls current={p.hpCurrent} max={p.hpMax} onDelta={d=>onDelta(p.id, d)} onSetExact={patch=>onSetStat(p.id, patch)}/>
+      </div>
+      <div className="focus-section">
+        <p className="focus-section-title">Conditions</p>
+        <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
+      </div>
+      {p.tacticalPriority && (
+        <div className="focus-section">
+          <p className="focus-section-title">What the monsters see</p>
+          <p style={{margin:0, color:'var(--amber-text)', fontSize:15}}>{p.tacticalPriority}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive}){
+  return (
+    <aside className="card rail" aria-label="Initiative order">
+      <div className="rail-head"><h2>Initiative order</h2><span className="muted" style={{fontSize:12.5}}>Click to inspect</span></div>
+      {rows.map(r=>{
+        const active = r.id === activeId;
+        const color = kindColor(r);
+        const pct = clampPct(r.hpCurrent, r.hpMax);
+        return (
+          <div key={r.id} className={"rail-row"+(active?" active":"")+(r.id===selectedId?" selected":"")} style={{'--c':color}}
+            role="button" tabIndex={0} aria-current={active ? 'true' : undefined}
+            onClick={()=>onSelect(r.id)}
+            onKeyDown={e=>{ if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onSelect(r.id); } }}>
+            <input className="rail-init" type="number" value={r.initiative} onClick={e=>e.stopPropagation()} onChange={e=>onSetInitiative(r.kind, r.id, e.target.value)} aria-label={`${r.name} initiative`} title="Initiative — click to change"/>
+            <div style={{minWidth:0}}>
+              <div className="rail-name">
+                <span className="kind-dot" style={{'--c':color}} title={kindLabel(r)}/>
+                <span className="t">{r.name}</span>
+                {active && <span className="rail-turn">Turn</span>}
+              </div>
+              <div className="rail-meta">
+                {r.isMob
+                  ? <span className="rail-hp-num">{r.mobCount} alive</span>
+                  : (
+                    <React.Fragment>
+                      <div className="rail-hp"><div style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>
+                      <span className={"rail-hp-num"+(r.hpCurrent<=0?" down":"")}>{r.hpCurrent<=0 ? 'Down' : `${r.hpCurrent}/${r.hpMax}`}</span>
+                    </React.Fragment>
+                  )}
+                {r.conditions.length>0 && (
+                  <span className="cond-dots" title={r.conditions.join(', ')}>
+                    {r.conditions.slice(0,4).map(c=><i key={c} style={{'--c':CONDITION_COLORS[c]}}/>)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {defeated.length>0 && (
+        <div className="rail-section">
+          <p className="focus-section-title" style={{marginBottom:4}}>Defeated ({defeated.length})</p>
+          {defeated.map(m=>(
+            <div className="rail-defeated" key={m.id}>
+              <span className="t">{m.name}</span>
+              <button className="link-btn" onClick={()=>onRevive(m.id)}>Bring back</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function TurnBar({round, active, onPrev, onNext, menuItems, difficulty}){
+  return (
+    <section className="card turnbar">
+      <div className="turnbar-round"><span className="turnbar-label">Round</span><b>{round.roundNumber}</b></div>
+      <div className="turnbar-now">
+        <span className="turnbar-label">Now acting</span>
+        <b><span className="kind-dot" style={{'--c': active ? kindColor(active) : 'var(--line)', width:14, height:14}}/>{active ? active.name : '—'}</b>
+      </div>
+      <div className="turnbar-actions">
+        {difficulty}
+        <button className="btn btn-lg" onClick={onPrev} title="Go back one turn"><Icon name="chevron" size={17} style={{transform:'scaleX(-1)'}}/>Back</button>
+        <button className="btn btn-primary btn-lg" onClick={onNext} title="End this turn and move to the next combatant">Next turn<Icon name="chevron" size={17}/></button>
+        <MoreMenu label="Round controls" items={menuItems}/>
+      </div>
+    </section>
+  );
+}
+
+function PlanStrip({axes}){
+  const hz = axes.hazardOrClock;
+  const hint = `Hazard: ${hz.title} — ${typeof hz.initiativeCount==='number' ? `at count ${hz.initiativeCount}` : hz.initiativeCount}`;
+  return (
+    <div className="plan-strip">
+      <Collapsible icon="compass" iconColor="var(--amber)" title="Encounter plan" hint={hint}>
+        <div className="plan-grid" style={{padding:'14px 0 0'}}>
+          <div className="plan-item" style={{'--c':'var(--blood)'}}><small>Win condition</small><b>{axes.winCondition.title}</b><p>{axes.winCondition.moraleThresholds}</p></div>
+          <div className="plan-item" style={{'--c':'var(--arcane)'}}><small>Battlefield</small><b>{axes.battlefieldOptimizer.title}</b><p>{axes.battlefieldOptimizer.mechanicalBenefit}</p></div>
+          <div className="plan-item" style={{'--c':'var(--amber)'}}><small>Hazard / clock</small><b>{hz.title} <span className="pill pill-amber">{typeof hz.initiativeCount==='number' ? `Count ${hz.initiativeCount}` : hz.initiativeCount}</span></b><p>{hz.triggerEffect}</p></div>
+        </div>
+      </Collapsible>
+    </div>
+  );
+}
+
+function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep}){
+  const focusId = (selectedId && rows.some(r=>r.id===selectedId)) ? selectedId : activeId;
+  const focusRow = rows.find(r=>r.id===focusId);
+  const active = rows.find(r=>r.id===activeId);
+  if(rows.length === 0){
+    return (
+      <div className="card empty" style={{padding:'56px 20px'}}>
+        <Icon name="swords" size={36} style={{color:'var(--parchment-faint)'}}/>
+        <h3>Nobody is in the fight yet</h3>
+        <p>Add your players and some monsters in Prep, then come back here to run the combat.</p>
+        <button className="btn btn-primary btn-lg" style={{marginTop:18}} onClick={onGoPrep}>Go to Prep</button>
+      </div>
+    );
+  }
+  const monster = focusRow?.kind === 'monster' ? encounter.round.monsters.find(m=>m.id===focusRow.id) : null;
+  const pc = focusRow?.kind === 'pc' ? encounter.party.find(p=>p.id===focusRow.id) : null;
+  return (
+    <div>
+      <TurnBar round={encounter.round} active={active} onPrev={turn.onPrev} onNext={turn.onNext} menuItems={turn.menuItems}
+        difficulty={<DifficultyBadge party={encounter.party} monsters={encounter.round.monsters}/>}/>
+      <PlanStrip axes={encounter.axes}/>
+      <div className="run">
+        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive}/>
+        <div>
+          {monster && <MonsterFocus key={monster.id} m={monster} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
+            onDelta={handlers.onMonsterDelta} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
+            onToggleCondition={(id,c)=>handlers.onToggleCondition('monster', id, c)} onPosture={handlers.onPosture} onDamageParty={handlers.onPartyDelta}/>}
+          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c)=>handlers.onToggleCondition('pc', id, c)}/>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowToUseModal({open, onClose}){
+  if(!open) return null;
+  const sections = [
+    {
+      title: 'Two views: Prep and Run Combat',
+      body: [
+        'Use the switch at the top. Prep is where you set things up before the session. Run Combat is the live tracker you use at the table. Your changes are saved automatically in this browser.',
+      ],
+    },
+    {
+      title: 'In Prep',
+      body: [
+        '1 · Add your party: each player\'s name, level, AC, hit points, attack bonus and initiative. Mark someone Absent if they missed the session — they stay saved but sit out the fight.',
+        '2 · Add monsters: type a name to search the 2024 SRD (328 creatures) and your own saved monsters, or use Browse the compendium or Paste a stat block for anything else. Open a monster\'s arrow to read its stat block.',
+        '3 · Describe the scene (optional): Environment, Terrain, Situation and Time of day. They generate map ideas and can draft an Encounter plan: a win condition, a battlefield feature worth fighting over, and a ticking hazard. You can ignore all of it.',
+        'When you\'re ready, press Start combat.',
+      ],
+    },
+    {
+      title: 'In Run Combat',
+      body: [
+        'The list on the left is the initiative order. Whoever is acting is highlighted. Press Next turn to move on; the round counter goes up when the order wraps around.',
+        'Click anyone in the list to see their details on the right. Type an amount and press Enter (or Damage / Heal) to change hit points. Add conditions like Prone or Frightened under Conditions. You can change anyone\'s initiative number right in the list.',
+        'For monsters, the tabs show their Actions (attacks and multiattack), Stats (ability scores — click one to roll a check, or a save to roll it) and Tactics (how the creature fights right now).',
+        'Defeated monsters drop out of the order and wait at the bottom of the list in case you need to bring them back. For a big group, add them as a mob in Prep to track them with one shared headcount.',
+      ],
+    },
+    {
+      title: 'Share with players',
+      body: [
+        'Sign in with Sync, then use Share to get a link for your players. They see the turn order, their own characters\' hit points, and each monster\'s name and conditions — nothing else. Players can also type their own notes on each card.',
+      ],
+    },
+    {
+      title: 'Rules and monsters',
+      body: [
+        'This tool uses the 2024 revision of D&D 5e (sometimes called 5.5e). Monsters come from the free 2024 SRD, the open-license part of the Monster Manual published under Creative Commons (CC BY 4.0). It isn\'t the whole book — if a monster is missing, paste its stat block in Prep.',
+      ],
+    },
+    {
+      title: 'Data and syncing',
+      body: [
+        'Everything lives in this browser unless you turn on Sync, which keeps your encounters and monster library in step across devices. Open the ⋯ menu for Export / Import, which also works for moving to a new device.',
+      ],
+    },
+  ];
+  return (
+    <div className="modal-veil" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} role="dialog" aria-label="Quick guide">
+        <div className="modal-head">
+          <h2><Icon name="help" size={19} style={{color:'var(--accent-text)'}}/>Quick guide</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={18}/></button>
+        </div>
+        <div className="modal-body">
+          {sections.map(s=>(
+            <div key={s.title} style={{marginBottom:18}}>
+              <p style={{fontSize:15.5, fontWeight:650, color:'var(--parchment)', margin:'0 0 6px'}}>{s.title}</p>
+              {s.body.map((p,i)=>(
+                <p key={i} style={{fontSize:14.5, color:'var(--parchment-dim)', lineHeight:1.6, margin:'0 0 8px'}}>{p}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const [theme, toggleTheme] = useTheme();
   const [store, setStore] = useState(loadEncounterStore);
@@ -3556,12 +3895,12 @@ function App(){
   const [customHazards, setCustomHazards] = useState(loadCustomHazards);
   const [importOpen, setImportOpen] = useState(false);
   const [dataModalMode, setDataModalMode] = useState(null); // null | 'export' | 'import'
-  const [expandedIds, setExpandedIds] = useState(()=>new Set());
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
-
-  function toggleExpanded(id){ setExpandedIds(prev=>{ const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }); }
-  function expand(id){ setExpandedIds(prev=>{ const next = new Set(prev); next.add(id); return next; }); }
+  const [mode, setMode] = useState(()=>{ try{ return localStorage.getItem(MODE_KEY)==='run' ? 'run' : 'prep'; }catch(e){ return 'prep'; } });
+  const [selectedId, setSelectedId] = useState(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(()=>{ try{ localStorage.setItem(MODE_KEY, mode); }catch(e){} }, [mode]);
 
   useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
   useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
@@ -3680,9 +4019,17 @@ function App(){
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, initiative:n} : p)}));
     else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, initiative:n} : m)}}));
   }
-  function setPartyAc(id, ac){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, ac} : p)})); }
-  function setPartyLevel(id, level){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, level} : p)})); }
-  function setPartyAttackBonus(id, attackBonus){ updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, attackBonus} : p)})); }
+  function setPartyStat(id, patch){
+    updateActive(enc=>({...enc, party: enc.party.map(p=>{
+      if(p.id!==id) return p;
+      const next = {...p, ...patch};
+      next.hpCurrent = Math.max(0, Math.min(next.hpMax, next.hpCurrent));
+      return next;
+    })}));
+  }
+  function reviveMonster(id){
+    updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:false, hpCurrent: m.hpCurrent>0 ? m.hpCurrent : 1} : m)}}));
+  }
   function toggleCondition(kind, id, condition){
     const flip = (list)=> (list||[]).includes(condition) ? list.filter(c=>c!==condition) : [...(list||[]), condition];
     if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, conditions: flip(p.conditions)} : p)}));
@@ -3756,11 +4103,10 @@ function App(){
     updateActive(enc=>{
       const order = getTurnOrder(enc);
       if(order.length === 0) return enc;
-      const curIdx = order.findIndex(c=>c.id === enc.round.activeCombatantId);
+      const curIdx = order.findIndex(c=>c.id === resolveActiveId(enc));
       const nextIdx = curIdx === -1 ? 0 : (curIdx + 1) % order.length;
       const wrapped = curIdx !== -1 && nextIdx === 0;
       const next = order[nextIdx];
-      if(next.kind === 'monster') expand(next.id);
       return {...enc, round:{...enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
     });
   }
@@ -3768,11 +4114,10 @@ function App(){
     updateActive(enc=>{
       const order = getTurnOrder(enc);
       if(order.length === 0) return enc;
-      const curIdx = order.findIndex(c=>c.id === enc.round.activeCombatantId);
+      const curIdx = order.findIndex(c=>c.id === resolveActiveId(enc));
       const atStart = curIdx === -1 || curIdx === 0;
       const prevIdx = atStart ? order.length - 1 : curIdx - 1;
       const prev = order[prevIdx];
-      if(prev.kind === 'monster') expand(prev.id);
       return {...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}};
     });
   }
@@ -3797,8 +4142,7 @@ function App(){
   function importEncounter(imported){ updateActive(enc=>({...imported, id: enc.id})); }
 
   const turnOrder = getTurnOrder(encounter);
-  const activeCombatant = turnOrder.find(c=>c.id === encounter.round.activeCombatantId) ?? turnOrder[0];
-  const activeMonster = activeCombatant?.kind === 'monster' ? encounter.round.monsters.find(m=>m.id===activeCombatant.id) : undefined;
+  const activeId = resolveActiveId(encounter);
   const activeParty = encounter.party.filter(p=>p.active !== false);
 
   // Recomputes order/party from `encounter` directly rather than depending on the
@@ -3811,7 +4155,7 @@ function App(){
     const party = encounter.party.filter(p=>p.active !== false);
     return {
       encounterName: encounter.name,
-      round: { roundNumber: encounter.round.roundNumber, activeCombatantId: encounter.round.activeCombatantId },
+      round: { roundNumber: encounter.round.roundNumber, activeCombatantId: resolveActiveId(encounter) },
       order: order.map(c=> c.kind==='monster'
         ? { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: encounter.round.monsters.find(m=>m.id===c.id)?.conditions || [] }
         : { id:c.id, name:c.name, kind:'pc' }
@@ -3821,61 +4165,89 @@ function App(){
   }, [encounter]);
   const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
 
+  // Whenever the turn moves, jump the detail panel back to whoever is acting.
+  useEffect(()=>{ setSelectedId(null); }, [activeId]);
+
+  const partyById = new Map(encounter.party.map(p=>[p.id, p]));
+  const monsterById = new Map(encounter.round.monsters.map(m=>[m.id, m]));
+  const rows = turnOrder.map(c=>{
+    const src = c.kind==='pc' ? partyById.get(c.id) : monsterById.get(c.id);
+    return {...c, hpCurrent:src.hpCurrent, hpMax:src.hpMax, conditions:src.conditions||[], isMob:!!src.isMob, mobCount:src.mobCount};
+  });
+  const defeated = encounter.round.monsters.filter(m=>m.isDefeated);
+  const inProgress = encounter.round.roundNumber > 1 || !!encounter.round.activeCombatantId;
+
+  function startCombat(){
+    updateActive(enc=>({...enc, round:{...enc.round, activeCombatantId: resolveActiveId(enc)}}));
+    setMode('run');
+  }
+
+  const axesProps = {
+    axes: encounter.axes, monsters: encounter.round.monsters, scene: encounter.scene, onSuggest: setAxes,
+    onRollCombatMenu: rollCombatMenu, onRollWinCondition: rollWinCondition, onRollBattlefieldOptimizer: rollBattlefieldOptimizer,
+    locked: encounter.axesLocked || {win:false, opt:false, hazard:false}, onToggleLock: toggleAxisLock,
+    customHazards, onApplyHazard: applyHazard, onSaveCustomHazard: addCustomHazard, onRemoveCustomHazard: removeCustomHazard,
+  };
+  const monsterHandlers = { onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
+  const partyHandlers = { onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
+  const runHandlers = {
+    onMonsterDelta:updateMonsterHp, onPartyDelta:updatePartyHp, onSetStats:setMonsterStats, onSetPartyStat:setPartyStat,
+    onToggleDefeated:toggleDefeated, onToggleTeam:toggleMonsterTeam, onToggleCondition:toggleCondition, onPosture:setMonsterPosture,
+  };
+  const turn = {
+    onPrev:prevTurn, onNext:nextTurn,
+    menuItems:[
+      {icon:'skip', label:'Jump to next round', onClick:nextRound},
+      {icon:'reset', label:'Back to previous round', onClick:prevRound},
+      {sep:true},
+      {icon:'reset', label:'Reset to round 1', onClick:resetRound},
+    ],
+  };
+  const moreItems = [
+    {icon: theme==='dark' ? 'sun' : 'moon', label: theme==='dark' ? 'Switch to light theme' : 'Switch to dark theme', onClick:toggleTheme},
+    {icon:'help', label:'Quick guide', onClick:()=>setHelpOpen(true)},
+    {sep:true},
+    {icon:'download', label:'Export all data', onClick:()=>setDataModalMode('export')},
+    {icon:'upload', label:'Import data', onClick:()=>setDataModalMode('import')},
+    {icon:'upload', label:'Import encounter from markdown', onClick:()=>setImportOpen(true)},
+  ];
+
   return (
     <React.Fragment>
-      <div className="topbar">
+      <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
             <Icon name="blade" size={26} style={{color:'var(--blood)'}}/>
-            <div><h1>Tactics Table</h1><p>{encounter.name}</p></div>
+            <h1>Tactics Table</h1>
           </div>
+          <ModeSwitch mode={mode} onChange={setMode}/>
           <div className="topbar-actions">
-            <button className="icon-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
-              <Icon name={theme==='dark' ? 'sun' : 'moon'} size={17}/>
-            </button>
-            <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
             <PlayerShareControl cloud={cloud} enabled={shareEnabled} onToggleEnabled={setShareEnabled} share={playerShare}/>
-            <HowToUseSection/>
-            <button className="btn" onClick={()=>setDataModalMode('export')} title="Copy every encounter, custom monster, and custom hazard on this device as one block of text"><Icon name="download" size={15}/>Export Data</button>
-            <button className="btn" onClick={()=>setDataModalMode('import')} title="Paste back a previous export, overwriting what's on this device"><Icon name="upload" size={15}/>Import Data</button>
-            <button className="btn" onClick={()=>setImportOpen(true)} title="Load one full encounter from raw markdown text"><Icon name="upload" size={15}/>Import Markdown</button>
+            <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
+            <MoreMenu items={moreItems}/>
           </div>
         </div>
         <EncounterTabs encounters={store.encounters} activeId={store.activeId} onSelect={selectEncounterTab} onAdd={addEncounterTab} onDuplicate={duplicateEncounterTab} onDelete={deleteEncounterTab}
           renamingId={renamingId} renameValue={renameValue} onRenameStart={startRename} onRenameChange={setRenameValue} onRenameCommit={commitRename}/>
-      </div>
+      </header>
 
+      <HowToUseModal open={helpOpen} onClose={()=>setHelpOpen(false)}/>
       {importOpen && <ImportModal onClose={()=>setImportOpen(false)} onImport={importEncounter}/>}
       {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
-      <div className="shell">
-        <AxesStrip axes={encounter.axes} monsters={encounter.round.monsters} scene={encounter.scene} onSuggest={setAxes}
-          onRollCombatMenu={rollCombatMenu} onRollWinCondition={rollWinCondition} onRollBattlefieldOptimizer={rollBattlefieldOptimizer}
-          locked={encounter.axesLocked || {win:false,opt:false,hazard:false}} onToggleLock={toggleAxisLock}
-          customHazards={customHazards} onApplyHazard={applyHazard} onSaveCustomHazard={addCustomHazard} onRemoveCustomHazard={removeCustomHazard}/>
-        <div className="scene-elements-row">
-          <SceneFieldsStrip scene={encounter.scene} onChange={setScene} onGenerate={handleGenerateEncounter}/>
-          <MapElementsStrip scene={encounter.scene}/>
-        </div>
-        <RoundTracker round={encounter.round} order={turnOrder} party={encounter.party} onNextTurn={nextTurn} onPrevTurn={prevTurn} onPrevRound={prevRound} onNextRound={nextRound} onReset={resetRound} onRemoveMonster={removeMonster} onToggleTeam={toggleMonsterTeam} onSetInitiative={setInitiative}/>
-        <div className="main-grid">
-          <div className="stack">
-            <PartyPanel party={encounter.party} onDelta={updatePartyHp} onAdd={addPartyMember} onRemove={removePartyMember} onSetInitiative={(id,v)=>setInitiative('pc', id, v)} onSetAc={setPartyAc} onSetLevel={setPartyLevel} onSetAttackBonus={setPartyAttackBonus} onToggleCondition={(id,c)=>toggleCondition('pc', id, c)} onToggleActive={togglePartyActive}/>
-          </div>
-          <div className="stack">
-            <AddMonsterForm onAdd={addMonster} customMonsters={customMonsters} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}/>
-            <div className="monster-grid">
-              {encounter.round.monsters.map(m=>(
-                <MonsterCard key={m.id} monster={m} isActiveTurn={activeMonster && activeMonster.id===m.id}
-                  expanded={expandedIds.has(m.id)} onToggleExpand={()=>toggleExpanded(m.id)}
-                  onDelta={updateMonsterHp} onPosture={setMonsterPosture} onToggleDefeated={toggleDefeated} onRemove={removeMonster} onSetStats={setMonsterStats} onToggleTeam={toggleMonsterTeam}
-                  traitTriggers={encounter.traitTriggers} axes={encounter.axes} onToggleCondition={(id,c)=>toggleCondition('monster', id, c)}
-                  party={activeParty} onDamageParty={updatePartyHp}/>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <main className="shell">
+        {mode === 'prep' ? (
+          <PrepView encounter={encounter} customMonsters={customMonsters} party={activeParty}
+            partyHandlers={partyHandlers} monsterHandlers={monsterHandlers}
+            onAddMonster={addMonster} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}
+            onSetScene={setScene} onGenerate={handleGenerateEncounter} axesProps={axesProps}
+            onStart={startCombat} inProgress={inProgress} canStart={turnOrder.length>0} onOpenHelp={()=>setHelpOpen(true)}/>
+        ) : (
+          <RunView encounter={encounter} rows={rows} activeId={activeId} selectedId={selectedId} onSelect={setSelectedId}
+            defeated={defeated} onRevive={reviveMonster} onSetInitiative={setInitiative} party={activeParty}
+            handlers={runHandlers} turn={turn} onGoPrep={()=>setMode('prep')}/>
+        )}
+      </main>
     </React.Fragment>
   );
 }
