@@ -2621,15 +2621,17 @@ function AddMonsterForm({onAdd, customMonsters, onSaveCustom, onRemoveCustom}){
 
   function handleQuickAdd(){
     if(!name.trim()) return;
+    // typed "owlbear" and matched the compendium's "Owlbear"? use the proper capitalisation
+    const baseName = (match && match.name.toLowerCase() === name.trim().toLowerCase()) ? match.name : name.trim();
     const suffix = Date.now();
     const overrides = { ac: ac.trim()?Number(ac):undefined, hpMax: hp.trim()?Number(hp):undefined, speed: speed.trim()?Number(speed):undefined };
     if(asMob){
       const mobSize = Math.max(2, Math.min(50, Number(count) || 2));
-      const mob = buildMonsterFromName(name.trim(), suffix, overrides, customMonsters);
-      onAdd({...mob, name:`${name.trim()} Mob`, isMob:true, mobCount:mobSize});
+      const mob = buildMonsterFromName(baseName, suffix, overrides, customMonsters);
+      onAdd({...mob, name:`${baseName} Mob`, isMob:true, mobCount:mobSize});
     } else {
       const qty = Math.max(1, Math.min(12, Number(count) || 1));
-      for(let i=0;i<qty;i++){ const label = qty>1?`${name.trim()} ${i+1}`:name.trim(); onAdd(buildMonsterFromName(label, `${suffix}-${i}`, overrides, customMonsters)); }
+      for(let i=0;i<qty;i++){ const label = qty>1?`${baseName} ${i+1}`:baseName; onAdd(buildMonsterFromName(label, `${suffix}-${i}`, overrides, customMonsters)); }
     }
     setName(''); setCount('1'); setAc(''); setHp(''); setSpeed('');
   }
