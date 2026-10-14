@@ -2068,12 +2068,12 @@ const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
 function AddPartyMemberForm({onAdd, onDone}){
   const [name, setName] = useState(''); const [role, setRole] = useState('Custom');
   const [species, setSpecies] = useState(''); const [ac, setAc] = useState('15'); const [hp, setHp] = useState('20'); const [level, setLevel] = useState('1');
-  const [priority, setPriority] = useState(''); const [link, setLink] = useState('');
+  const [priority, setPriority] = useState(''); const [link, setLink] = useState(''); const [initBonus, setInitBonus] = useState('0');
   function submit(){
     if(!name.trim()) return;
     const hpMax = Math.max(1, Number(hp) || 1);
     const lvl = Math.max(1, Math.min(20, Number(level) || 1));
-    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, hpCurrent:hpMax, hpMax,
+    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, initiativeBonus:Number(initBonus)||0, hpCurrent:hpMax, hpMax,
       tacticalPriority: priority.trim() || 'No tactical note yet', conditions:[], referenceLink: link.trim() || undefined });
     onDone();
   }
@@ -2085,6 +2085,7 @@ function AddPartyMemberForm({onAdd, onDone}){
         <input className="text-input" type="number" min="1" max="20" value={level} onChange={e=>setLevel(e.target.value)} placeholder="Lvl" style={{width:48}} title="Character level — used for the encounter difficulty rating"/>
         <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:56}}/>
         <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:56}}/>
+        <input className="text-input" value={initBonus} onChange={e=>setInitBonus(e.target.value)} placeholder="Init" style={{width:52}} title="Initiative modifier (usually Dexterity)"/>
       </div>
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
@@ -2857,6 +2858,41 @@ function ImportModal({onClose, onImport}){
 
 const ENCOUNTERS_KEY = 'tactics-table-encounters-v1';
 const MODE_KEY = 'tactics-table-mode-v2';
+/* ---------- shared party ----------
+   Character sheet fields live once in store.party and apply to every encounter. Per-fight state
+   (current HP, conditions, initiative roll, absent) lives in each encounter's pcState. */
+const PC_SHARED_FIELDS = ['id','name','role','species','level','ac','hpMax','initiativeBonus','referenceLink','tacticalPriority'];
+const PC_STATE_FIELDS = ['hpCurrent','conditions','initiative','active'];
+function pickFields(obj, keys){ const o = {}; keys.forEach(k=>{ if(obj[k] !== undefined) o[k] = obj[k]; }); return o; }
+function composeParty(roster, pcState){
+  return (roster||[]).map(p=>{
+    const st = (pcState||{})[p.id] || {};
+    return {...p, hpCurrent: st.hpCurrent ?? p.hpMax, conditions: st.conditions ?? [], initiative: st.initiative ?? 10, active: st.active ?? true};
+  });
+}
+/** Older saves keep a separate party inside every encounter; fold those into one shared roster (active encounter wins). */
+function normalizeStore(store){
+  if(!store || !Array.isArray(store.encounters)) return store;
+  const hasRoster = Array.isArray(store.party);
+  const roster = hasRoster ? store.party.slice() : [];
+  const seen = new Set(roster.map(p=>p.id));
+  const ordered = [...store.encounters].sort((a,b)=> (b.id===store.activeId) - (a.id===store.activeId));
+  const encounters = store.encounters.map(e=>{
+    const {party, ...rest} = e;
+    if(!Array.isArray(party) || hasRoster) return rest;
+    const pcState = {...(e.pcState||{})};
+    party.forEach(p=>{ pcState[p.id] = pickFields(p, PC_STATE_FIELDS); });
+    return {...rest, pcState};
+  });
+  if(!hasRoster){
+    ordered.forEach(e=>(e.party||[]).forEach(p=>{ if(!seen.has(p.id)){ seen.add(p.id); roster.push(pickFields(p, PC_SHARED_FIELDS)); } }));
+  }
+  return {...store, party: roster, encounters};
+}
+/** What gets saved and synced: the shared shape, plus a full party on each encounter so the classic version of the app can still open the data. */
+function toPersistShape(store){
+  return {...store, encounters: store.encounters.map(e=>({...e, party: composeParty(store.party, e.pcState)}))};
+}
 function blankEncounter(name){
   return {
     id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name,
@@ -2873,16 +2909,16 @@ function loadEncounterStore(){
     const raw = localStorage.getItem(ENCOUNTERS_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      if(parsed && Array.isArray(parsed.encounters) && parsed.encounters.length>0) return parsed;
+      if(parsed && Array.isArray(parsed.encounters) && parsed.encounters.length>0) return normalizeStore(parsed);
     }
     const old = localStorage.getItem(STORAGE_KEY);
     if(old){
       const enc = JSON.parse(old);
       if(!enc.scene) enc.scene = {environment:'', terrain:'', combatSituation:'', timeOfDay:''};
-      return { encounters:[enc], activeId: enc.id };
+      return normalizeStore({ encounters:[enc], activeId: enc.id });
     }
   }catch(e){}
-  return { encounters:[sampleEncounter], activeId: sampleEncounter.id };
+  return normalizeStore({ encounters:[sampleEncounter], activeId: sampleEncounter.id });
 }
 
 function CloudSyncControl({cloud, open, onToggleOpen}){
@@ -3369,7 +3405,7 @@ function MonsterDetails({monster, axes, traitTriggers, party, onPosture, onSetSt
 }
 
 /* ---------- PREP mode ---------- */
-function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
+function PartyRosterRow({p, onChange, onRemove, onToggleActive, onRollInitiative}){
   const absent = p.active === false;
   function setHpMax(v){
     const n = Math.max(1, Number(v)||1);
@@ -3386,10 +3422,12 @@ function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
           <label className="stat-field" title="Character level — used for the encounter difficulty rating"><span>Lvl</span><input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onChange(p.id, {level: Math.max(1, Math.min(20, Number(e.target.value)||1))})}/></label>
           <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={p.ac} onChange={e=>onChange(p.id, {ac: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={p.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>
+          <label className="stat-field" title="Initiative modifier (usually Dexterity) — used when you roll initiative for a player"><span>Mod</span><input type="number" value={p.initiativeBonus ?? 0} onChange={e=>onChange(p.id, {initiativeBonus: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={p.initiative ?? 10} onChange={e=>onChange(p.id, {initiative: Number(e.target.value)||0})}/></label>
         </div>
         <div className="row-actions">
           {p.referenceLink && <a className="iconbtn" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="Open character sheet" aria-label={`Open ${p.name}'s character sheet`}><Icon name="link" size={16}/></a>}
+          <button className="iconbtn" onClick={()=>onRollInitiative(p.id)} aria-label={`Roll initiative for ${p.name}`} title="Roll initiative (d20 + modifier)"><Icon name="dice" size={17}/></button>
           <button className={"iconbtn"+(absent?" on":"")} onClick={()=>onToggleActive(p.id)} aria-label={absent ? `Mark ${p.name} present` : `Mark ${p.name} absent`} title={absent ? 'Absent this session — click to bring them back into combat' : 'Player missing this session? Click to leave them out of combat without deleting their sheet'}>
             <Icon name={absent ? 'userplus' : 'userminus'} size={17}/>
           </button>
@@ -3401,28 +3439,129 @@ function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
   );
 }
 
-function PartyCard({party, onChange, onAdd, onRemove, onToggleActive}){
+const PC_SHEET_PROMPT = `Please read this D&D 5e character sheet (a screenshot, PDF or photo) and reply with ONLY the block below, filled in with the character's current totals, inside a markdown code block. If something isn't shown on the sheet, leave it blank.
+
+Name:
+Species:
+Class:
+Level:
+AC:
+Max HP:
+Initiative Bonus:
+Sheet Link:`;
+
+/** Reads the "Name: … / Level: …" block an AI chat produces from a character sheet. */
+function parsePcSheet(text){
+  const grab = (labels)=>{
+    for(const label of labels){
+      const m = text.match(new RegExp('^[\\s>*\\-]*\\**\\s*' + label + '\\s*\\**\\s*[:=]\\s*\\**\\s*(.*?)\\s*\\**\\s*$', 'im'));
+      if(m && m[1].trim()) return m[1].trim();
+    }
+    return '';
+  };
+  const num = v => { const m = String(v).match(/-?\d+/); return m ? Number(m[0]) : NaN; };
+  const name = grab(['name','character name']);
+  const species = grab(['species','race']);
+  const klass = grab(['class','classes']);
+  let level = num(grab(['level','character level']));
+  if(Number.isNaN(level)) level = num(klass);
+  const ac = num(grab(['ac','armor class']));
+  const hpMax = num(grab(['max hp','max hit points','hit point maximum','hp','hit points']));
+  const initRaw = num(grab(['initiative bonus','initiative modifier','initiative','init']));
+  const link = grab(['sheet link','link','url']);
+  const missing = [];
+  if(!name) missing.push('Name');
+  if(Number.isNaN(ac)) missing.push('AC');
+  if(Number.isNaN(hpMax) || hpMax < 1) missing.push('Max HP');
+  if(missing.length) return {error: 'Couldn\'t find: ' + missing.join(', ') + '. Check the reply uses lines like "Name: Sable".'};
+  return {
+    name, species, role: klass.replace(/\s*\d+\s*$/, '').trim() || 'Custom',
+    level: Number.isNaN(level) ? 1 : Math.max(1, Math.min(20, level)),
+    ac, hpMax: Math.round(hpMax), initiativeBonus: Number.isNaN(initRaw) ? 0 : initRaw,
+    referenceLink: /^https?:\/\//i.test(link) ? link : '',
+  };
+}
+
+function SheetImportPanel({party, onAdd, onUpdate, onClose}){
+  const [text, setText] = useState('');
+  const [copied, setCopied] = useState(false);
+  const parsed = useMemo(()=> text.trim() ? parsePcSheet(text) : null, [text]);
+  const ok = parsed && !parsed.error ? parsed : null;
+  const existing = ok ? party.find(p=>p.name.trim().toLowerCase() === ok.name.trim().toLowerCase()) : null;
+  function copyPrompt(){ navigator.clipboard?.writeText(PC_SHEET_PROMPT).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 2000); }); }
+  function apply(){
+    if(!ok) return;
+    if(existing){
+      onUpdate(existing.id, {
+        role: ok.role !== 'Custom' ? ok.role : existing.role, species: ok.species || existing.species, level: ok.level, ac: ok.ac, hpMax: ok.hpMax,
+        hpCurrent: (existing.hpCurrent === existing.hpMax || existing.hpCurrent > ok.hpMax) ? ok.hpMax : existing.hpCurrent,
+        initiativeBonus: ok.initiativeBonus, referenceLink: ok.referenceLink || existing.referenceLink,
+      });
+    } else {
+      onAdd({ id:`pc-${Date.now()}`, name:ok.name, role:ok.role, species: ok.species || undefined, level:ok.level, ac:ok.ac, hpCurrent:ok.hpMax, hpMax:ok.hpMax,
+        initiativeBonus: ok.initiativeBonus, tacticalPriority:'No tactical note yet', conditions:[], referenceLink: ok.referenceLink || undefined });
+    }
+    setText('');
+    onClose();
+  }
+  return (
+    <div className="roster-row" style={{padding:16}}>
+      <p style={{margin:'0 0 4px', fontWeight:650, fontSize:15.5}}>Add or update a player from their character sheet</p>
+      <ol className="muted" style={{margin:'6px 0 12px', paddingLeft:20, fontSize:14, lineHeight:1.6}}>
+        <li>Copy the prompt below.</li>
+        <li>Paste it into any AI chat (Claude, ChatGPT…) and attach a screenshot or PDF of the sheet, from D&amp;D Beyond or paper.</li>
+        <li>Paste the reply here. If the name matches someone already in your party, they're updated instead of added twice.</li>
+      </ol>
+      <button className="btn btn-sm" onClick={copyPrompt}><Icon name={copied?'check':'copy'} size={14}/>{copied ? 'Copied!' : 'Copy the prompt'}</button>
+      <textarea value={text} onChange={e=>setText(e.target.value)} style={{height:120, marginTop:12}} placeholder={'Name: Sable\nSpecies: Elf\nClass: Rogue\nLevel: 5\nAC: 15\nMax HP: 27\nInitiative Bonus: +4\nSheet Link: https://www.dndbeyond.com/characters/…'}/>
+      {parsed && parsed.error && <div className="error-box"><Icon name="alert" size={16}/><p>{parsed.error}</p></div>}
+      {ok && (
+        <p style={{margin:'12px 0 0', fontSize:14.5}}>
+          <b>{ok.name}</b> — {[ok.species, ok.role].filter(Boolean).join(' ')} · Level {ok.level} · AC {ok.ac} · {ok.hpMax} HP · initiative {ok.initiativeBonus>=0?'+':'−'}{Math.abs(ok.initiativeBonus)}
+          <span className={"pill "+(existing?'pill-amber':'pill-moss')} style={{marginLeft:8}}>{existing ? 'Will update existing player' : 'New player'}</span>
+        </p>
+      )}
+      <div style={{display:'flex', gap:8, marginTop:14}}>
+        <button className="btn btn-primary" disabled={!ok} onClick={apply}>{existing ? `Update ${existing.name}` : 'Add player'}</button>
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function PartyCard({party, onChange, onAdd, onRemove, onToggleActive, onRollInitiative}){
   const [showAdd, setShowAdd] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const present = party.filter(p=>p.active !== false).length;
   return (
     <Card id="prep-party" icon="party" iconColor="var(--arcane)" title="Your party"
-      subtitle="The player characters in this fight."
-      action={<span className="pill pill-arcane">{present} in combat</span>}>
+      subtitle="Shared by every encounter — change a character once and it updates everywhere."
+      action={
+        <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+          <span className="pill pill-arcane">{present} in combat</span>
+          {party.length>0 && <button className="btn btn-sm" onClick={()=>onRollInitiative()} title="Roll d20 + modifier for every player — only needed if they aren't rolling their own"><Icon name="dice" size={15}/>Roll for players</button>}
+        </div>
+      }>
       {party.length === 0 ? (
         <div className="empty" style={{padding:'18px 0'}}><Icon name="party" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No players yet</h3><p>Add each player character so they appear in the initiative order.</p></div>
       ) : (
         <div className="roster">
-          {party.map(p=><PartyRosterRow key={p.id} p={p} onChange={onChange} onRemove={onRemove} onToggleActive={onToggleActive}/>)}
+          {party.map(p=><PartyRosterRow key={p.id} p={p} onChange={onChange} onRemove={onRemove} onToggleActive={onToggleActive} onRollInitiative={onRollInitiative}/>)}
         </div>
       )}
       <div style={{marginTop:14}}>
-        {showAdd ? (
+        {showSheet ? (
+          <SheetImportPanel party={party} onAdd={onAdd} onUpdate={onChange} onClose={()=>setShowSheet(false)}/>
+        ) : showAdd ? (
           <div className="roster-row" style={{padding:14}}>
             <AddPartyMemberForm onAdd={onAdd} onDone={()=>setShowAdd(false)}/>
             <button className="btn btn-ghost btn-sm" style={{marginTop:6}} onClick={()=>setShowAdd(false)}>Cancel</button>
           </div>
         ) : (
-          <button className="btn" onClick={()=>setShowAdd(true)}><Icon name="userplus" size={16}/>Add a player</button>
+          <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+            <button className="btn" onClick={()=>setShowAdd(true)}><Icon name="userplus" size={16}/>Add a player</button>
+            <button className="btn" onClick={()=>setShowSheet(true)} title="Add or update a player from a screenshot, PDF or photo of their character sheet"><Icon name="clip" size={16}/>Import from sheet</button>
+          </div>
         )}
       </div>
     </Card>
@@ -3552,7 +3691,7 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
       </section>
 
       <div className="prep-grid">
-        <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive}/>
+        <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive} onRollInitiative={partyHandlers.onRollInitiative}/>
         <Card id="prep-monsters" icon="swords" iconColor="var(--blood)" title="Monsters"
           subtitle="Search the 2024 SRD, or paste your own stat block."
           action={monsters.length>0 && (
@@ -3855,7 +3994,7 @@ function HowToUseModal({open, onClose}){
     {
       title: 'In Prep',
       body: [
-        '1 · Add your party: each player\'s name, level, AC, hit points and initiative. Mark someone Absent if they missed the session — they stay saved but sit out the fight.',
+        '1 · Add your party: each player\'s name, level, AC, hit points and initiative. The party is shared by every encounter, so a level-up is changed once. Use Import from sheet to add or update a player from a screenshot or PDF of their character sheet. Mark someone Absent if they missed the session — they stay saved but sit out the fight.',
         '2 · Add monsters: type a name to search the 2024 SRD (328 creatures) and your own saved monsters, or use Browse the compendium or Paste a stat block for anything else. Open a monster\'s arrow to read its stat block.',
         '3 · Describe the scene (optional): Environment, Terrain, Situation and Time of day. They generate map ideas and can draft an Encounter plan: a win condition, a battlefield feature worth fighting over, and a ticking hazard. You can ignore all of it.',
         'When you\'re ready, press Start combat.',
@@ -3926,7 +4065,7 @@ function App(){
   const [initiativeNote, setInitiativeNote] = useState('');
   useEffect(()=>{ try{ localStorage.setItem(MODE_KEY, mode); }catch(e){} }, [mode]);
 
-  useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
+  useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(toPersistShape(store))); }catch(e){} }, [store]);
   useEffect(()=>{ saveCustomMonsters(customMonsters); }, [customMonsters]);
   useEffect(()=>{ saveCustomHazards(customHazards); }, [customHazards]);
 
@@ -3953,10 +4092,10 @@ function App(){
     };
   }, []);
 
-  const cloudBlob = useMemo(()=>({store, customMonsters, customHazards}), [store, customMonsters, customHazards]);
+  const cloudBlob = useMemo(()=>({store: toPersistShape(store), customMonsters, customHazards}), [store, customMonsters, customHazards]);
   const applyRemoteBlob = React.useCallback(remote=>{
     if(!remote) return;
-    if(remote.store && Array.isArray(remote.store.encounters) && remote.store.encounters.length>0) setStore(remote.store);
+    if(remote.store && Array.isArray(remote.store.encounters) && remote.store.encounters.length>0) setStore(normalizeStore(remote.store));
     if(Array.isArray(remote.customMonsters)) setCustomMonsters(remote.customMonsters);
     if(Array.isArray(remote.customHazards)) setCustomHazards(remote.customHazards);
   }, []);
@@ -3965,13 +4104,22 @@ function App(){
   const [shareEnabled, setShareEnabled] = useState(()=>{ try{ return localStorage.getItem('tactics-table-share-enabled')==='1'; }catch(e){ return false; } });
   useEffect(()=>{ try{ localStorage.setItem('tactics-table-share-enabled', shareEnabled?'1':'0'); }catch(e){} }, [shareEnabled]);
 
-  const encounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
-  function updateActive(fn){ setStore(s=>({...s, encounters: s.encounters.map(e=> e.id===s.activeId ? fn(e) : e)})); }
+  const rawEncounter = store.encounters.find(e=>e.id===store.activeId) || store.encounters[0];
+  // The party is shared by every encounter; each encounter only adds its own per-fight state on top.
+  const encounter = useMemo(()=>({...rawEncounter, party: composeParty(store.party, rawEncounter.pcState)}), [rawEncounter, store.party]);
+  function updateActive(fn){
+    setStore(s=>{
+      const active = s.encounters.find(e=>e.id===s.activeId) || s.encounters[0];
+      const {party: nextParty, ...rest} = fn({...active, party: composeParty(s.party, active.pcState)});
+      const pcState = {};
+      nextParty.forEach(p=>{ pcState[p.id] = pickFields(p, PC_STATE_FIELDS); });
+      return {...s, party: nextParty.map(p=>pickFields(p, PC_SHARED_FIELDS)), encounters: s.encounters.map(e=> e.id===active.id ? {...rest, pcState} : e)};
+    });
+  }
 
   function addEncounterTab(){
     const enc = blankEncounter(`Encounter ${store.encounters.length+1}`);
-    enc.party = JSON.parse(JSON.stringify(encounter.party));
-    setStore(s=>({encounters:[...s.encounters, enc], activeId: enc.id}));
+    setStore(s=>({...s, encounters:[...s.encounters, enc], activeId: enc.id}));
     setRenamingId(enc.id); setRenameValue(enc.name);
   }
   function selectEncounterTab(id){ setStore(s=>({...s, activeId:id})); }
@@ -3982,7 +4130,7 @@ function App(){
       const clone = { ...JSON.parse(JSON.stringify(source)), id: `enc-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: `${source.name} (Copy)` };
       const idx = s.encounters.findIndex(e=>e.id===id);
       const encounters = [...s.encounters.slice(0, idx+1), clone, ...s.encounters.slice(idx+1)];
-      return { encounters, activeId: clone.id };
+      return { ...s, encounters, activeId: clone.id };
     });
   }
   function deleteEncounterTab(id){
@@ -3990,7 +4138,7 @@ function App(){
       if(s.encounters.length<=1) return s;
       const encounters = s.encounters.filter(e=>e.id!==id);
       const activeId = s.activeId===id ? encounters[0].id : s.activeId;
-      return {encounters, activeId};
+      return {...s, encounters, activeId};
     });
   }
   function startRename(id, name){ setRenamingId(id); setRenameValue(name); }
@@ -4031,6 +4179,18 @@ function App(){
     if(rolled.length === 0) return;
     const byId = new Map(rolled.map(r=>[r.id, r.total]));
     updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> byId.has(m.id) ? {...m, initiative:byId.get(m.id)} : m)}}));
+    setInitiativeNote('Rolled — ' + rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · '));
+  }
+  /** Roll d20 + initiative modifier for the players (or one of them) — handy when someone isn't rolling their own. */
+  function rollPlayerInitiative(onlyId){
+    const rolled = encounter.party.filter(p=>p.active !== false && (!onlyId || p.id===onlyId)).map(p=>{
+      const mod = Number(p.initiativeBonus) || 0;
+      const die = rollD20();
+      return {id:p.id, name:p.name, die, mod, total:die+mod};
+    });
+    if(rolled.length === 0) return;
+    const byId = new Map(rolled.map(r=>[r.id, r.total]));
+    updateActive(enc=>({...enc, party: enc.party.map(p=> byId.has(p.id) ? {...p, initiative:byId.get(p.id)} : p)}));
     setInitiativeNote('Rolled — ' + rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · '));
   }
   function toggleDefeated(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:!m.isDefeated} : m)}})); }
@@ -4099,14 +4259,14 @@ function App(){
   function removeCustomHazard(title){ setCustomHazards(list=>list.filter(h=>h.title!==title)); }
   function toggleAxisLock(key){ updateActive(enc=>({...enc, axesLocked:{...getLocks(enc), [key]: !getLocks(enc)[key]}})); }
   function buildExportPayload(){
-    return JSON.stringify({tacticsTableExport:1, exportedAt:new Date().toISOString(), store, customMonsters, customHazards}, null, 2);
+    return JSON.stringify({tacticsTableExport:1, exportedAt:new Date().toISOString(), store: toPersistShape(store), customMonsters, customHazards}, null, 2);
   }
   function applyImportedData(jsonText){
     const data = JSON.parse(jsonText);
     if(!data || typeof data !== 'object' || !data.store || !Array.isArray(data.store.encounters) || data.store.encounters.length===0){
       throw new Error('This doesn\'t look like a Tactics Table export — expected a "store" with at least one encounter.');
     }
-    setStore(data.store);
+    setStore(normalizeStore(data.store));
     if(Array.isArray(data.customMonsters)) setCustomMonsters(data.customMonsters);
     if(Array.isArray(data.customHazards)) setCustomHazards(data.customHazards);
   }
@@ -4175,7 +4335,13 @@ function App(){
       return {...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}};
     });
   }
-  function importEncounter(imported){ updateActive(enc=>({...imported, id: enc.id})); }
+  function importEncounter(imported){
+    updateActive(enc=>{
+      const known = new Set(enc.party.map(p=>p.name.trim().toLowerCase()));
+      const newcomers = (imported.party||[]).filter(p=>!known.has(p.name.trim().toLowerCase()));
+      return {...imported, id: enc.id, party:[...enc.party, ...newcomers]};
+    });
+  }
 
   const turnOrder = getTurnOrder(encounter);
   const activeId = resolveActiveId(encounter);
@@ -4225,7 +4391,7 @@ function App(){
     customHazards, onApplyHazard: applyHazard, onSaveCustomHazard: addCustomHazard, onRemoveCustomHazard: removeCustomHazard,
   };
   const monsterHandlers = { onRollInitiative:rollMonsterInitiative, onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
-  const partyHandlers = { onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
+  const partyHandlers = { onRollInitiative:rollPlayerInitiative, onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
   const runHandlers = {
     onMonsterDelta:updateMonsterHp, onPartyDelta:updatePartyHp, onSetStats:setMonsterStats, onSetPartyStat:setPartyStat,
     onToggleDefeated:toggleDefeated, onToggleTeam:toggleMonsterTeam, onToggleCondition:toggleCondition, onPosture:setMonsterPosture,
