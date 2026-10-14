@@ -78,6 +78,7 @@
   }
 </style></head><body>
 <title>Tactics Table</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%3E%3Crect%20width%3D'24'%20height%3D'24'%20rx%3D'5'%20fill%3D'%230d0f13'%2F%3E%3Cg%20fill%3D'none'%20stroke%3D'%23f4635f'%20stroke-width%3D'1.8'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M12%203%20L14.2%209.5%20L12%2021%20L9.8%209.5%20Z'%2F%3E%3Cpath%20d%3D'M7.5%209.5%20H16.5'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
@@ -2068,12 +2069,12 @@ const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
 function AddPartyMemberForm({onAdd, onDone}){
   const [name, setName] = useState(''); const [role, setRole] = useState('Custom');
   const [species, setSpecies] = useState(''); const [ac, setAc] = useState('15'); const [hp, setHp] = useState('20'); const [level, setLevel] = useState('1');
-  const [priority, setPriority] = useState(''); const [link, setLink] = useState(''); const [initBonus, setInitBonus] = useState('0');
+  const [priority, setPriority] = useState(''); const [link, setLink] = useState('')
   function submit(){
     if(!name.trim()) return;
     const hpMax = Math.max(1, Number(hp) || 1);
     const lvl = Math.max(1, Math.min(20, Number(level) || 1));
-    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, initiativeBonus:Number(initBonus)||0, hpCurrent:hpMax, hpMax,
+    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, hpCurrent:hpMax, hpMax,
       tacticalPriority: priority.trim() || 'No tactical note yet', conditions:[], referenceLink: link.trim() || undefined });
     onDone();
   }
@@ -2085,7 +2086,6 @@ function AddPartyMemberForm({onAdd, onDone}){
         <input className="text-input" type="number" min="1" max="20" value={level} onChange={e=>setLevel(e.target.value)} placeholder="Lvl" style={{width:48}} title="Character level — used for the encounter difficulty rating"/>
         <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:56}}/>
         <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:56}}/>
-        <input className="text-input" value={initBonus} onChange={e=>setInitBonus(e.target.value)} placeholder="Init" style={{width:52}} title="Initiative modifier (usually Dexterity)"/>
       </div>
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
@@ -2439,7 +2439,7 @@ function parseSavingThrowBonus(text, abilityKey){
 }
 /** Click an ability score to roll a check, or a save underneath it to roll that save — no menu, no DC,
  * just a d20 plus the right modifier. Whoever called for the roll already has a DC to compare it to. */
-function AbilityRow({monster}){
+function AbilityRow({monster, showSaves=true}){
   const abilities = [['str','STR'],['dex','DEX'],['con','CON'],['int','INT'],['wis','WIS'],['cha','CHA']];
   const [result, setResult] = React.useState(null);
   function rollFor(label, mod){
@@ -2456,7 +2456,7 @@ function AbilityRow({monster}){
           </button>
         ))}
       </div>
-      <div className="abl-grid saves" style={{marginTop:0}}>
+      {showSaves && <div className="abl-grid saves" style={{marginTop:0}}>
         {abilities.map(([k,label])=>{
           const {mod, proficient} = saveModifierFor(monster, k);
           return (
@@ -2467,7 +2467,7 @@ function AbilityRow({monster}){
             </button>
           );
         })}
-      </div>
+      </div>}
       {result && (
         <p className="abl-roll-result">
           <b>{result.label}:</b> {result.die} {result.mod>=0?'+':''}{result.mod} = <b>{result.total}</b>{result.die===1?' (nat 1)':result.die===20?' (nat 20)':''}
@@ -2861,7 +2861,7 @@ const MODE_KEY = 'tactics-table-mode-v2';
 /* ---------- shared party ----------
    Character sheet fields live once in store.party and apply to every encounter. Per-fight state
    (current HP, conditions, initiative roll, absent) lives in each encounter's pcState. */
-const PC_SHARED_FIELDS = ['id','name','role','species','level','ac','hpMax','initiativeBonus','referenceLink','tacticalPriority'];
+const PC_SHARED_FIELDS = ['id','name','role','species','level','ac','hpMax','initiativeBonus','abilityScores','saves','referenceLink','tacticalPriority'];
 const PC_STATE_FIELDS = ['hpCurrent','conditions','initiative','active'];
 function pickFields(obj, keys){ const o = {}; keys.forEach(k=>{ if(obj[k] !== undefined) o[k] = obj[k]; }); return o; }
 function composeParty(roster, pcState){
@@ -3422,7 +3422,6 @@ function PartyRosterRow({p, onChange, onRemove, onToggleActive, onRollInitiative
           <label className="stat-field" title="Character level — used for the encounter difficulty rating"><span>Lvl</span><input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onChange(p.id, {level: Math.max(1, Math.min(20, Number(e.target.value)||1))})}/></label>
           <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={p.ac} onChange={e=>onChange(p.id, {ac: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={p.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>
-          <label className="stat-field" title="Initiative modifier (usually Dexterity) — used when you roll initiative for a player"><span>Mod</span><input type="number" value={p.initiativeBonus ?? 0} onChange={e=>onChange(p.id, {initiativeBonus: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={p.initiative ?? 10} onChange={e=>onChange(p.id, {initiative: Number(e.target.value)||0})}/></label>
         </div>
         <div className="row-actions">
@@ -3448,6 +3447,8 @@ Level:
 AC:
 Max HP:
 Initiative Bonus:
+Ability Scores: (for example STR 10, DEX 14, CON 12, INT 8, WIS 13, CHA 10)
+Saving Throws: (total modifiers including proficiency, for example STR +0, DEX +6, CON +1, INT -1, WIS +1, CHA +0)
 Sheet Link:`;
 
 /** Reads the "Name: … / Level: …" block an AI chat produces from a character sheet. */
@@ -3469,6 +3470,19 @@ function parsePcSheet(text){
   const hpMax = num(grab(['max hp','max hit points','hit point maximum','hp','hit points']));
   const initRaw = num(grab(['initiative bonus','initiative modifier','initiative','init']));
   const link = grab(['sheet link','link','url']);
+  const KEYS = ['str','dex','con','int','wis','cha'];
+  const readSix = line => {
+    if(!line) return null;
+    const o = {};
+    for(const k of KEYS){
+      const m = line.match(new RegExp(k + '\\w*\\s*[:=]?\\s*([+\\-−]?\\d+)', 'i'));
+      if(!m) return null;
+      o[k] = Number(m[1].replace('−', '-'));
+    }
+    return o;
+  };
+  const abilityScores = readSix(grab(['ability scores','abilities','scores']));
+  const saves = readSix(grab(['saving throws','saves']));
   const missing = [];
   if(!name) missing.push('Name');
   if(Number.isNaN(ac)) missing.push('AC');
@@ -3479,6 +3493,7 @@ function parsePcSheet(text){
     level: Number.isNaN(level) ? 1 : Math.max(1, Math.min(20, level)),
     ac, hpMax: Math.round(hpMax), initiativeBonus: Number.isNaN(initRaw) ? 0 : initRaw,
     referenceLink: /^https?:\/\//i.test(link) ? link : '',
+    abilityScores: abilityScores || undefined, saves: abilityScores && saves ? saves : undefined,
   };
 }
 
@@ -3496,10 +3511,11 @@ function SheetImportPanel({party, onAdd, onUpdate, onClose}){
         role: ok.role !== 'Custom' ? ok.role : existing.role, species: ok.species || existing.species, level: ok.level, ac: ok.ac, hpMax: ok.hpMax,
         hpCurrent: (existing.hpCurrent === existing.hpMax || existing.hpCurrent > ok.hpMax) ? ok.hpMax : existing.hpCurrent,
         initiativeBonus: ok.initiativeBonus, referenceLink: ok.referenceLink || existing.referenceLink,
+        abilityScores: ok.abilityScores || existing.abilityScores, saves: ok.saves || existing.saves,
       });
     } else {
       onAdd({ id:`pc-${Date.now()}`, name:ok.name, role:ok.role, species: ok.species || undefined, level:ok.level, ac:ok.ac, hpCurrent:ok.hpMax, hpMax:ok.hpMax,
-        initiativeBonus: ok.initiativeBonus, tacticalPriority:'No tactical note yet', conditions:[], referenceLink: ok.referenceLink || undefined });
+        initiativeBonus: ok.initiativeBonus, abilityScores: ok.abilityScores, saves: ok.saves, tacticalPriority:'No tactical note yet', conditions:[], referenceLink: ok.referenceLink || undefined });
     }
     setText('');
     onClose();
@@ -3513,11 +3529,11 @@ function SheetImportPanel({party, onAdd, onUpdate, onClose}){
         <li>Paste the reply here. If the name matches someone already in your party, they're updated instead of added twice.</li>
       </ol>
       <button className="btn btn-sm" onClick={copyPrompt}><Icon name={copied?'check':'copy'} size={14}/>{copied ? 'Copied!' : 'Copy the prompt'}</button>
-      <textarea value={text} onChange={e=>setText(e.target.value)} style={{height:120, marginTop:12}} placeholder={'Name: Sable\nSpecies: Elf\nClass: Rogue\nLevel: 5\nAC: 15\nMax HP: 27\nInitiative Bonus: +4\nSheet Link: https://www.dndbeyond.com/characters/…'}/>
+      <textarea value={text} onChange={e=>setText(e.target.value)} style={{height:120, marginTop:12}} placeholder={'Name: Sable\nSpecies: Elf\nClass: Rogue\nLevel: 5\nAC: 15\nMax HP: 27\nInitiative Bonus: +4\nAbility Scores: STR 8, DEX 18, CON 14, INT 12, WIS 10, CHA 13\nSaving Throws: STR -1, DEX +7, CON +2, INT +4, WIS +0, CHA +1\nSheet Link: https://www.dndbeyond.com/characters/…'}/>
       {parsed && parsed.error && <div className="error-box"><Icon name="alert" size={16}/><p>{parsed.error}</p></div>}
       {ok && (
         <p style={{margin:'12px 0 0', fontSize:14.5}}>
-          <b>{ok.name}</b> — {[ok.species, ok.role].filter(Boolean).join(' ')} · Level {ok.level} · AC {ok.ac} · {ok.hpMax} HP · initiative {ok.initiativeBonus>=0?'+':'−'}{Math.abs(ok.initiativeBonus)}
+          <b>{ok.name}</b> — {[ok.species, ok.role].filter(Boolean).join(' ')} · Level {ok.level} · AC {ok.ac} · {ok.hpMax} HP · initiative {ok.initiativeBonus>=0?'+':'−'}{Math.abs(ok.initiativeBonus)}{ok.abilityScores ? ' · ability scores included' : ''}
           <span className={"pill "+(existing?'pill-amber':'pill-moss')} style={{marginLeft:8}}>{existing ? 'Will update existing player' : 'New player'}</span>
         </p>
       )}
@@ -3846,6 +3862,12 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
         <p className="focus-section-title">Conditions</p>
         <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
       </div>
+      <div className="focus-section">
+        <p className="focus-section-title">Abilities</p>
+        {p.abilityScores
+          ? <AbilityRow monster={p} showSaves={!!p.saves}/>
+          : <p className="muted" style={{margin:0, fontSize:14}}>Not added yet. Use <b>Import from sheet</b> in Prep to bring in their ability scores and saves.</p>}
+      </div>
       {p.tacticalPriority && (
         <div className="focus-section">
           <p className="focus-section-title">What the monsters see</p>
@@ -4005,7 +4027,7 @@ function HowToUseModal({open, onClose}){
       body: [
         'The list on the left is the initiative order. Whoever is acting is highlighted. Press Next turn to move on; the round counter goes up when the order wraps around.',
         'Click anyone in the list to see their details on the right. Type an amount and press Enter (or Damage / Heal) to change hit points. Add conditions like Prone or Frightened under Conditions. You can change anyone\'s initiative number right in the list.',
-        'For monsters, the tabs show their Actions (attacks and multiattack), Stats (ability scores — click one to roll a check, or a save to roll it) and Tactics (how the creature fights right now).',
+        'For monsters, the tabs show their Actions (attacks and multiattack), Stats (ability scores — click one to roll a check, or a save to roll it) and Tactics (how the creature fights right now). A player\'s ability scores and saves appear on their panel once you import their sheet.',
         'Defeated monsters drop out of the order and wait at the bottom of the list in case you need to bring them back. For a big group, add them as a mob in Prep to track them with one shared headcount.',
       ],
     },
@@ -4184,7 +4206,7 @@ function App(){
   /** Roll d20 + initiative modifier for the players (or one of them) — handy when someone isn't rolling their own. */
   function rollPlayerInitiative(onlyId){
     const rolled = encounter.party.filter(p=>p.active !== false && (!onlyId || p.id===onlyId)).map(p=>{
-      const mod = Number(p.initiativeBonus) || 0;
+      const mod = p.initiativeBonus != null ? (Number(p.initiativeBonus) || 0) : (p.abilityScores ? abilityScoreMod(p.abilityScores.dex ?? 10) : 0);
       const die = rollD20();
       return {id:p.id, name:p.name, die, mod, total:die+mod};
     });
