@@ -53,6 +53,10 @@
   select.text-input{ padding-right:8px; }
   .player-view-card{ border-radius:var(--radius); }
   .player-view-wrap{ font-size:15px; }
+  .init-note{ display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:10px 12px; border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); background:var(--accent-soft); color:var(--accent-text); border-radius:10px; font-size:13.5px; line-height:1.5; }
+  .init-note svg{ flex-shrink:0; margin-top:2px; }
+  .init-note span{ flex:1; min-width:0; }
+  .rail .init-note{ margin:4px 6px 8px; }
   @media (max-width:760px){
     .topbar-inner{ flex-wrap:wrap; gap:10px; padding:10px 14px; }
     .brand{ flex:1; }
@@ -816,10 +820,10 @@ const sampleEncounter = {
     timeOfDay: 'Dusk',
   },
   party: [
-    {id:'pc-1', name:'Sable', role:'Rogue', level:5, ac:15, attackBonus:7, hpCurrent:27, hpMax:27, tacticalPriority:'Soft target — low AC, no armor proficiency', conditions:[]},
-    {id:'pc-2', name:'Ithren', role:'Druid', level:5, ac:14, attackBonus:5, hpCurrent:24, hpMax:24, tacticalPriority:'Disrupt Concentration — Conjure Animals caster', conditions:[]},
-    {id:'pc-3', name:'Bram', role:'Paladin', level:5, ac:18, attackBonus:7, hpCurrent:38, hpMax:38, tacticalPriority:'Hard target — ignore unless isolated', conditions:[]},
-    {id:'pc-4', name:'Voss', role:'Cleric', level:5, ac:16, attackBonus:5, hpCurrent:30, hpMax:30, tacticalPriority:'Priority — removes conditions & heals', conditions:[]},
+    {id:'pc-1', name:'Sable', role:'Rogue', level:5, ac:15, hpCurrent:27, hpMax:27, tacticalPriority:'Soft target — low AC, no armor proficiency', conditions:[]},
+    {id:'pc-2', name:'Ithren', role:'Druid', level:5, ac:14, hpCurrent:24, hpMax:24, tacticalPriority:'Disrupt Concentration — Conjure Animals caster', conditions:[]},
+    {id:'pc-3', name:'Bram', role:'Paladin', level:5, ac:18, hpCurrent:38, hpMax:38, tacticalPriority:'Hard target — ignore unless isolated', conditions:[]},
+    {id:'pc-4', name:'Voss', role:'Cleric', level:5, ac:16, hpCurrent:30, hpMax:30, tacticalPriority:'Priority — removes conditions & heals', conditions:[]},
   ],
   axes: {
     winCondition:{ title:'Break the Warband, Not the Room',
@@ -1091,7 +1095,6 @@ function parsePartyMember(block){
   return {id:slugify(block.heading), name:block.heading, role:roles.includes(role)?role:'Custom',
     species: f.get('species') || undefined,
     level: f.get('level') ? Math.max(1, Math.min(20, parseInt10(f.get('level'),'Level',context))) : 1,
-    attackBonus: f.get('attackbonus') ? parseInt10(f.get('attackbonus'),'Attack Bonus',context) : 5,
     ac:parseInt10(requireField(f,'ac',context),'AC',context), hpCurrent:hp.current, hpMax:hp.max,
     tacticalPriority:requireField(f,'tacticalpriority',context), conditions:parseList(f.get('conditions')),
     referenceLink: f.get('referencelink') || f.get('dndbeyond') || undefined};
@@ -2065,13 +2068,12 @@ const PC_ROLES = ['Druid','Rogue','Paladin','Cleric','Warlock','Custom'];
 function AddPartyMemberForm({onAdd, onDone}){
   const [name, setName] = useState(''); const [role, setRole] = useState('Custom');
   const [species, setSpecies] = useState(''); const [ac, setAc] = useState('15'); const [hp, setHp] = useState('20'); const [level, setLevel] = useState('1');
-  const [attackBonus, setAttackBonus] = useState('5');
   const [priority, setPriority] = useState(''); const [link, setLink] = useState('');
   function submit(){
     if(!name.trim()) return;
     const hpMax = Math.max(1, Number(hp) || 1);
     const lvl = Math.max(1, Math.min(20, Number(level) || 1));
-    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, attackBonus:Number(attackBonus)||0, hpCurrent:hpMax, hpMax,
+    onAdd({ id:`pc-${Date.now()}`, name:name.trim(), role, species: species.trim() || undefined, level:lvl, ac:Number(ac)||10, hpCurrent:hpMax, hpMax,
       tacticalPriority: priority.trim() || 'No tactical note yet', conditions:[], referenceLink: link.trim() || undefined });
     onDone();
   }
@@ -2083,7 +2085,6 @@ function AddPartyMemberForm({onAdd, onDone}){
         <input className="text-input" type="number" min="1" max="20" value={level} onChange={e=>setLevel(e.target.value)} placeholder="Lvl" style={{width:48}} title="Character level — used for the encounter difficulty rating"/>
         <input className="text-input" value={ac} onChange={e=>setAc(e.target.value)} placeholder="AC" style={{width:56}}/>
         <input className="text-input" value={hp} onChange={e=>setHp(e.target.value)} placeholder="HP" style={{width:56}}/>
-        <input className="text-input" value={attackBonus} onChange={e=>setAttackBonus(e.target.value)} placeholder="Atk" style={{width:48}} title="Total attack bonus — used to autofill the Attack Roll panel on mobs"/>
       </div>
       <input className="text-input" value={species} onChange={e=>setSpecies(e.target.value)} placeholder="Species (e.g. Elf) — optional"/>
       <input className="text-input" value={priority} onChange={e=>setPriority(e.target.value)} placeholder="Tactical priority"/>
@@ -3385,7 +3386,6 @@ function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
           <label className="stat-field" title="Character level — used for the encounter difficulty rating"><span>Lvl</span><input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onChange(p.id, {level: Math.max(1, Math.min(20, Number(e.target.value)||1))})}/></label>
           <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={p.ac} onChange={e=>onChange(p.id, {ac: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={p.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>
-          <label className="stat-field" title="Total attack bonus — autofills the Attack Roll panel on mobs"><span>Atk</span><input type="number" value={p.attackBonus ?? 5} onChange={e=>onChange(p.id, {attackBonus: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={p.initiative ?? 10} onChange={e=>onChange(p.id, {initiative: Number(e.target.value)||0})}/></label>
         </div>
         <div className="row-actions">
@@ -3429,7 +3429,7 @@ function PartyCard({party, onChange, onAdd, onRemove, onToggleActive}){
   );
 }
 
-function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, axes, traitTriggers, party, onPosture, onDamageParty}){
+function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, onRollInitiative, axes, traitTriggers, party, onPosture, onDamageParty}){
   const [open, setOpen] = useState(false);
   const isAlly = m.team === 'ally';
   function setHpMax(v){
@@ -3459,6 +3459,7 @@ function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, axes
             <button className={!isAlly?'on-enemy':''} onClick={()=>isAlly && onToggleTeam(m.id)} aria-pressed={!isAlly}>Enemy</button>
             <button className={isAlly?'on-ally':''} onClick={()=>!isAlly && onToggleTeam(m.id)} aria-pressed={isAlly}>Ally</button>
           </div>
+          <button className="iconbtn" onClick={()=>onRollInitiative(m.id)} aria-label={`Roll initiative for ${m.name}`} title="Roll initiative (d20 + Dexterity modifier)"><Icon name="dice" size={17}/></button>
           <button className="iconbtn danger" onClick={()=>onRemove(m.id)} aria-label={`Remove ${m.name}`} title="Remove from the encounter"><Icon name="trash" size={17}/></button>
         </div>
       </div>
@@ -3507,7 +3508,17 @@ function SceneNotes({scene, onChange, onGenerate}){
   );
 }
 
-function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp}){
+function InitiativeNote({text, onDismiss}){
+  if(!text) return null;
+  return (
+    <div className="init-note" role="status">
+      <Icon name="dice" size={16}/><span>{text}</span>
+      <button className="iconbtn" style={{width:26, height:26}} onClick={onDismiss} aria-label="Dismiss"><Icon name="x" size={14}/></button>
+    </div>
+  );
+}
+
+function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp, initiativeNote, onDismissNote}){
   const monsters = encounter.round.monsters;
   const presentParty = encounter.party.filter(p=>p.active !== false);
   const sceneFilled = Object.values(encounter.scene||{}).some(v=>String(v||'').trim());
@@ -3544,7 +3555,13 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
         <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive}/>
         <Card id="prep-monsters" icon="swords" iconColor="var(--blood)" title="Monsters"
           subtitle="Search the 2024 SRD, or paste your own stat block."
-          action={monsters.length>0 && <span className="pill pill-blood">{monsters.length} in this fight</span>}>
+          action={monsters.length>0 && (
+            <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+              <span className="pill pill-blood">{monsters.length} in this fight</span>
+              <button className="btn btn-sm" onClick={()=>monsterHandlers.onRollInitiative()} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={15}/>Roll initiative</button>
+            </div>
+          )}>
+          <InitiativeNote text={initiativeNote} onDismiss={onDismissNote}/>
           <AddMonsterForm onAdd={onAddMonster} customMonsters={customMonsters} onSaveCustom={onSaveCustom} onRemoveCustom={onRemoveCustom}/>
           {monsters.length === 0 ? (
             <div className="empty" style={{padding:'22px 0 6px'}}><Icon name="swords" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No monsters yet</h3><p>Type a name above to add one. Try "goblin" or "owlbear".</p></div>
@@ -3552,7 +3569,7 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
             <div className="roster" style={{marginTop:18}}>
               {monsters.map(m=>(
                 <MonsterRosterRow key={m.id} m={m} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={presentParty}
-                  onSetStats={monsterHandlers.onSetStats} onToggleTeam={monsterHandlers.onToggleTeam} onRemove={monsterHandlers.onRemove} onRevive={monsterHandlers.onRevive}
+                  onSetStats={monsterHandlers.onSetStats} onToggleTeam={monsterHandlers.onToggleTeam} onRemove={monsterHandlers.onRemove} onRevive={monsterHandlers.onRevive} onRollInitiative={monsterHandlers.onRollInitiative}
                   onPosture={monsterHandlers.onPosture} onDamageParty={monsterHandlers.onDamageParty}/>
               ))}
             </div>
@@ -3679,7 +3696,7 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
         </div>
         <div className="focus-stats">
           <div className="big-stat"><b>{p.ac}</b><span>AC</span></div>
-          <div className="big-stat"><b>{(p.attackBonus ?? 0) >= 0 ? '+' : ''}{p.attackBonus ?? 0}</b><span>Attack</span></div>
+          <div className="big-stat"><b>{p.initiative ?? 10}</b><span>Init</span></div>
         </div>
       </div>
       <div className="focus-section">
@@ -3700,10 +3717,14 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
   );
 }
 
-function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive}){
+function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive, onRollInitiative, initiativeNote, onDismissNote}){
   return (
     <aside className="card rail" aria-label="Initiative order">
-      <div className="rail-head"><h2>Initiative order</h2><span className="muted" style={{fontSize:12.5}}>Click to inspect</span></div>
+      <div className="rail-head">
+        <h2>Initiative order</h2>
+        <button className="btn btn-sm" onClick={onRollInitiative} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={14}/>Roll monsters</button>
+      </div>
+      <InitiativeNote text={initiativeNote} onDismiss={onDismissNote}/>
       {rows.map(r=>{
         const active = r.id === activeId;
         const color = kindColor(r);
@@ -3788,7 +3809,7 @@ function PlanStrip({axes}){
   );
 }
 
-function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep}){
+function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, initiativeNote, onDismissNote}){
   const focusId = (selectedId && rows.some(r=>r.id===selectedId)) ? selectedId : activeId;
   const focusRow = rows.find(r=>r.id===focusId);
   const active = rows.find(r=>r.id===activeId);
@@ -3810,7 +3831,7 @@ function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onR
         difficulty={<DifficultyBadge party={encounter.party} monsters={encounter.round.monsters}/>}/>
       <PlanStrip axes={encounter.axes}/>
       <div className="run">
-        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive}/>
+        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote}/>
         <div>
           {monster && <MonsterFocus key={monster.id} m={monster} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
             onDelta={handlers.onMonsterDelta} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
@@ -3834,7 +3855,7 @@ function HowToUseModal({open, onClose}){
     {
       title: 'In Prep',
       body: [
-        '1 · Add your party: each player\'s name, level, AC, hit points, attack bonus and initiative. Mark someone Absent if they missed the session — they stay saved but sit out the fight.',
+        '1 · Add your party: each player\'s name, level, AC, hit points and initiative. Mark someone Absent if they missed the session — they stay saved but sit out the fight.',
         '2 · Add monsters: type a name to search the 2024 SRD (328 creatures) and your own saved monsters, or use Browse the compendium or Paste a stat block for anything else. Open a monster\'s arrow to read its stat block.',
         '3 · Describe the scene (optional): Environment, Terrain, Situation and Time of day. They generate map ideas and can draft an Encounter plan: a win condition, a battlefield feature worth fighting over, and a ticking hazard. You can ignore all of it.',
         'When you\'re ready, press Start combat.',
@@ -3902,6 +3923,7 @@ function App(){
   const [mode, setMode] = useState(()=>{ try{ return localStorage.getItem(MODE_KEY)==='run' ? 'run' : 'prep'; }catch(e){ return 'prep'; } });
   const [selectedId, setSelectedId] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [initiativeNote, setInitiativeNote] = useState('');
   useEffect(()=>{ try{ localStorage.setItem(MODE_KEY, mode); }catch(e){} }, [mode]);
 
   useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(store)); }catch(e){} }, [store]);
@@ -3998,6 +4020,18 @@ function App(){
       next.isDefeated = next.hpCurrent <= 0;
       return {...next, activePosture: computeAutoPosture(next)};
     })}}));
+  }
+  /** Roll d20 + DEX modifier for every monster/NPC (or just one). Players roll their own and enter it themselves. */
+  function rollMonsterInitiative(onlyId){
+    const rolled = encounter.round.monsters.filter(m=>!onlyId || m.id===onlyId).map(m=>{
+      const mod = abilityScoreMod(m.abilityScores?.dex ?? 10);
+      const die = rollD20();
+      return {id:m.id, name:m.name, die, mod, total:die+mod};
+    });
+    if(rolled.length === 0) return;
+    const byId = new Map(rolled.map(r=>[r.id, r.total]));
+    updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> byId.has(m.id) ? {...m, initiative:byId.get(m.id)} : m)}}));
+    setInitiativeNote('Rolled — ' + rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · '));
   }
   function toggleDefeated(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:!m.isDefeated} : m)}})); }
   function toggleMonsterTeam(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, team: m.team==='ally' ? 'enemy' : 'ally'} : m)}})); }
@@ -4190,7 +4224,7 @@ function App(){
     locked: encounter.axesLocked || {win:false, opt:false, hazard:false}, onToggleLock: toggleAxisLock,
     customHazards, onApplyHazard: applyHazard, onSaveCustomHazard: addCustomHazard, onRemoveCustomHazard: removeCustomHazard,
   };
-  const monsterHandlers = { onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
+  const monsterHandlers = { onRollInitiative:rollMonsterInitiative, onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
   const partyHandlers = { onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
   const runHandlers = {
     onMonsterDelta:updateMonsterHp, onPartyDelta:updatePartyHp, onSetStats:setMonsterStats, onSetPartyStat:setPartyStat,
@@ -4243,10 +4277,12 @@ function App(){
             partyHandlers={partyHandlers} monsterHandlers={monsterHandlers}
             onAddMonster={addMonster} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}
             onSetScene={setScene} onGenerate={handleGenerateEncounter} axesProps={axesProps}
-            onStart={startCombat} inProgress={inProgress} canStart={turnOrder.length>0} onOpenHelp={()=>setHelpOpen(true)}/>
+            onStart={startCombat} inProgress={inProgress} canStart={turnOrder.length>0} onOpenHelp={()=>setHelpOpen(true)}
+            initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}/>
         ) : (
           <RunView encounter={encounter} rows={rows} activeId={activeId} selectedId={selectedId} onSelect={setSelectedId}
             defeated={defeated} onRevive={reviveMonster} onSetInitiative={setInitiative} party={activeParty}
+            onRollInitiative={()=>rollMonsterInitiative()} initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
             handlers={runHandlers} turn={turn} onGoPrep={()=>setMode('prep')}/>
         )}
       </main>
