@@ -345,6 +345,15 @@
   .turnbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap; }
   .kind-dot{ width:10px; height:10px; border-radius:50%; background:var(--c, var(--line)); flex-shrink:0; }
   .plan-strip{ margin-bottom:18px; }
+  .difficulty{ --dc:var(--parchment-faint); --dct:var(--parchment-dim); display:inline-flex; align-items:center; gap:12px; padding:9px 18px 9px 14px; border-radius:14px; border:2px solid var(--dc); background:color-mix(in srgb, var(--dc) 15%, transparent); color:var(--dct); cursor:help; }
+  .difficulty-dot{ width:14px; height:14px; border-radius:50%; background:var(--dc); box-shadow:0 0 0 4px color-mix(in srgb, var(--dc) 25%, transparent); flex-shrink:0; }
+  .difficulty-text{ display:flex; flex-direction:column; line-height:1.1; }
+  .difficulty-text small{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }
+  .difficulty-text b{ font-size:22px; font-weight:800; letter-spacing:.01em; margin-top:2px; }
+  .difficulty-trivial{ --dc:var(--arcane); --dct:var(--arcane-text); }
+  .difficulty-low{ --dc:var(--moss); --dct:var(--moss); }
+  .difficulty-moderate{ --dc:var(--amber); --dct:var(--amber-text); }
+  .difficulty-high{ --dc:var(--blood); --dct:var(--blood-text); }
   .top-drops{ display:flex; flex-direction:column; gap:10px; }
   .top-drops .plan-strip{ margin-bottom:0; }
   .run > .top-drops, .shell > div > .top-drops{ margin-bottom:0; }
@@ -3295,8 +3304,12 @@ function DifficultyBadge({party, monsters}){
     `Monster XP total: ${result.totalXp.toLocaleString()} (2024 DMG — no multiplier, allies excluded). `+
     `Party budget — Low ${result.thresholds.low.toLocaleString()} · Moderate ${result.thresholds.moderate.toLocaleString()} · High ${result.thresholds.high.toLocaleString()}.`+
     (result.unknownCount ? ` (${result.unknownCount} monster${result.unknownCount>1?'s':''} without CR excluded.)` : '');
-  const cls = {Low:'pill-moss', Moderate:'pill-amber', High:'pill-blood'}[result.tier] || '';
-  return <span className={"pill "+cls} title={tooltip}>Difficulty: {result.tier}</span>;
+  return (
+    <span className={"difficulty difficulty-" + result.tier.toLowerCase()} title={tooltip}>
+      <span className="difficulty-dot"/>
+      <span className="difficulty-text"><small>Difficulty</small><b>{result.tier}</b></span>
+    </span>
+  );
 }
 
 function EncounterTabs({encounters, activeId, onSelect, onAdd, onDuplicate, onDelete, renamingId, renameValue, onRenameStart, onRenameChange, onRenameCommit}){
