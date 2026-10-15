@@ -345,6 +345,9 @@
   .turnbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap; }
   .kind-dot{ width:10px; height:10px; border-radius:50%; background:var(--c, var(--line)); flex-shrink:0; }
   .plan-strip{ margin-bottom:18px; }
+  .top-drops{ display:flex; flex-direction:column; gap:10px; }
+  .top-drops .plan-strip{ margin-bottom:0; }
+  .run > .top-drops, .shell > div > .top-drops{ margin-bottom:0; }
   .plan-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; padding:2px 20px 18px; }
   @media (max-width:900px){ .plan-grid{ grid-template-columns:1fr; } }
   .plan-item{ border-left:3px solid var(--c); padding:2px 0 2px 12px; }
@@ -3765,6 +3768,15 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
   return (
     <div className="prep">
       {showSample && <SampleBanner onStartFresh={onStartFresh} onDismiss={onDismissSample}/>}
+      <div className="top-drops">
+      <Collapsible id="prep-scene" icon="map" iconColor="var(--amber)" title="Scene & map ideas" badge="Optional" hint={encounter.scene.environment || 'Where the fight happens'}>
+        <SceneNotes scene={encounter.scene} onChange={onSetScene} onGenerate={onGenerate}/>
+      </Collapsible>
+      <Collapsible id="prep-plan" icon="compass" iconColor="var(--amber)" title="Encounter plan" badge="Optional" hint="Win condition, battlefield feature and hazard — makes fights more than a damage race">
+        <div style={{paddingTop:14}}><AxesStrip {...axesProps}/></div>
+      </Collapsible>
+      </div>
+
       <section className="card setup-card">
         <div className="setup-intro">
           <h2>Set up your encounter</h2>
@@ -3812,12 +3824,6 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
         </Card>
       </div>
 
-      <Collapsible id="prep-scene" icon="map" iconColor="var(--amber)" title="Scene & map ideas" badge="Optional" hint="Where the fight happens">
-        <SceneNotes scene={encounter.scene} onChange={onSetScene} onGenerate={onGenerate}/>
-      </Collapsible>
-      <Collapsible id="prep-plan" icon="compass" iconColor="var(--amber)" title="Encounter plan" badge="Optional" hint="Win condition, battlefield feature and hazard — makes fights more than a damage race">
-        <div style={{paddingTop:14}}><AxesStrip {...axesProps}/></div>
-      </Collapsible>
     </div>
   );
 }
@@ -4166,6 +4172,27 @@ function PlanStrip({axes}){
   );
 }
 
+function MapIdeasStrip({scene}){
+  const elements = useMemo(()=>suggestMapElements(scene), [scene]);
+  const notes = [['environment','Environment'],['terrain','Terrain'],['combatSituation','Situation'],['timeOfDay','Time of day']].filter(([k])=>String(scene[k] || '').trim());
+  return (
+    <Collapsible icon="map" iconColor="var(--amber)" title="Scene & map ideas" hint={scene.environment || 'Terrain and cover ideas for this fight'}>
+      <div style={{paddingTop:14}}>
+        {notes.length > 0 && (
+          <div className="plan-grid" style={{padding:'0 0 14px'}}>
+            {notes.map(([k, label])=>(
+              <div className="plan-item" key={k} style={{'--c':'var(--amber)'}}><small>{label}</small><p style={{margin:0, color:'var(--parchment)'}}>{scene[k]}</p></div>
+            ))}
+          </div>
+        )}
+        <ul style={{margin:0, padding:0, listStyle:'none', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px,1fr))', columnGap:24, rowGap:4}}>
+          {elements.map(el=><li key={el} style={{fontSize:14, color:'var(--parchment-dim)', lineHeight:1.5, display:'flex', gap:8}}><span style={{color:'var(--parchment-faint)'}}>•</span><span>{el}</span></li>)}
+        </ul>
+      </div>
+    </Collapsible>
+  );
+}
+
 function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
   const focusId = (selectedId && rows.some(r=>r.id===selectedId)) ? selectedId : activeId;
   const focusRow = rows.find(r=>r.id===focusId);
@@ -4186,7 +4213,7 @@ function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onR
     <div>
       <TurnBar round={encounter.round} active={active} onPrev={turn.onPrev} onNext={turn.onNext} onUndo={turn.onUndo} undoLabel={turn.undoLabel} menuItems={turn.menuItems}
         difficulty={<DifficultyBadge party={encounter.party} monsters={encounter.round.monsters}/>}/>
-      <PlanStrip axes={encounter.axes}/>
+      <div className="top-drops" style={{marginBottom:18}}><MapIdeasStrip scene={encounter.scene}/><PlanStrip axes={encounter.axes}/></div>
       <div className="run">
         <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote} groupRoll={groupRoll} onToggleGroupRoll={onToggleGroupRoll} onMove={onMove}/>
         <div>
