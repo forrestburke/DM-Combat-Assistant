@@ -3000,7 +3000,7 @@ function CloudSyncControl({cloud, open, onToggleOpen}){
   );
 }
 
-function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
+function PlayerShareControl({cloud, enabled, onToggleEnabled, share, showHealth, onToggleHealth}){
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   if(!cloud.available) return null;
@@ -3035,6 +3035,10 @@ function PlayerShareControl({cloud, enabled, onToggleEnabled, share}){
                     {share.error && <p style={{fontSize:13, color:'var(--blood-text)', margin:'0 0 8px'}}>{share.error}</p>}
                     <input className="text-input" readOnly value={link} style={{marginBottom:10, fontSize:12.5}}/>
                     <button className="btn btn-primary" style={{width:'100%'}} onClick={copyLink}>{copied ? 'Copied!' : 'Copy link'}</button>
+                    <label style={{display:'flex', alignItems:'flex-start', gap:10, fontSize:14, marginTop:14, cursor:'pointer', color:'var(--parchment-dim)'}}>
+                      <input type="checkbox" checked={showHealth} onChange={e=>onToggleHealth(e.target.checked)} style={{width:18, height:18, marginTop:1, flexShrink:0}}/>
+                      <span>Show how hurt each monster is: <b style={{color:'var(--parchment)'}}>Healthy</b>, <b style={{color:'var(--parchment)'}}>Bloodied</b> or <b style={{color:'var(--parchment)'}}>Near death</b>. Never the numbers.</span>
+                    </label>
                   </React.Fragment>
                 )}
               </React.Fragment>
@@ -3140,6 +3144,8 @@ function PlayerView({uid}){
                   <span className="player-view-card-name">
                     {c.name}
                     <span className={"player-view-card-kind "+kindClass}>{kindLabel}</span>
+                    {c.id === data.round?.nextCombatantId && c.id !== activeId && <span className="pill pill-accent">Up next</span>}
+                    {c.health && <span className={"pill "+({Healthy:'pill-moss', Bloodied:'pill-amber', 'Near death':'pill-blood'}[c.health] || '')}>{c.health}</span>}
                   </span>
                   {pc && <span className="ac-badge" title="Armor Class"><Icon name="shield" size={13}/>{pc.ac}</span>}
                 </div>
@@ -4096,7 +4102,7 @@ function HowToUseModal({open, onClose}){
     {
       title: 'Share with players',
       body: [
-        'Sign in with Sync, then use Share to get a link for your players. They see the turn order, their own characters\' hit points, and each monster\'s name and conditions — nothing else. Players can also type their own notes on each card.',
+        'Sign in with Sync, then use Share to get a link for your players. They see the turn order, their own characters\' hit points, and each monster\'s name and conditions — nothing else. Players can also type their own notes on each card, and you can choose to show how hurt each monster is (Healthy, Bloodied, Near death) without any numbers. The next combatant is marked "Up next".',
       ],
     },
     {
@@ -4222,6 +4228,8 @@ function App(){
   useEffect(()=>{ try{ localStorage.setItem('tactics-table-group-roll', groupRoll?'1':'0'); }catch(e){} }, [groupRoll]);
   const [sampleDismissed, setSampleDismissed] = useState(()=>{ try{ return localStorage.getItem('tactics-table-sample-dismissed')==='1'; }catch(e){ return false; } });
   const [endOpen, setEndOpen] = useState(false);
+  const [shareHealth, setShareHealth] = useState(()=>{ try{ return localStorage.getItem('tactics-table-share-health')==='1'; }catch(e){ return false; } });
+  useEffect(()=>{ try{ localStorage.setItem('tactics-table-share-health', shareHealth?'1':'0'); }catch(e){} }, [shareHealth]);
   const [undoStack, setUndoStack] = useState([]);
   const [notice, setNotice] = useState(null);
   const storeRef = useRef(store); storeRef.current = store;
@@ -4448,16 +4456,25 @@ function App(){
   const playerSnapshot = useMemo(()=>{
     const order = getTurnOrder(encounter);
     const party = encounter.party.filter(p=>p.active !== false);
+    const actingId = resolveActiveId(encounter);
+    const ai = order.findIndex(c=>c.id===actingId);
+    const nextId = order.length > 1 && ai >= 0 ? order[(ai+1) % order.length].id : null;
+    const healthOf = m=>{
+      if(!shareHealth || m.isMob || !(m.hpMax > 0)) return undefined;
+      const pct = m.hpCurrent / m.hpMax;
+      return pct > 0.5 ? 'Healthy' : pct > 0.25 ? 'Bloodied' : 'Near death';
+    };
     return {
       encounterName: encounter.name,
-      round: { roundNumber: encounter.round.roundNumber, activeCombatantId: resolveActiveId(encounter) },
-      order: order.map(c=> c.kind==='monster'
-        ? { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: encounter.round.monsters.find(m=>m.id===c.id)?.conditions || [] }
-        : { id:c.id, name:c.name, kind:'pc' }
-      ),
+      round: { roundNumber: encounter.round.roundNumber, activeCombatantId: actingId, nextCombatantId: nextId },
+      order: order.map(c=>{
+        if(c.kind !== 'monster') return { id:c.id, name:c.name, kind:'pc' };
+        const m = encounter.round.monsters.find(x=>x.id===c.id);
+        return { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: m?.conditions || [], health: m ? healthOf(m) : undefined };
+      }),
       party: party.map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[] })),
     };
-  }, [encounter]);
+  }, [encounter, shareHealth]);
   const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
 
   // Whenever the turn moves, jump the detail panel back to whoever is acting.
@@ -4770,7 +4787,7 @@ function App(){
           </div>
           <ModeSwitch mode={mode} onChange={setMode}/>
           <div className="topbar-actions">
-            <PlayerShareControl cloud={cloud} enabled={shareEnabled} onToggleEnabled={setShareEnabled} share={playerShare}/>
+            <PlayerShareControl cloud={cloud} enabled={shareEnabled} onToggleEnabled={setShareEnabled} share={playerShare} showHealth={shareHealth} onToggleHealth={setShareHealth}/>
             <CloudSyncControl cloud={cloud} open={syncPanelOpen} onToggleOpen={()=>setSyncPanelOpen(v=>!v)}/>
             <MoreMenu items={moreItems}/>
           </div>
