@@ -57,6 +57,24 @@
   .init-note svg{ flex-shrink:0; margin-top:2px; }
   .init-note span{ flex:1; min-width:0; }
   .rail .init-note{ margin:4px 6px 8px; }
+  .toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:60; display:flex; align-items:center; gap:12px; max-width:min(560px, calc(100vw - 28px)); padding:11px 14px; border-radius:12px; background:var(--panel-raised); border:1px solid var(--line); box-shadow:var(--shadow), 0 18px 40px -16px rgba(0,0,0,.6); font-size:14.5px; }
+  .toast-btn{ border:none; background:none; color:var(--accent-text); font-weight:700; font-size:14.5px; padding:4px 8px; border-radius:6px; }
+  .toast-btn:hover{ background:var(--accent-soft); }
+  .toast-x{ border:none; background:none; color:var(--parchment-faint); padding:2px; display:inline-flex; }
+  .kbd-hint{ margin:18px 2px 0; color:var(--parchment-faint); font-size:13px; line-height:2; }
+  kbd{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:1px 6px; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; background:var(--panel-raised); color:var(--parchment-dim); }
+  .log-list{ list-style:none; margin:12px 0 0; padding:0; max-height:340px; overflow:auto; display:flex; flex-direction:column; gap:2px; }
+  .log-list li{ display:flex; gap:10px; align-items:baseline; padding:5px 0; border-bottom:1px solid var(--line-soft); font-size:14px; }
+  .log-list li .pill{ font-family:'IBM Plex Mono', monospace; flex-shrink:0; }
+  .picker-duration{ flex:1 1 100%; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--parchment-dim); margin-bottom:4px; }
+  .picker-duration input{ width:56px; text-align:center; padding:4px; border:1px solid var(--line); background:var(--ink); border-radius:6px; color:var(--parchment); font:inherit; }
+  .chip-timer{ font-family:'IBM Plex Mono', monospace; font-size:11px; opacity:.85; padding:0 4px; border-radius:99px; background:color-mix(in srgb, var(--c) 28%, transparent); }
+  .rail-option{ display:flex; align-items:center; gap:8px; padding:2px 10px 8px; font-size:13px; color:var(--parchment-dim); cursor:pointer; }
+  .rail-row.dragging{ opacity:.45; }
+  .rail-row.drag-over{ box-shadow:0 -3px 0 0 var(--accent); }
+  .sample-banner{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 18px; background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 35%, transparent); }
+  .check-row{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:15px; cursor:pointer; }
+  .check-row input{ width:18px; height:18px; flex-shrink:0; }
   @media (max-width:760px){
     .topbar-inner{ flex-wrap:wrap; gap:10px; padding:10px 14px; }
     .brand{ flex:1; }
@@ -1996,23 +2014,38 @@ const CONDITION_COLORS = {
   Paralyzed: '#d9b23a', Petrified: '#a08f74', Poisoned: '#6fae4a', Prone: '#9c7248',
   Restrained: '#c2703a', Stunned: '#e8d24a', Unconscious: '#6a5acd',
 };
-function ConditionRow({conditions, onToggle}){
+function ConditionRow({conditions, durations, onToggle}){
   const active = conditions || [];
   const [adding, setAdding] = useState(false);
+  const [rounds, setRounds] = useState('');
+  function pick(c){
+    const n = Math.max(0, Math.floor(Number(rounds) || 0));
+    onToggle(c, n > 0 ? n : undefined);
+    setAdding(false); setRounds('');
+  }
   return (
     <div className="condition-row">
-      {active.map(c=>(
-        <button key={c} className="condition-chip active" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>onToggle(c)} title={`${CONDITION_INFO[c] || ''} Click to remove.`}>
-          {c}<Icon name="x" size={10}/>
-        </button>
-      ))}
+      {active.map(c=>{
+        const left = durations?.[c];
+        return (
+          <button key={c} className="condition-chip active" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>onToggle(c)}
+            title={`${CONDITION_INFO[c] || ''} ${left ? 'Ends after ' + left + ' more of its turns. ' : ''}Click to remove.`}>
+            {c}{left ? <span className="chip-timer">{left}r</span> : null}<Icon name="x" size={10}/>
+          </button>
+        );
+      })}
       <button className="condition-chip add" onClick={()=>setAdding(v=>!v)} title="Add a condition">
         <Icon name="plus" size={11}/>{active.length===0 ? 'Condition' : ''}
       </button>
       {adding && (
         <div className="condition-picker">
+          <label className="picker-duration" title="Optional. The condition ends by itself after this many of the creature's own turns.">
+            <span>Lasts</span>
+            <input type="number" min="1" value={rounds} onChange={e=>setRounds(e.target.value)} placeholder="∞"/>
+            <span>rounds (leave empty until removed)</span>
+          </label>
           {CONDITIONS.filter(c=>!active.includes(c)).map(c=>(
-            <button key={c} className="condition-chip pickable" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>{ onToggle(c); setAdding(false); }} title={CONDITION_INFO[c] || `Apply ${c}`}>
+            <button key={c} className="condition-chip pickable" style={{'--c':CONDITION_COLORS[c]}} onClick={()=>pick(c)} title={CONDITION_INFO[c] || `Apply ${c}`}>
               <span className="condition-dot"/>{c}
             </button>
           ))}
@@ -2029,9 +2062,9 @@ function computeAutoPosture(m){ if(m.hpMax<=0) return m.activePosture; const pct
 
 /** Combined PC + monster turn order, sorted by initiative (highest first). Defeated monsters are dropped; PCs always stay in the order. */
 function getTurnOrder(encounter, includeDefeated=false){
-  const pcs = encounter.party.filter(p=>p.active !== false).map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, kind:'pc' }));
-  const mons = encounter.round.monsters.filter(m=>includeDefeated || !m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, kind:'monster', team: m.team || 'enemy' }));
-  return [...pcs, ...mons].sort((a,b)=> b.initiative - a.initiative);
+  const pcs = encounter.party.filter(p=>p.active !== false).map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, tiebreak: p.tiebreak ?? 0, kind:'pc' }));
+  const mons = encounter.round.monsters.filter(m=>includeDefeated || !m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, tiebreak: m.tiebreak ?? 0, kind:'monster', team: m.team || 'enemy' }));
+  return [...pcs, ...mons].sort((a,b)=> (b.initiative - a.initiative) || (b.tiebreak - a.tiebreak));
 }
 /** Whose turn it is. If the stored active combatant has since dropped out of the order (defeated, removed, absent),
  * carry on from where they sat in the full initiative order instead of snapping back to the top. */
@@ -2858,16 +2891,19 @@ function ImportModal({onClose, onImport}){
 
 const ENCOUNTERS_KEY = 'tactics-table-encounters-v1';
 const MODE_KEY = 'tactics-table-mode-v2';
+const SAMPLE_ID = 'sample-01';
+/** Append one line to an encounter's combat log (kept to the latest 300 entries). */
+function withLog(enc, text){ return {...enc, log:[...(enc.log || []), {r: enc.round.roundNumber, t: Date.now(), text}].slice(-300)}; }
 /* ---------- shared party ----------
    Character sheet fields live once in store.party and apply to every encounter. Per-fight state
    (current HP, conditions, initiative roll, absent) lives in each encounter's pcState. */
 const PC_SHARED_FIELDS = ['id','name','role','species','level','ac','hpMax','initiativeBonus','abilityScores','saves','referenceLink','tacticalPriority'];
-const PC_STATE_FIELDS = ['hpCurrent','conditions','initiative','active'];
+const PC_STATE_FIELDS = ['hpCurrent','conditions','conditionDurations','initiative','tiebreak','active'];
 function pickFields(obj, keys){ const o = {}; keys.forEach(k=>{ if(obj[k] !== undefined) o[k] = obj[k]; }); return o; }
 function composeParty(roster, pcState){
   return (roster||[]).map(p=>{
     const st = (pcState||{})[p.id] || {};
-    return {...p, hpCurrent: st.hpCurrent ?? p.hpMax, conditions: st.conditions ?? [], initiative: st.initiative ?? 10, active: st.active ?? true};
+    return {...p, ...st, hpCurrent: st.hpCurrent ?? p.hpMax, conditions: st.conditions ?? [], initiative: st.initiative ?? 10, active: st.active ?? true};
   });
 }
 /** Older saves keep a separate party inside every encounter; fold those into one shared roster (active encounter wins). */
@@ -3673,7 +3709,7 @@ function InitiativeNote({text, onDismiss}){
   );
 }
 
-function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp, initiativeNote, onDismissNote}){
+function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp, initiativeNote, onDismissNote, showSample, onStartFresh, onDismissSample}){
   const monsters = encounter.round.monsters;
   const presentParty = encounter.party.filter(p=>p.active !== false);
   const sceneFilled = Object.values(encounter.scene||{}).some(v=>String(v||'').trim());
@@ -3685,6 +3721,7 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
   ];
   return (
     <div className="prep">
+      {showSample && <SampleBanner onStartFresh={onStartFresh} onDismiss={onDismissSample}/>}
       <section className="card setup-card">
         <div className="setup-intro">
           <h2>Set up your encounter</h2>
@@ -3766,10 +3803,10 @@ function HpControls({current, max, onDelta, onSetExact}){
       )}
       <div className="hp-actions">
         <input className="text-input amount" type="number" min="0" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)}
-          onKeyDown={e=>{ if(e.key==='Enter') apply(-1); }} aria-label="Hit point amount — press Enter to apply as damage"/>
+          onKeyDown={e=>{ if(e.key==='Enter') apply(e.shiftKey ? 1 : -1); }} aria-label="Hit point amount — Enter applies damage, Shift+Enter heals"/>
         <button className="btn btn-blood" onClick={()=>apply(-1)} disabled={!valid}>Damage</button>
         <button className="btn btn-moss" onClick={()=>apply(1)} disabled={!valid}>Heal</button>
-        <span className="muted" style={{fontSize:13}}>Type a number, then press Enter to deal damage.</span>
+        <span className="muted" style={{fontSize:13}}>Enter deals damage · Shift+Enter heals</span>
       </div>
     </div>
   );
@@ -3817,7 +3854,7 @@ function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetSt
 
       <div className="focus-section">
         <p className="focus-section-title">Conditions</p>
-        <ConditionRow conditions={m.conditions} onToggle={c=>onToggleCondition(m.id, c)}/>
+        <ConditionRow conditions={m.conditions} durations={m.conditionDurations} onToggle={(c,r)=>onToggleCondition(m.id, c, r)}/>
       </div>
 
       <div className="focus-section">
@@ -3860,7 +3897,7 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
       </div>
       <div className="focus-section">
         <p className="focus-section-title">Conditions</p>
-        <ConditionRow conditions={p.conditions} onToggle={c=>onToggleCondition(p.id, c)}/>
+        <ConditionRow conditions={p.conditions} durations={p.conditionDurations} onToggle={(c,r)=>onToggleCondition(p.id, c, r)}/>
       </div>
       <div className="focus-section">
         <p className="focus-section-title">Abilities</p>
@@ -3878,23 +3915,45 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
   );
 }
 
-function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive, onRollInitiative, initiativeNote, onDismissNote}){
+function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive, onRollInitiative, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
+  const [dragId, setDragId] = useState(null);
+  const [overId, setOverId] = useState(null);
+  const refocus = useRef(null);
+  useEffect(()=>{
+    if(refocus.current){ document.querySelector('[data-rid="' + refocus.current + '"]')?.focus(); refocus.current = null; }
+  });
   return (
     <aside className="card rail" aria-label="Initiative order">
       <div className="rail-head">
         <h2>Initiative order</h2>
         <button className="btn btn-sm" onClick={onRollInitiative} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={14}/>Roll monsters</button>
       </div>
+      <label className="rail-option" title="When on, every creature of the same kind (Goblin 1, Goblin 2…) shares one initiative roll">
+        <input type="checkbox" checked={groupRoll} onChange={e=>onToggleGroupRoll(e.target.checked)}/>Same kind shares one roll
+      </label>
       <InitiativeNote text={initiativeNote} onDismiss={onDismissNote}/>
-      {rows.map(r=>{
+      {rows.map((r, i)=>{
         const active = r.id === activeId;
         const color = kindColor(r);
         const pct = clampPct(r.hpCurrent, r.hpMax);
         return (
-          <div key={r.id} className={"rail-row"+(active?" active":"")+(r.id===selectedId?" selected":"")} style={{'--c':color}}
+          <div key={r.id} data-rid={r.id}
+            className={"rail-row"+(active?" active":"")+(r.id===selectedId?" selected":"")+(dragId===r.id?" dragging":"")+(dragId && overId===r.id && dragId!==r.id?" drag-over":"")}
+            style={{'--c':color}}
             role="button" tabIndex={0} aria-current={active ? 'true' : undefined}
+            draggable
+            title="Click to inspect. Drag to reorder, or focus and press Alt+↑ / Alt+↓."
             onClick={()=>onSelect(r.id)}
-            onKeyDown={e=>{ if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); onSelect(r.id); } }}>
+            onDragStart={e=>{ setDragId(r.id); e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', r.id); }catch(_){} }}
+            onDragOver={e=>{ if(dragId){ e.preventDefault(); setOverId(r.id); } }}
+            onDrop={e=>{ e.preventDefault(); if(dragId && dragId !== r.id) onMove(dragId, i); setDragId(null); setOverId(null); }}
+            onDragEnd={()=>{ setDragId(null); setOverId(null); }}
+            onKeyDown={e=>{
+              if(e.target !== e.currentTarget) return;
+              if(e.altKey && e.key === 'ArrowUp'){ e.preventDefault(); refocus.current = r.id; onMove(r.id, i-1); }
+              else if(e.altKey && e.key === 'ArrowDown'){ e.preventDefault(); refocus.current = r.id; onMove(r.id, i+1); }
+              else if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onSelect(r.id); }
+            }}>
             <input className="rail-init" type="number" value={r.initiative} onClick={e=>e.stopPropagation()} onChange={e=>onSetInitiative(r.kind, r.id, e.target.value)} aria-label={`${r.name} initiative`} title="Initiative — click to change"/>
             <div style={{minWidth:0}}>
               <div className="rail-name">
@@ -3936,7 +3995,7 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
   );
 }
 
-function TurnBar({round, active, onPrev, onNext, menuItems, difficulty}){
+function TurnBar({round, active, onPrev, onNext, onUndo, undoLabel, menuItems, difficulty}){
   return (
     <section className="card turnbar">
       <div className="turnbar-round"><span className="turnbar-label">Round</span><b>{round.roundNumber}</b></div>
@@ -3946,8 +4005,9 @@ function TurnBar({round, active, onPrev, onNext, menuItems, difficulty}){
       </div>
       <div className="turnbar-actions">
         {difficulty}
-        <button className="btn btn-lg" onClick={onPrev} title="Go back one turn"><Icon name="chevron" size={17} style={{transform:'scaleX(-1)'}}/>Back</button>
-        <button className="btn btn-primary btn-lg" onClick={onNext} title="End this turn and move to the next combatant">Next turn<Icon name="chevron" size={17}/></button>
+        <button className="btn btn-lg" onClick={onUndo} disabled={!undoLabel} title={undoLabel ? 'Undo: ' + undoLabel + ' (U)' : 'Nothing to undo'}><Icon name="reset" size={16}/>Undo</button>
+        <button className="btn btn-lg" onClick={onPrev} title="Go back one turn (B)"><Icon name="chevron" size={17} style={{transform:'scaleX(-1)'}}/>Back</button>
+        <button className="btn btn-primary btn-lg" onClick={onNext} title="End this turn and move to the next combatant (N)">Next turn<Icon name="chevron" size={17}/></button>
         <MoreMenu label="Round controls" items={menuItems}/>
       </div>
     </section>
@@ -3970,7 +4030,7 @@ function PlanStrip({axes}){
   );
 }
 
-function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, initiativeNote, onDismissNote}){
+function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
   const focusId = (selectedId && rows.some(r=>r.id===selectedId)) ? selectedId : activeId;
   const focusRow = rows.find(r=>r.id===focusId);
   const active = rows.find(r=>r.id===activeId);
@@ -3988,18 +4048,20 @@ function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onR
   const pc = focusRow?.kind === 'pc' ? encounter.party.find(p=>p.id===focusRow.id) : null;
   return (
     <div>
-      <TurnBar round={encounter.round} active={active} onPrev={turn.onPrev} onNext={turn.onNext} menuItems={turn.menuItems}
+      <TurnBar round={encounter.round} active={active} onPrev={turn.onPrev} onNext={turn.onNext} onUndo={turn.onUndo} undoLabel={turn.undoLabel} menuItems={turn.menuItems}
         difficulty={<DifficultyBadge party={encounter.party} monsters={encounter.round.monsters}/>}/>
       <PlanStrip axes={encounter.axes}/>
       <div className="run">
-        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote}/>
+        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote} groupRoll={groupRoll} onToggleGroupRoll={onToggleGroupRoll} onMove={onMove}/>
         <div>
           {monster && <MonsterFocus key={monster.id} m={monster} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
             onDelta={handlers.onMonsterDelta} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
-            onToggleCondition={(id,c)=>handlers.onToggleCondition('monster', id, c)} onPosture={handlers.onPosture} onDamageParty={handlers.onPartyDelta}/>}
-          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c)=>handlers.onToggleCondition('pc', id, c)}/>}
+            onToggleCondition={(id,c,r)=>handlers.onToggleCondition('monster', id, c, r)} onPosture={handlers.onPosture} onDamageParty={handlers.onPartyDelta}/>}
+          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c,r)=>handlers.onToggleCondition('pc', id, c, r)}/>}
+          <div style={{marginTop:18}}><CombatLog log={encounter.log}/></div>
         </div>
       </div>
+      <p className="kbd-hint">Shortcuts: <kbd>N</kbd> next turn · <kbd>B</kbd> back · <kbd>U</kbd> undo · <kbd>D</kbd> damage box · <kbd>↑</kbd> <kbd>↓</kbd> inspect · <kbd>Esc</kbd> back to whoever is acting</p>
     </div>
   );
 }
@@ -4072,6 +4134,77 @@ function HowToUseModal({open, onClose}){
   );
 }
 
+function CombatLog({log}){
+  const [copied, setCopied] = useState(false);
+  const entries = [...(log || [])].reverse();
+  function copy(){
+    const text = (log || []).map(e=>'Round ' + e.r + ' · ' + e.text).join('\n');
+    navigator.clipboard?.writeText(text).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 1800); }).catch(()=>{});
+  }
+  return (
+    <Collapsible icon="scroll" iconColor="var(--arcane)" title="Combat log" badge={entries.length ? String(entries.length) : null} hint="What happened, round by round">
+      {entries.length === 0 ? (
+        <p className="muted" style={{margin:'14px 0 0'}}>Nothing yet. Damage, healing, conditions and turns show up here as you play.</p>
+      ) : (
+        <div style={{paddingTop:12}}>
+          <button className="btn btn-sm" onClick={copy}><Icon name={copied ? 'check' : 'copy'} size={14}/>{copied ? 'Copied!' : 'Copy the whole log'}</button>
+          <ul className="log-list">
+            {entries.map((e, i)=><li key={e.t + '-' + i}><span className="pill">R{e.r}</span><span>{e.text}</span></li>)}
+          </ul>
+        </div>
+      )}
+    </Collapsible>
+  );
+}
+
+function EndCombatModal({onClose, onConfirm}){
+  const [restoreMonsters, setRestoreMonsters] = useState(true);
+  const [clearConditions, setClearConditions] = useState(true);
+  const [healPlayers, setHealPlayers] = useState(false);
+  return (
+    <div className="modal-veil" onClick={onClose}>
+      <div className="modal" style={{maxWidth:500}} onClick={e=>e.stopPropagation()} role="dialog" aria-label="End combat">
+        <div className="modal-head">
+          <h2>End combat</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close" title="Close"><Icon name="x" size={18}/></button>
+        </div>
+        <div className="modal-body">
+          <p className="muted" style={{margin:'0 0 14px'}}>This goes back to round 1 and returns to Prep, so you can run the fight again or move on. Choose what to reset:</p>
+          <label className="check-row"><input type="checkbox" checked={restoreMonsters} onChange={e=>setRestoreMonsters(e.target.checked)}/>Monsters back to full HP, and bring defeated ones back</label>
+          <label className="check-row"><input type="checkbox" checked={clearConditions} onChange={e=>setClearConditions(e.target.checked)}/>Clear every condition</label>
+          <label className="check-row"><input type="checkbox" checked={healPlayers} onChange={e=>setHealPlayers(e.target.checked)}/>Heal the players to full HP</label>
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={()=>onConfirm({restoreMonsters, clearConditions, healPlayers})}>End combat</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toast({notice, canUndo, onUndo, onClose}){
+  if(!notice) return null;
+  return (
+    <div className="toast" role="status">
+      <span>{notice.text}</span>
+      {notice.undoable && canUndo && <button className="toast-btn" onClick={onUndo}>Undo</button>}
+      <button className="toast-x" onClick={onClose} aria-label="Dismiss"><Icon name="x" size={14}/></button>
+    </div>
+  );
+}
+
+function SampleBanner({onStartFresh, onDismiss}){
+  return (
+    <section className="card sample-banner">
+      <Icon name="sparkles" size={22} style={{color:'var(--accent-text)', flexShrink:0}}/>
+      <div style={{flex:1, minWidth:200}}><b>This is an example encounter.</b> <span className="muted">Look around, then clear it to start with your own party and monsters.</span></div>
+      <button className="btn btn-primary btn-sm" onClick={onStartFresh}>Start fresh</button>
+      <button className="iconbtn" onClick={onDismiss} aria-label="Keep the example for now" title="Keep the example for now"><Icon name="x" size={15}/></button>
+    </section>
+  );
+}
+
 function App(){
   const [theme, toggleTheme] = useTheme();
   const [store, setStore] = useState(loadEncounterStore);
@@ -4085,6 +4218,26 @@ function App(){
   const [selectedId, setSelectedId] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [initiativeNote, setInitiativeNote] = useState('');
+  const [groupRoll, setGroupRoll] = useState(()=>{ try{ return localStorage.getItem('tactics-table-group-roll')==='1'; }catch(e){ return false; } });
+  useEffect(()=>{ try{ localStorage.setItem('tactics-table-group-roll', groupRoll?'1':'0'); }catch(e){} }, [groupRoll]);
+  const [sampleDismissed, setSampleDismissed] = useState(()=>{ try{ return localStorage.getItem('tactics-table-sample-dismissed')==='1'; }catch(e){ return false; } });
+  const [endOpen, setEndOpen] = useState(false);
+  const [undoStack, setUndoStack] = useState([]);
+  const [notice, setNotice] = useState(null);
+  const storeRef = useRef(store); storeRef.current = store;
+  const undoRef = useRef(undoStack); undoRef.current = undoStack;
+  function showNotice(text, undoable){ setNotice({text, undoable: !!undoable, id: Date.now()}); }
+  useEffect(()=>{ if(!notice) return; const t = setTimeout(()=>setNotice(null), notice.undoable ? 8000 : 4500); return ()=>clearTimeout(t); }, [notice]);
+  function recordUndo(label){ setUndoStack(st=>[...st.slice(-39), {label, store: storeRef.current}]); }
+  function undo(){
+    const st = undoRef.current;
+    if(st.length === 0) return;
+    const last = st[st.length - 1];
+    const cur = storeRef.current;
+    setUndoStack(st.slice(0, -1));
+    setStore({...last.store, activeId: last.store.encounters.some(e=>e.id===cur.activeId) ? cur.activeId : last.store.activeId});
+    showNotice('Undid: ' + last.label);
+  }
   useEffect(()=>{ try{ localStorage.setItem(MODE_KEY, mode); }catch(e){} }, [mode]);
 
   useEffect(()=>{ try{ localStorage.setItem(ENCOUNTERS_KEY, JSON.stringify(toPersistShape(store))); }catch(e){} }, [store]);
@@ -4172,14 +4325,6 @@ function App(){
   function addCustomMonster(template){ setCustomMonsters(list=>[...list.filter(m=>m.name.toLowerCase()!==template.name.toLowerCase()), template]); }
   function removeCustomMonster(name){ setCustomMonsters(list=>list.filter(m=>m.name!==name)); }
 
-  function updateMonsterHp(id, delta){
-    updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=>{
-      if(m.id!==id) return m;
-      const hpCurrent = Math.max(0, Math.min(m.hpMax, m.hpCurrent+delta));
-      const next = {...m, hpCurrent, isDefeated: hpCurrent<=0};
-      return {...next, activePosture: computeAutoPosture(next)};
-    })}}));
-  }
   function setMonsterPosture(id, posture){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, activePosture:posture} : m)}})); }
   function setMonsterStats(id, patch){
     updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=>{
@@ -4191,33 +4336,7 @@ function App(){
       return {...next, activePosture: computeAutoPosture(next)};
     })}}));
   }
-  /** Roll d20 + DEX modifier for every monster/NPC (or just one). Players roll their own and enter it themselves. */
-  function rollMonsterInitiative(onlyId){
-    const rolled = encounter.round.monsters.filter(m=>!onlyId || m.id===onlyId).map(m=>{
-      const mod = abilityScoreMod(m.abilityScores?.dex ?? 10);
-      const die = rollD20();
-      return {id:m.id, name:m.name, die, mod, total:die+mod};
-    });
-    if(rolled.length === 0) return;
-    const byId = new Map(rolled.map(r=>[r.id, r.total]));
-    updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> byId.has(m.id) ? {...m, initiative:byId.get(m.id)} : m)}}));
-    setInitiativeNote('Rolled — ' + rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · '));
-  }
-  /** Roll d20 + initiative modifier for the players (or one of them) — handy when someone isn't rolling their own. */
-  function rollPlayerInitiative(onlyId){
-    const rolled = encounter.party.filter(p=>p.active !== false && (!onlyId || p.id===onlyId)).map(p=>{
-      const mod = p.initiativeBonus != null ? (Number(p.initiativeBonus) || 0) : (p.abilityScores ? abilityScoreMod(p.abilityScores.dex ?? 10) : 0);
-      const die = rollD20();
-      return {id:p.id, name:p.name, die, mod, total:die+mod};
-    });
-    if(rolled.length === 0) return;
-    const byId = new Map(rolled.map(r=>[r.id, r.total]));
-    updateActive(enc=>({...enc, party: enc.party.map(p=> byId.has(p.id) ? {...p, initiative:byId.get(p.id)} : p)}));
-    setInitiativeNote('Rolled — ' + rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · '));
-  }
-  function toggleDefeated(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:!m.isDefeated} : m)}})); }
   function toggleMonsterTeam(id){ updateActive(enc=>({...enc, round:{...enc.round, monsters:enc.round.monsters.map(m=> m.id===id ? {...m, team: m.team==='ally' ? 'enemy' : 'ally'} : m)}})); }
-  function updatePartyHp(id, delta){ updateActive(enc=>({...enc, party:enc.party.map(p=> p.id===id ? {...p, hpCurrent:Math.max(0,Math.min(p.hpMax,p.hpCurrent+delta))} : p)})); }
   function addPartyMember(member){ updateActive(enc=>({...enc, party:[...enc.party, member]})); }
   function removePartyMember(id){ updateActive(enc=>({...enc, party:enc.party.filter(p=>p.id!==id)})); }
   function togglePartyActive(id){
@@ -4244,14 +4363,6 @@ function App(){
       next.hpCurrent = Math.max(0, Math.min(next.hpMax, next.hpCurrent));
       return next;
     })}));
-  }
-  function reviveMonster(id){
-    updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, isDefeated:false, hpCurrent: m.hpCurrent>0 ? m.hpCurrent : 1} : m)}}));
-  }
-  function toggleCondition(kind, id, condition){
-    const flip = (list)=> (list||[]).includes(condition) ? list.filter(c=>c!==condition) : [...(list||[]), condition];
-    if(kind === 'pc') updateActive(enc=>({...enc, party: enc.party.map(p=> p.id===id ? {...p, conditions: flip(p.conditions)} : p)}));
-    else updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? {...m, conditions: flip(m.conditions)} : m)}}));
   }
   function setScene(patch){ updateActive(enc=>({...enc, scene:{...enc.scene, ...patch}})); }
   function getLocks(enc){ return enc.axesLocked || {win:false, opt:false, hazard:false}; }
@@ -4317,46 +4428,6 @@ function App(){
       return {...enc, axes:{...enc.axes, battlefieldOptimizer:{title:opt.title, description:opt.description, mechanicalBenefit:opt.mechanicalBenefit}}};
     });
   }
-  function nextTurn(){
-    updateActive(enc=>{
-      const order = getTurnOrder(enc);
-      if(order.length === 0) return enc;
-      const curIdx = order.findIndex(c=>c.id === resolveActiveId(enc));
-      const nextIdx = curIdx === -1 ? 0 : (curIdx + 1) % order.length;
-      const wrapped = curIdx !== -1 && nextIdx === 0;
-      const next = order[nextIdx];
-      return {...enc, round:{...enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
-    });
-  }
-  function prevTurn(){
-    updateActive(enc=>{
-      const order = getTurnOrder(enc);
-      if(order.length === 0) return enc;
-      const curIdx = order.findIndex(c=>c.id === resolveActiveId(enc));
-      const atStart = curIdx === -1 || curIdx === 0;
-      const prevIdx = atStart ? order.length - 1 : curIdx - 1;
-      const prev = order[prevIdx];
-      return {...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}};
-    });
-  }
-  function nextRound(){
-    updateActive(enc=>{
-      const order = getTurnOrder(enc);
-      return {...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeCombatantId: order[0]?.id ?? null}};
-    });
-  }
-  function prevRound(){
-    updateActive(enc=>{
-      const order = getTurnOrder(enc);
-      return {...enc, round:{...enc.round, roundNumber: Math.max(1, enc.round.roundNumber-1), activeCombatantId: order[0]?.id ?? null}};
-    });
-  }
-  function resetRound(){
-    updateActive(enc=>{
-      const order = getTurnOrder(enc);
-      return {...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}};
-    });
-  }
   function importEncounter(imported){
     updateActive(enc=>{
       const known = new Set(enc.party.map(p=>p.name.trim().toLowerCase()));
@@ -4401,10 +4472,260 @@ function App(){
   const defeated = encounter.round.monsters.filter(m=>m.isDefeated);
   const inProgress = encounter.round.roundNumber > 1 || !!encounter.round.activeCombatantId;
 
+  function updateMonsterHp(id, delta){
+    const m = encounter.round.monsters.find(x=>x.id===id);
+    if(!m) return;
+    recordUndo((delta<0 ? 'damage to ' : 'healing for ') + m.name);
+    updateActive(enc=>{
+      let text = '';
+      const monsters = enc.round.monsters.map(mm=>{
+        if(mm.id!==id) return mm;
+        const hpCurrent = Math.max(0, Math.min(mm.hpMax, mm.hpCurrent+delta));
+        const next = {...mm, hpCurrent, isDefeated: hpCurrent<=0};
+        text = mm.name + (delta<0 ? ' took ' + (-delta) + ' damage' : ' healed ' + delta) + ' (' + mm.hpCurrent + '→' + hpCurrent + ')' + (hpCurrent<=0 && mm.hpCurrent>0 ? ' — defeated' : '');
+        return {...next, activePosture: computeAutoPosture(next)};
+      });
+      return withLog({...enc, round:{...enc.round, monsters}}, text);
+    });
+  }
+  function updatePartyHp(id, delta){
+    const pc = encounter.party.find(x=>x.id===id);
+    if(!pc) return;
+    recordUndo((delta<0 ? 'damage to ' : 'healing for ') + pc.name);
+    updateActive(enc=>{
+      let text = '';
+      const party = enc.party.map(p=>{
+        if(p.id!==id) return p;
+        const hpCurrent = Math.max(0, Math.min(p.hpMax, p.hpCurrent+delta));
+        text = p.name + (delta<0 ? ' took ' + (-delta) + ' damage' : ' healed ' + delta) + ' (' + p.hpCurrent + '→' + hpCurrent + ')' + (hpCurrent<=0 && p.hpCurrent>0 ? ' — down' : '');
+        return {...p, hpCurrent};
+      });
+      return withLog({...enc, party}, text);
+    });
+  }
+  function toggleDefeated(id){
+    const m = encounter.round.monsters.find(x=>x.id===id);
+    if(!m) return;
+    recordUndo((m.isDefeated ? 'bringing back ' : 'defeating ') + m.name);
+    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters:enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:!mm.isDefeated} : mm)}}, m.name + (m.isDefeated ? ' brought back' : ' defeated')));
+  }
+  function reviveMonster(id){
+    const m = encounter.round.monsters.find(x=>x.id===id);
+    if(!m) return;
+    recordUndo('bringing back ' + m.name);
+    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters: enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:false, hpCurrent: mm.hpCurrent>0 ? mm.hpCurrent : 1} : mm)}}, m.name + ' brought back'));
+  }
+  function toggleCondition(kind, id, condition, rounds){
+    const src = kind === 'pc' ? encounter.party.find(p=>p.id===id) : encounter.round.monsters.find(m=>m.id===id);
+    if(!src) return;
+    const has = (src.conditions||[]).includes(condition);
+    recordUndo((has ? 'removing ' : 'adding ') + condition + (has ? ' from ' : ' on ') + src.name);
+    const apply = o=>{
+      const conds = has ? (o.conditions||[]).filter(c=>c!==condition) : [...(o.conditions||[]), condition];
+      const dur = {...(o.conditionDurations||{})};
+      if(has || !rounds) delete dur[condition]; else dur[condition] = rounds;
+      return {...o, conditions:conds, conditionDurations:dur};
+    };
+    const text = src.name + ': ' + condition + (has ? ' removed' : ' added' + (rounds ? ' (' + rounds + ' round' + (rounds>1?'s':'') + ')' : ''));
+    updateActive(enc=>{
+      const next = kind === 'pc'
+        ? {...enc, party: enc.party.map(p=> p.id===id ? apply(p) : p)}
+        : {...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? apply(m) : m)}};
+      return withLog(next, text);
+    });
+  }
+  function nextTurn(){
+    if(getTurnOrder(encounter).length === 0) return;
+    recordUndo('next turn');
+    const endedNow = tickConditions(encounter, resolveActiveId(encounter)).ended;
+    if(endedNow.length) showNotice('Ended: ' + endedNow.join(', '));
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      if(order.length === 0) return enc;
+      const curId = resolveActiveId(enc);
+      const curIdx = order.findIndex(c=>c.id === curId);
+      const nextIdx = curIdx === -1 ? 0 : (curIdx + 1) % order.length;
+      const wrapped = curIdx !== -1 && nextIdx === 0;
+      const next = order[nextIdx];
+      const ticked = tickConditions(enc, curId);
+      let out = {...ticked.enc, round:{...ticked.enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
+      ticked.ended.forEach(t=>{ out = withLog(out, 'Ended: ' + t); });
+      return withLog(out, (wrapped ? 'Round ' + out.round.roundNumber + ' begins. ' : '') + next.name + "'s turn");
+    });
+  }
+  function prevTurn(){
+    if(getTurnOrder(encounter).length === 0) return;
+    recordUndo('back one turn');
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      if(order.length === 0) return enc;
+      const curIdx = order.findIndex(c=>c.id === resolveActiveId(enc));
+      const atStart = curIdx === -1 || curIdx === 0;
+      const prevIdx = atStart ? order.length - 1 : curIdx - 1;
+      const prev = order[prevIdx];
+      return withLog({...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}}, 'Back to ' + prev.name + "'s turn");
+    });
+  }
+  function nextRound(){
+    recordUndo('jump to next round');
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return withLog({...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeCombatantId: order[0]?.id ?? null}}, 'Jumped to round ' + (enc.round.roundNumber+1));
+    });
+  }
+  function prevRound(){
+    recordUndo('back to previous round');
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return withLog({...enc, round:{...enc.round, roundNumber: Math.max(1, enc.round.roundNumber-1), activeCombatantId: order[0]?.id ?? null}}, 'Back to round ' + Math.max(1, enc.round.roundNumber-1));
+    });
+  }
+  function resetRound(){
+    recordUndo('reset to round 1');
+    updateActive(enc=>{
+      const order = getTurnOrder(enc);
+      return withLog({...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}}, 'Reset to round 1');
+    });
+  }
+  /** Roll d20 + DEX modifier for every monster/NPC (or just one). With "group same types" on, e.g. every Goblin shares one roll. */
+  function rollMonsterInitiative(onlyId){
+    const pool = encounter.round.monsters.filter(m=>!onlyId || m.id===onlyId);
+    if(pool.length === 0) return;
+    const grouped = groupRoll && !onlyId;
+    const shared = new Map();
+    const rolled = pool.map(m=>{
+      const mod = abilityScoreMod(m.abilityScores?.dex ?? 10);
+      const key = m.name.replace(/\s+\d+$/, '').trim().toLowerCase();
+      let die;
+      if(grouped){ if(!shared.has(key)) shared.set(key, rollD20()); die = shared.get(key); } else die = rollD20();
+      return {id:m.id, name:m.name, key, die, mod, total:die+mod};
+    });
+    recordUndo('initiative roll');
+    const byId = new Map(rolled.map(r=>[r.id, r.total]));
+    updateActive(enc=>({...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> byId.has(m.id) ? {...m, initiative:byId.get(m.id), tiebreak:0} : m)}}));
+    let text;
+    if(grouped){
+      const seen = new Set();
+      text = rolled.filter(r=>{ if(seen.has(r.key)) return false; seen.add(r.key); return true; }).map(r=>{
+        const count = rolled.filter(x=>x.key===r.key).length;
+        const label = count > 1 ? r.name.replace(/\s+\d+$/, '') + ' ×' + count : r.name;
+        return label + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')';
+      }).join(' · ');
+    } else {
+      text = rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · ');
+    }
+    setInitiativeNote('Rolled — ' + text);
+    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text));
+  }
+  /** Roll d20 + initiative modifier for the players (or one of them) — handy when someone isn't rolling their own. */
+  function rollPlayerInitiative(onlyId){
+    const rolled = encounter.party.filter(p=>p.active !== false && (!onlyId || p.id===onlyId)).map(p=>{
+      const mod = p.initiativeBonus != null ? (Number(p.initiativeBonus) || 0) : (p.abilityScores ? abilityScoreMod(p.abilityScores.dex ?? 10) : 0);
+      const die = rollD20();
+      return {id:p.id, name:p.name, die, mod, total:die+mod};
+    });
+    if(rolled.length === 0) return;
+    recordUndo('initiative roll');
+    const byId = new Map(rolled.map(r=>[r.id, r.total]));
+    updateActive(enc=>({...enc, party: enc.party.map(p=> byId.has(p.id) ? {...p, initiative:byId.get(p.id), tiebreak:0} : p)}));
+    const text = rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · ');
+    setInitiativeNote('Rolled — ' + text);
+    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text));
+  }
+  /** Drag (or Alt+arrow) a combatant to a new spot: it ties with its new neighbour and the tie is ordered explicitly. */
+  function moveInOrder(draggedId, toIndex){
+    const order = getTurnOrder(encounter);
+    const from = order.findIndex(c=>c.id===draggedId);
+    if(from < 0 || toIndex < 0 || toIndex >= order.length || from === toIndex) return;
+    recordUndo('reordering initiative');
+    const ids = order.map(c=>c.id);
+    ids.splice(from, 1); ids.splice(toIndex, 0, draggedId);
+    const initOf = id=>order.find(c=>c.id===id).initiative;
+    const newInit = toIndex > 0 ? initOf(ids[toIndex-1]) : initOf(ids[toIndex+1]);
+    const group = ids.filter(id=> id===draggedId || initOf(id)===newInit);
+    const tb = new Map(group.map((id,i)=>[id, group.length - i]));
+    const patch = o=> tb.has(o.id) ? {...o, initiative: o.id===draggedId ? newInit : o.initiative, tiebreak: tb.get(o.id)} : o;
+    const moved = order[from].name;
+    updateActive(enc=>withLog({...enc, party: enc.party.map(patch), round:{...enc.round, monsters: enc.round.monsters.map(patch)}}, 'Moved ' + moved + ' in the initiative order'));
+  }
+  function tickConditions(enc, id){
+    const ended = [];
+    const tick = o=>{
+      const d = o.conditionDurations;
+      if(!d || Object.keys(d).length === 0) return o;
+      const nd = {}; let conds = o.conditions || [];
+      Object.entries(d).forEach(([c, r])=>{
+        if(r - 1 <= 0){ ended.push(c + ' on ' + o.name); conds = conds.filter(x=>x!==c); } else nd[c] = r - 1;
+      });
+      return {...o, conditions:conds, conditionDurations:nd};
+    };
+    const party = enc.party.map(p=> p.id===id ? tick(p) : p);
+    const monsters = enc.round.monsters.map(m=> m.id===id ? tick(m) : m);
+    return {enc:{...enc, party, round:{...enc.round, monsters}}, ended};
+  }
+  function endCombat(opts){
+    recordUndo('ending combat');
+    updateActive(enc=>{
+      const wipe = o=> opts.clearConditions ? {...o, conditions:[], conditionDurations:{}} : o;
+      const monsters = enc.round.monsters.map(m=>{
+        let o = wipe(m);
+        if(opts.restoreMonsters) o = {...o, hpCurrent:o.hpMax, isDefeated:false, activePosture: m.activePosture==='B' ? 'A' : m.activePosture};
+        return o;
+      });
+      const party = enc.party.map(p=>{
+        let o = wipe(p);
+        if(opts.healPlayers) o = {...o, hpCurrent:o.hpMax};
+        return o;
+      });
+      return withLog({...enc, party, round:{...enc.round, monsters, roundNumber:1, activeCombatantId:null}}, 'Combat ended');
+    });
+    setMode('prep');
+    showNotice('Combat ended', true);
+  }
+  function startFresh(){
+    recordUndo('clearing the example encounter');
+    setStore(s=>({
+      ...s,
+      party: s.party.filter(p=>!/^pc-[1-4]$/.test(p.id)),
+      encounters: s.encounters.map(e=> e.id===SAMPLE_ID ? {...blankEncounter('First encounter'), id:e.id} : e),
+    }));
+    try{ localStorage.setItem('tactics-table-sample-dismissed','1'); }catch(e){}
+    setSampleDismissed(true);
+    showNotice('Cleared the example — add your own party and monsters', true);
+  }
+
   function startCombat(){
     updateActive(enc=>({...enc, round:{...enc.round, activeCombatantId: resolveActiveId(enc)}}));
     setMode('run');
   }
+
+  const shortcutRef = useRef({});
+  shortcutRef.current = { mode, nextTurn, prevTurn, undo, rows, focusId: selectedId ?? activeId, setSelectedId, blocked: helpOpen || importOpen || !!dataModalMode || endOpen };
+  useEffect(()=>{
+    function onKey(e){
+      const sc = shortcutRef.current;
+      if(sc.mode !== 'run' || sc.blocked) return;
+      const t = e.target, tag = t && t.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if(e.ctrlKey || e.metaKey){ if(e.key.toLowerCase() === 'z'){ e.preventDefault(); sc.undo(); } return; }
+      if(e.altKey) return;
+      const k = e.key.toLowerCase();
+      if(k === 'n' || k === 'arrowright'){ e.preventDefault(); sc.nextTurn(); }
+      else if(k === 'b' || k === 'arrowleft'){ e.preventDefault(); sc.prevTurn(); }
+      else if(k === 'u'){ sc.undo(); }
+      else if(k === 'd'){ const el = document.querySelector('.hp-actions .amount'); if(el){ e.preventDefault(); el.focus(); } }
+      else if(k === 'escape'){ sc.setSelectedId(null); }
+      else if(k === 'arrowdown' || k === 'arrowup'){
+        const ids = sc.rows.map(r=>r.id);
+        if(!ids.length) return;
+        const i = ids.indexOf(sc.focusId);
+        const ni = k === 'arrowdown' ? Math.min(ids.length-1, i+1) : Math.max(0, i-1);
+        e.preventDefault(); sc.setSelectedId(ids[ni]);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return ()=>document.removeEventListener('keydown', onKey);
+  }, []);
 
   const axesProps = {
     axes: encounter.axes, monsters: encounter.round.monsters, scene: encounter.scene, onSuggest: setAxes,
@@ -4425,7 +4746,10 @@ function App(){
       {icon:'reset', label:'Back to previous round', onClick:prevRound},
       {sep:true},
       {icon:'reset', label:'Reset to round 1', onClick:resetRound},
+      {sep:true},
+      {icon:'check', label:'End combat…', onClick:()=>setEndOpen(true)},
     ],
+    onUndo:undo, undoLabel: undoStack.length ? undoStack[undoStack.length-1].label : null,
   };
   const moreItems = [
     {icon: theme==='dark' ? 'sun' : 'moon', label: theme==='dark' ? 'Switch to light theme' : 'Switch to dark theme', onClick:toggleTheme},
@@ -4456,6 +4780,8 @@ function App(){
       </header>
 
       <HowToUseModal open={helpOpen} onClose={()=>setHelpOpen(false)}/>
+      {endOpen && <EndCombatModal onClose={()=>setEndOpen(false)} onConfirm={opts=>{ setEndOpen(false); endCombat(opts); }}/>}
+      <Toast notice={notice} canUndo={undoStack.length>0} onUndo={undo} onClose={()=>setNotice(null)}/>
       {importOpen && <ImportModal onClose={()=>setImportOpen(false)} onImport={importEncounter}/>}
       {dataModalMode && <DataModal mode={dataModalMode} exportText={dataModalMode==='export' ? buildExportPayload() : ''} onImport={applyImportedData} onClose={()=>setDataModalMode(null)}/>}
 
@@ -4466,11 +4792,13 @@ function App(){
             onAddMonster={addMonster} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}
             onSetScene={setScene} onGenerate={handleGenerateEncounter} axesProps={axesProps}
             onStart={startCombat} inProgress={inProgress} canStart={turnOrder.length>0} onOpenHelp={()=>setHelpOpen(true)}
-            initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}/>
+            initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
+            showSample={encounter.id===SAMPLE_ID && !sampleDismissed} onStartFresh={startFresh} onDismissSample={()=>{ try{ localStorage.setItem('tactics-table-sample-dismissed','1'); }catch(e){} setSampleDismissed(true); }}/>
         ) : (
           <RunView encounter={encounter} rows={rows} activeId={activeId} selectedId={selectedId} onSelect={setSelectedId}
             defeated={defeated} onRevive={reviveMonster} onSetInitiative={setInitiative} party={activeParty}
             onRollInitiative={()=>rollMonsterInitiative()} initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
+            groupRoll={groupRoll} onToggleGroupRoll={setGroupRoll} onMove={moveInOrder}
             handlers={runHandlers} turn={turn} onGoPrep={()=>setMode('prep')}/>
         )}
       </main>
