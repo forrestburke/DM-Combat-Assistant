@@ -2904,7 +2904,8 @@ const ENCOUNTERS_KEY = 'tactics-table-encounters-v1';
 const MODE_KEY = 'tactics-table-mode-v2';
 const SAMPLE_ID = 'sample-01';
 /** Append one line to an encounter's combat log (kept to the latest 300 entries). */
-function withLog(enc, text){ return {...enc, log:[...(enc.log || []), {r: enc.round.roundNumber, t: Date.now(), text}].slice(-300)}; }
+/** pub: what players may read for this entry — a string, true for "same as text", or omitted to keep it DM-only. */
+function withLog(enc, text, pub){ return {...enc, log:[...(enc.log || []), {r: enc.round.roundNumber, t: Date.now(), text, p: pub === true ? text : pub}].slice(-300)}; }
 /* ---------- shared party ----------
    Character sheet fields live once in store.party and apply to every encounter. Per-fight state
    (current HP, conditions, initiative roll, absent) lives in each encounter's pcState. */
@@ -3035,7 +3036,7 @@ function PlayerShareControl({cloud, enabled, onToggleEnabled, share, showHealth,
               <p style={{fontSize:14, color:'var(--parchment-dim)', margin:0}}>Sign in with Sync first — the player link is shared through that same account.</p>
             ) : (
               <React.Fragment>
-                <p style={{fontSize:14, color:'var(--parchment-dim)', margin:'0 0 12px'}}>Players open a live page showing the turn order, their characters' hit points, and each monster's name and conditions — no stats or tactics.</p>
+                <p style={{fontSize:14, color:'var(--parchment-dim)', margin:'0 0 12px'}}>Players open a live page showing the turn order, their characters' hit points, and each monster's name and conditions, plus a log of what's happened — no monster numbers, stats or tactics.</p>
                 <label style={{display:'flex', alignItems:'center', gap:10, fontSize:14.5, fontWeight:500, marginBottom: enabled?12:0, cursor:'pointer'}}>
                   <input type="checkbox" checked={enabled} onChange={e=>onToggleEnabled(e.target.checked)} style={{width:18, height:18}}/>
                   Player link is on
@@ -3101,6 +3102,23 @@ function MonsterNoteField({uid, monsterId, remoteValue}){
       {saveState==='saving' && <span className="player-view-note-status">Saving…</span>}
       {saveState==='error' && <span className="player-view-note-status error">Couldn't save — check your connection and try again.</span>}
     </div>
+  );
+}
+
+function PlayerLog({log}){
+  const entries = [...(log || [])].reverse();
+  if(entries.length === 0) return null;
+  return (
+    <section className="card" style={{marginTop:18}}>
+      <header className="card-head" style={{paddingBottom:0}}>
+        <div className="card-title"><Icon name="scroll" size={20} style={{color:'var(--arcane)'}}/><h2 style={{fontSize:17}}>What's happened</h2></div>
+      </header>
+      <div className="card-body">
+        <ul className="log-list" style={{marginTop:0}}>
+          {entries.map((e, i)=><li key={e.t + '-' + i}><span className="pill">R{e.r}</span><span>{e.text}</span></li>)}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -3179,6 +3197,7 @@ function PlayerView({uid}){
           })}
         </div>
       )}
+      <PlayerLog log={data.log}/>
     </div>
   );
 }
@@ -4214,7 +4233,7 @@ function HowToUseModal({open, onClose}){
     {
       title: 'Share with players',
       body: [
-        'Sign in with Sync, then use Share to get a link for your players. They see the turn order, their own characters\' hit points, and each monster\'s name and conditions — nothing else. Players can also type their own notes on each card, and you can choose to show how hurt each monster is (Healthy, Bloodied, Near death) without any numbers. The next combatant is marked "Up next".',
+        'Sign in with Sync, then use Share to get a link for your players. They see the turn order, their own characters\' hit points, and each monster\'s name and conditions — nothing else. Players can also type their own notes on each card, and you can choose to show how hurt each monster is (Healthy, Bloodied, Near death) without any numbers. The next combatant is marked "Up next", and a log shows what has happened (turns, conditions, defeats and players\' hit points) but never monster numbers.',
       ],
     },
     {
@@ -4585,6 +4604,7 @@ function App(){
         return { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: m?.conditions || [], health: m ? healthOf(m) : undefined };
       }),
       party: party.filter(p=>!p.dead).map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[], tempHp:p.tempHp||0, status: p.hpCurrent<=0 ? (p.stable ? 'stable' : 'down') : undefined })),
+      log: (encounter.log || []).filter(e=>e.p).slice(-60).map(e=>({r:e.r, t:e.t, text:e.p})),
     };
   }, [encounter, shareHealth]);
   const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
@@ -4608,13 +4628,13 @@ function App(){
     const m = encounter.round.monsters.find(x=>x.id===id);
     if(!m) return;
     recordUndo((m.isDefeated ? 'bringing back ' : 'defeating ') + m.name);
-    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters:enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:!mm.isDefeated} : mm)}}, m.name + (m.isDefeated ? ' brought back' : ' defeated')));
+    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters:enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:!mm.isDefeated} : mm)}}, m.name + (m.isDefeated ? ' brought back' : ' defeated'), m.name + (m.isDefeated ? ' is back in the fight' : ' was defeated')));
   }
   function reviveMonster(id){
     const m = encounter.round.monsters.find(x=>x.id===id);
     if(!m) return;
     recordUndo('bringing back ' + m.name);
-    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters: enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:false, hpCurrent: mm.hpCurrent>0 ? mm.hpCurrent : 1} : mm)}}, m.name + ' brought back'));
+    updateActive(enc=>withLog({...enc, round:{...enc.round, monsters: enc.round.monsters.map(mm=> mm.id===id ? {...mm, isDefeated:false, hpCurrent: mm.hpCurrent>0 ? mm.hpCurrent : 1} : mm)}}, m.name + ' brought back', m.name + ' is back in the fight'));
   }
   function toggleCondition(kind, id, condition, rounds){
     const src = kind === 'pc' ? encounter.party.find(p=>p.id===id) : encounter.round.monsters.find(m=>m.id===id);
@@ -4632,7 +4652,7 @@ function App(){
       const next = kind === 'pc'
         ? {...enc, party: enc.party.map(p=> p.id===id ? apply(p) : p)}
         : {...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? apply(m) : m)}};
-      return withLog(next, text);
+      return withLog(next, text, true);
     });
   }
   function nextTurn(){
@@ -4650,8 +4670,8 @@ function App(){
       const next = order[nextIdx];
       const ticked = tickConditions(enc, curId);
       let out = {...ticked.enc, round:{...ticked.enc.round, activeCombatantId: next.id, roundNumber: wrapped ? enc.round.roundNumber + 1 : enc.round.roundNumber}};
-      ticked.ended.forEach(t=>{ out = withLog(out, 'Ended: ' + t); });
-      return withLog(out, (wrapped ? 'Round ' + out.round.roundNumber + ' begins. ' : '') + next.name + "'s turn");
+      ticked.ended.forEach(t=>{ out = withLog(out, 'Ended: ' + t, true); });
+      return withLog(out, (wrapped ? 'Round ' + out.round.roundNumber + ' begins. ' : '') + next.name + "'s turn", true);
     });
   }
   function prevTurn(){
@@ -4664,28 +4684,28 @@ function App(){
       const atStart = curIdx === -1 || curIdx === 0;
       const prevIdx = atStart ? order.length - 1 : curIdx - 1;
       const prev = order[prevIdx];
-      return withLog({...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}}, 'Back to ' + prev.name + "'s turn");
+      return withLog({...enc, round:{...enc.round, activeCombatantId: prev.id, roundNumber: atStart && enc.round.roundNumber > 1 ? enc.round.roundNumber - 1 : enc.round.roundNumber}}, 'Back to ' + prev.name + "'s turn", true);
     });
   }
   function nextRound(){
     recordUndo('jump to next round');
     updateActive(enc=>{
       const order = getTurnOrder(enc);
-      return withLog({...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeCombatantId: order[0]?.id ?? null}}, 'Jumped to round ' + (enc.round.roundNumber+1));
+      return withLog({...enc, round:{...enc.round, roundNumber:enc.round.roundNumber+1, activeCombatantId: order[0]?.id ?? null}}, 'Jumped to round ' + (enc.round.roundNumber+1), true);
     });
   }
   function prevRound(){
     recordUndo('back to previous round');
     updateActive(enc=>{
       const order = getTurnOrder(enc);
-      return withLog({...enc, round:{...enc.round, roundNumber: Math.max(1, enc.round.roundNumber-1), activeCombatantId: order[0]?.id ?? null}}, 'Back to round ' + Math.max(1, enc.round.roundNumber-1));
+      return withLog({...enc, round:{...enc.round, roundNumber: Math.max(1, enc.round.roundNumber-1), activeCombatantId: order[0]?.id ?? null}}, 'Back to round ' + Math.max(1, enc.round.roundNumber-1), true);
     });
   }
   function resetRound(){
     recordUndo('reset to round 1');
     updateActive(enc=>{
       const order = getTurnOrder(enc);
-      return withLog({...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}}, 'Reset to round 1');
+      return withLog({...enc, round:{...enc.round, roundNumber:1, activeCombatantId: order[0]?.id ?? null}}, 'Reset to round 1', true);
     });
   }
   /** Roll d20 + DEX modifier for every monster/NPC (or just one). With "group same types" on, e.g. every Goblin shares one roll. */
@@ -4716,7 +4736,7 @@ function App(){
       text = rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · ');
     }
     setInitiativeNote('Rolled — ' + text);
-    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text));
+    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text, 'Initiative was rolled for the monsters'));
   }
   /** Roll d20 + initiative modifier for the players (or one of them) — handy when someone isn't rolling their own. */
   function rollPlayerInitiative(onlyId){
@@ -4731,7 +4751,7 @@ function App(){
     updateActive(enc=>({...enc, party: enc.party.map(p=> byId.has(p.id) ? {...p, initiative:byId.get(p.id), tiebreak:0} : p)}));
     const text = rolled.map(r=>r.name + ' ' + r.total + ' (' + r.die + (r.mod>=0?'+':'−') + Math.abs(r.mod) + ')').join(' · ');
     setInitiativeNote('Rolled — ' + text);
-    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text));
+    updateActive(enc=>withLog(enc, 'Rolled initiative — ' + text, 'Initiative was rolled for the players'));
   }
   /** Drag (or Alt+arrow) a combatant to a new spot: it ties with its new neighbour and the tie is ordered explicitly. */
   function moveInOrder(draggedId, toIndex){
@@ -4747,7 +4767,7 @@ function App(){
     const tb = new Map(group.map((id,i)=>[id, group.length - i]));
     const patch = o=> tb.has(o.id) ? {...o, initiative: o.id===draggedId ? newInit : o.initiative, tiebreak: tb.get(o.id)} : o;
     const moved = order[from].name;
-    updateActive(enc=>withLog({...enc, party: enc.party.map(patch), round:{...enc.round, monsters: enc.round.monsters.map(patch)}}, 'Moved ' + moved + ' in the initiative order'));
+    updateActive(enc=>withLog({...enc, party: enc.party.map(patch), round:{...enc.round, monsters: enc.round.monsters.map(patch)}}, 'Moved ' + moved + ' in the initiative order', true));
   }
   function tickConditions(enc, id){
     const ended = [];
@@ -4778,7 +4798,7 @@ function App(){
         if(opts.healPlayers) o = {...o, hpCurrent:o.hpMax};
         return o;
       });
-      return withLog({...enc, party, round:{...enc.round, monsters, roundNumber:1, activeCombatantId:null}}, 'Combat ended');
+      return withLog({...enc, party, round:{...enc.round, monsters, roundNumber:1, activeCombatantId:null}}, 'Combat ended', true);
     });
     setMode('prep');
     showNotice('Combat ended', true);
@@ -4808,7 +4828,7 @@ function App(){
     const isDamage = !!(meta && meta.damage) || delta < 0;
     recordUndo((isDamage ? 'damage to ' : 'healing for ') + m.name);
     updateActive(enc=>{
-      let text = '';
+      let text = '', pub;
       const monsters = enc.round.monsters.map(mm=>{
         if(mm.id!==id) return mm;
         let next;
@@ -4819,14 +4839,16 @@ function App(){
           const hpCurrent = Math.max(0, mm.hpCurrent - dmg);
           next = {...mm, hpCurrent, tempHp: temp - absorbed, isDefeated: hpCurrent<=0};
           text = damageText(mm.name, Math.max(0, -delta), meta, absorbed, mm.hpCurrent, hpCurrent) + (hpCurrent<=0 && mm.hpCurrent>0 ? ' — defeated' : '');
+          pub = Math.max(0, -delta) > 0 ? mm.name + (hpCurrent<=0 && mm.hpCurrent>0 ? ' was defeated' : ' took damage') : undefined;
         } else {
           const hpCurrent = Math.min(mm.hpMax, mm.hpCurrent + delta);
           next = {...mm, hpCurrent, isDefeated: hpCurrent<=0};
           text = mm.name + ' healed ' + delta + ' (' + mm.hpCurrent + '→' + hpCurrent + ')';
+          pub = mm.name + ' recovered some hit points';
         }
         return {...next, activePosture: computeAutoPosture(next)};
       });
-      return withLog({...enc, round:{...enc.round, monsters}}, text);
+      return withLog({...enc, round:{...enc.round, monsters}}, text, pub);
     });
   }
   function updatePartyHp(id, delta, meta){
@@ -4860,7 +4882,7 @@ function App(){
         text = damageText(p.name, total, meta, absorbed, p.hpCurrent, hpCurrent) + tail;
         return next;
       });
-      return withLog({...enc, party}, text);
+      return withLog({...enc, party}, text, true);
     });
   }
   function setTempHp(kind, id, value){
@@ -4871,7 +4893,7 @@ function App(){
     const text = value > 0 ? src.name + ' gains ' + value + ' temp HP' : src.name + "'s temp HP cleared";
     updateActive(enc=>withLog(kind === 'pc'
       ? {...enc, party: enc.party.map(p=> p.id===id ? set(p) : p)}
-      : {...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? set(m) : m)}}, text));
+      : {...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? set(m) : m)}}, text, kind === 'pc' ? text : undefined));
   }
   function setDeathSaves(id, saves){
     const pc = encounter.party.find(p=>p.id===id);
@@ -4885,7 +4907,7 @@ function App(){
         if(saves.s >= 3){ text = pc.name + ' is stable'; return {...p, deathSaves:{s:0, f:0}, stable:true}; }
         return {...p, deathSaves:saves};
       });
-      return withLog({...enc, party}, text);
+      return withLog({...enc, party}, text, true);
     });
   }
   function rollDeathSave(id){
@@ -4903,20 +4925,20 @@ function App(){
       else if(s >= 3){ stable = true; s = 0; f = 0; text += ' — now stable'; }
     }
     recordUndo('death save for ' + pc.name);
-    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, hpCurrent:hp, deathSaves:{s, f}, stable, dead} : p)}, pc.name + ' ' + text));
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, hpCurrent:hp, deathSaves:{s, f}, stable, dead} : p)}, pc.name + ' ' + text, true));
     showNotice(pc.name + ' ' + text);
   }
   function stabilizePc(id){
     const pc = encounter.party.find(p=>p.id===id);
     if(!pc) return;
     recordUndo('stabilizing ' + pc.name);
-    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, stable:true, deathSaves:{s:0, f:0}} : p)}, pc.name + ' is stabilized'));
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, stable:true, deathSaves:{s:0, f:0}} : p)}, pc.name + ' is stabilized', true));
   }
   function revivePc(id){
     const pc = encounter.party.find(p=>p.id===id);
     if(!pc) return;
     recordUndo('bringing back ' + pc.name);
-    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, dead:false, stable:false, deathSaves:{s:0, f:0}, hpCurrent: Math.max(1, p.hpCurrent)} : p)}, pc.name + ' brought back'));
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, dead:false, stable:false, deathSaves:{s:0, f:0}, hpCurrent: Math.max(1, p.hpCurrent)} : p)}, pc.name + ' brought back', true));
   }
 
   function startCombat(){
