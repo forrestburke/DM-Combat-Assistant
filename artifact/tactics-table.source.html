@@ -3500,7 +3500,7 @@ function MonsterDetails({monster, axes, traitTriggers, party, onPosture, onSetSt
 }
 
 /* ---------- PREP mode ---------- */
-function PartyRosterRow({p, onChange, onRemove, onToggleActive, onRollInitiative}){
+function PartyRosterRow({p, onChange, onRemove, onToggleActive}){
   const absent = p.active === false;
   function setHpMax(v){
     const n = Math.max(1, Number(v)||1);
@@ -3517,11 +3517,10 @@ function PartyRosterRow({p, onChange, onRemove, onToggleActive, onRollInitiative
           <label className="stat-field" title="Character level — used for the encounter difficulty rating"><span>Lvl</span><input type="number" min="1" max="20" value={p.level ?? 1} onChange={e=>onChange(p.id, {level: Math.max(1, Math.min(20, Number(e.target.value)||1))})}/></label>
           <label className="stat-field" title="Armor Class"><span>AC</span><input type="number" value={p.ac} onChange={e=>onChange(p.id, {ac: Number(e.target.value)||0})}/></label>
           <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={p.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>
-          <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={p.initiative ?? 10} onChange={e=>onChange(p.id, {initiative: Number(e.target.value)||0})}/></label>
+          <label className="stat-field" title="Initiative"><span>Init</span><CommitNumber value={p.initiative ?? 10} onCommit={n=>onChange(p.id, {initiative:n})} aria-label={`${p.name} initiative`}/></label>
         </div>
         <div className="row-actions">
           {p.referenceLink && <a className="iconbtn" href={p.referenceLink} target="_blank" rel="noopener noreferrer" title="Open character sheet" aria-label={`Open ${p.name}'s character sheet`}><Icon name="link" size={16}/></a>}
-          <button className="iconbtn" onClick={()=>onRollInitiative(p.id)} aria-label={`Roll initiative for ${p.name}`} title="Roll initiative (d20 + modifier)"><Icon name="dice" size={17}/></button>
           <button className={"iconbtn"+(absent?" on":"")} onClick={()=>onToggleActive(p.id)} aria-label={absent ? `Mark ${p.name} present` : `Mark ${p.name} absent`} title={absent ? 'Absent this session — click to bring them back into combat' : 'Player missing this session? Click to leave them out of combat without deleting their sheet'}>
             <Icon name={absent ? 'userplus' : 'userminus'} size={17}/>
           </button>
@@ -3640,24 +3639,19 @@ function SheetImportPanel({party, onAdd, onUpdate, onClose}){
   );
 }
 
-function PartyCard({party, onChange, onAdd, onRemove, onToggleActive, onRollInitiative}){
+function PartyCard({party, onChange, onAdd, onRemove, onToggleActive}){
   const [showAdd, setShowAdd] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const present = party.filter(p=>p.active !== false).length;
   return (
     <Card id="prep-party" icon="party" iconColor="var(--arcane)" title="Your party"
       subtitle="Shared by every encounter — change a character once and it updates everywhere."
-      action={
-        <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-          <span className="pill pill-arcane">{present} in combat</span>
-          {party.length>0 && <button className="btn btn-sm" onClick={()=>onRollInitiative()} title="Roll d20 + modifier for every player — only needed if they aren't rolling their own"><Icon name="dice" size={15}/>Roll for players</button>}
-        </div>
-      }>
+      action={<span className="pill pill-arcane">{present} in combat</span>}>
       {party.length === 0 ? (
         <div className="empty" style={{padding:'18px 0'}}><Icon name="party" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No players yet</h3><p>Add each player character so they appear in the initiative order.</p></div>
       ) : (
         <div className="roster">
-          {party.map(p=><PartyRosterRow key={p.id} p={p} onChange={onChange} onRemove={onRemove} onToggleActive={onToggleActive} onRollInitiative={onRollInitiative}/>)}
+          {party.map(p=><PartyRosterRow key={p.id} p={p} onChange={onChange} onRemove={onRemove} onToggleActive={onToggleActive}/>)}
         </div>
       )}
       <div style={{marginTop:14}}>
@@ -3679,7 +3673,7 @@ function PartyCard({party, onChange, onAdd, onRemove, onToggleActive, onRollInit
   );
 }
 
-function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, onRollInitiative, axes, traitTriggers, party, onPosture, onDamageParty}){
+function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, axes, traitTriggers, party, onPosture, onDamageParty}){
   const [open, setOpen] = useState(false);
   const isAlly = m.team === 'ally';
   function setHpMax(v){
@@ -3702,14 +3696,13 @@ function MonsterRosterRow({m, onSetStats, onToggleTeam, onRemove, onRevive, onRo
           {m.isMob
             ? <label className="stat-field" title="How many creatures are in this mob"><span>Count</span><input type="number" value={m.mobCount ?? 1} onChange={e=>setMobCount(e.target.value)}/></label>
             : <label className="stat-field" title="Maximum hit points"><span>HP</span><input type="number" value={m.hpMax} onChange={e=>setHpMax(e.target.value)}/></label>}
-          <label className="stat-field" title="Initiative"><span>Init</span><input type="number" value={m.initiative ?? 10} onChange={e=>onSetStats(m.id, {initiative: Number(e.target.value)||0})}/></label>
+          <label className="stat-field" title="Initiative"><span>Init</span><CommitNumber value={m.initiative ?? 10} onCommit={n=>onSetStats(m.id, {initiative:n})} aria-label={`${m.name} initiative`}/></label>
         </div>
         <div className="row-actions">
           <div className="team-toggle" role="group" aria-label={`${m.name} team`}>
             <button className={!isAlly?'on-enemy':''} onClick={()=>isAlly && onToggleTeam(m.id)} aria-pressed={!isAlly}>Enemy</button>
             <button className={isAlly?'on-ally':''} onClick={()=>!isAlly && onToggleTeam(m.id)} aria-pressed={isAlly}>Ally</button>
           </div>
-          <button className="iconbtn" onClick={()=>onRollInitiative(m.id)} aria-label={`Roll initiative for ${m.name}`} title="Roll initiative (d20 + Dexterity modifier)"><Icon name="dice" size={17}/></button>
           <button className="iconbtn danger" onClick={()=>onRemove(m.id)} aria-label={`Remove ${m.name}`} title="Remove from the encounter"><Icon name="trash" size={17}/></button>
         </div>
       </div>
@@ -3758,6 +3751,26 @@ function SceneNotes({scene, onChange, onGenerate}){
   );
 }
 
+/** A whole-number box that only commits on blur/Enter. It never re-sorts or reformats while you type, and it can hold "-" or be empty mid-edit. */
+function CommitNumber({value, onCommit, onEditing, ...rest}){
+  const [text, setText] = useState(String(value ?? ''));
+  const editing = useRef(false);
+  useEffect(()=>{ if(!editing.current) setText(String(value ?? '')); }, [value]);
+  function commit(){
+    const t = text.trim();
+    if(t === '' || t === '-' || Number.isNaN(Number(t))){ setText(String(value ?? '')); return; }
+    const n = Math.round(Number(t));
+    if(n !== value) onCommit(n);
+    setText(String(n));
+  }
+  return (
+    <input {...rest} type="text" inputMode="numeric" value={text}
+      onFocus={e=>{ editing.current = true; if(onEditing) onEditing(true); if(rest.onFocus) rest.onFocus(e); }}
+      onChange={e=>{ if(/^-?\d{0,4}$/.test(e.target.value)) setText(e.target.value); }}
+      onBlur={()=>{ editing.current = false; commit(); if(onEditing) onEditing(false); }}/>
+  );
+}
+
 function InitiativeNote({text, onDismiss}){
   if(!text) return null;
   return (
@@ -3768,7 +3781,7 @@ function InitiativeNote({text, onDismiss}){
   );
 }
 
-function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp, initiativeNote, onDismissNote, showSample, onStartFresh, onDismissSample}){
+function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandlers, onAddMonster, onSaveCustom, onRemoveCustom, onSetScene, onGenerate, axesProps, onStart, inProgress, canStart, onOpenHelp, showSample, onStartFresh, onDismissSample}){
   const monsters = encounter.round.monsters;
   const presentParty = encounter.party.filter(p=>p.active !== false);
   const sceneFilled = Object.values(encounter.scene||{}).some(v=>String(v||'').trim());
@@ -3812,16 +3825,10 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
       </section>
 
       <div className="prep-grid">
-        <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive} onRollInitiative={partyHandlers.onRollInitiative}/>
+        <PartyCard party={encounter.party} onChange={partyHandlers.onChange} onAdd={partyHandlers.onAdd} onRemove={partyHandlers.onRemove} onToggleActive={partyHandlers.onToggleActive} />
         <Card id="prep-monsters" icon="swords" iconColor="var(--blood)" title="Monsters"
           subtitle="Search the 2024 SRD, or paste your own stat block."
-          action={monsters.length>0 && (
-            <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
-              <span className="pill pill-blood">{monsters.length} in this fight</span>
-              <button className="btn btn-sm" onClick={()=>monsterHandlers.onRollInitiative()} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={15}/>Roll initiative</button>
-            </div>
-          )}>
-          <InitiativeNote text={initiativeNote} onDismiss={onDismissNote}/>
+          action={monsters.length>0 && <span className="pill pill-blood">{monsters.length} in this fight</span>}>
           <AddMonsterForm onAdd={onAddMonster} customMonsters={customMonsters} onSaveCustom={onSaveCustom} onRemoveCustom={onRemoveCustom}/>
           {monsters.length === 0 ? (
             <div className="empty" style={{padding:'22px 0 6px'}}><Icon name="swords" size={30} style={{color:'var(--parchment-faint)'}}/><h3>No monsters yet</h3><p>Type a name above to add one. Try "goblin" or "owlbear".</p></div>
@@ -3829,7 +3836,7 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
             <div className="roster" style={{marginTop:18}}>
               {monsters.map(m=>(
                 <MonsterRosterRow key={m.id} m={m} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={presentParty}
-                  onSetStats={monsterHandlers.onSetStats} onToggleTeam={monsterHandlers.onToggleTeam} onRemove={monsterHandlers.onRemove} onRevive={monsterHandlers.onRevive} onRollInitiative={monsterHandlers.onRollInitiative}
+                  onSetStats={monsterHandlers.onSetStats} onToggleTeam={monsterHandlers.onToggleTeam} onRemove={monsterHandlers.onRemove} onRevive={monsterHandlers.onRevive}
                   onPosture={monsterHandlers.onPosture} onDamageParty={monsterHandlers.onDamageParty}/>
               ))}
             </div>
@@ -3941,7 +3948,7 @@ function HpControls({current, max, tempHp, onDelta, onSetExact, onSetTemp, modif
   );
 }
 
-function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetTemp, onSetStats, onToggleDefeated, onToggleTeam, onToggleCondition, onPosture, onDamageParty}){
+function MonsterFocus({m, isActive, axes, traitTriggers, party, onRollInitiative, onDelta, onSetTemp, onSetStats, onToggleDefeated, onToggleTeam, onToggleCondition, onPosture, onDamageParty}){
   const isAlly = m.team === 'ally';
   const color = kindColor({kind:'monster', team:m.team});
   return (
@@ -3959,6 +3966,7 @@ function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetTe
             <a className="lookup-btn" href={`https://www.dndbeyond.com/monsters?filter-search=${encodeURIComponent(m.name)}`} target="_blank" rel="noopener noreferrer" title={`Look up "${m.name}" on D&D Beyond`}>
               <Icon name="link" size={14}/>Look up stat block
             </a>
+            <button className="link-btn" onClick={()=>onRollInitiative(m.id)} title="Roll d20 + Dexterity modifier for this creature">Roll initiative</button>
           </p>
         </div>
         <div className="focus-stats">
@@ -4000,7 +4008,7 @@ function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetTe
   );
 }
 
-function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition, onSetTemp, onSetDeathSaves, onRollDeathSave, onStabilize}){
+function PartyFocus({p, isActive, onRollInitiative, onDelta, onSetStat, onToggleCondition, onSetTemp, onSetDeathSaves, onRollDeathSave, onStabilize}){
   const color = 'var(--arcane)';
   const saves = p.deathSaves || {s:0, f:0};
   const pips = (kind, count)=>[0,1,2].map(i=>(
@@ -4019,6 +4027,7 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition, onSetTe
           <p className="focus-sub">
             <span>{[p.species, p.role].filter(Boolean).join(' ')}{p.level ? ` · Level ${p.level}` : ''}</span>
             {p.referenceLink && <a className="lookup-btn" href={p.referenceLink} target="_blank" rel="noopener noreferrer"><Icon name="link" size={14}/>Character sheet</a>}
+            <button className="link-btn" onClick={()=>onRollInitiative(p.id)} title="Roll d20 + initiative modifier for this player">Roll initiative</button>
           </p>
         </div>
         <div className="focus-stats">
@@ -4070,9 +4079,10 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition, onSetTe
   );
 }
 
-function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive, onRollInitiative, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
+function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defeated, onRevive, onRollInitiative, onRollPlayers, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
   const [dragId, setDragId] = useState(null);
   const [overId, setOverId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const refocus = useRef(null);
   useEffect(()=>{
     if(refocus.current){ document.querySelector('[data-rid="' + refocus.current + '"]')?.focus(); refocus.current = null; }
@@ -4081,7 +4091,10 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
     <aside className="card rail" aria-label="Initiative order">
       <div className="rail-head">
         <h2>Initiative order</h2>
-        <button className="btn btn-sm" onClick={onRollInitiative} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={14}/>Roll monsters</button>
+        <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+          <button className="btn btn-sm" onClick={onRollInitiative} title="Roll d20 + Dexterity modifier for every monster and NPC"><Icon name="dice" size={14}/>Roll monsters</button>
+          <button className="btn btn-sm" onClick={onRollPlayers} title="Roll d20 + modifier for every player — only needed if they aren't rolling their own"><Icon name="dice" size={14}/>Roll players</button>
+        </div>
       </div>
       <label className="rail-option" title="When on, every creature of the same kind (Goblin 1, Goblin 2…) shares one initiative roll">
         <input type="checkbox" checked={groupRoll} onChange={e=>onToggleGroupRoll(e.target.checked)}/>Same kind shares one roll
@@ -4096,7 +4109,7 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
             className={"rail-row"+(active?" active":"")+(r.id===selectedId?" selected":"")+(dragId===r.id?" dragging":"")+(dragId && overId===r.id && dragId!==r.id?" drag-over":"")}
             style={{'--c':color}}
             role="button" tabIndex={0} aria-current={active ? 'true' : undefined}
-            draggable
+            draggable={editingId !== r.id}
             title="Click to inspect. Drag to reorder, or focus and press Alt+↑ / Alt+↓."
             onClick={()=>onSelect(r.id)}
             onDragStart={e=>{ setDragId(r.id); e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', r.id); }catch(_){} }}
@@ -4109,7 +4122,7 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
               else if(e.altKey && e.key === 'ArrowDown'){ e.preventDefault(); refocus.current = r.id; onMove(r.id, i+1); }
               else if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onSelect(r.id); }
             }}>
-            <input className="rail-init" type="number" value={r.initiative} onClick={e=>e.stopPropagation()} onChange={e=>onSetInitiative(r.kind, r.id, e.target.value)} aria-label={`${r.name} initiative`} title="Initiative — click to change"/>
+            <CommitNumber className="rail-init" value={r.initiative} onCommit={n=>onSetInitiative(r.kind, r.id, n)} onEditing={on=>setEditingId(on ? r.id : null)} onClick={e=>e.stopPropagation()} aria-label={`${r.name} initiative`} title="Initiative — click to type a new number, then press Enter"/>
             <div style={{minWidth:0}}>
               <div className="rail-name">
                 <span className="kind-dot" style={{'--c':color}} title={kindLabel(r)}/>
@@ -4206,7 +4219,7 @@ function MapIdeasStrip({scene}){
   );
 }
 
-function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
+function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onRevive, onSetInitiative, party, handlers, turn, onGoPrep, onRollInitiative, onRollPlayers, initiativeNote, onDismissNote, groupRoll, onToggleGroupRoll, onMove}){
   const focusId = (selectedId && rows.some(r=>r.id===selectedId)) ? selectedId : activeId;
   const focusRow = rows.find(r=>r.id===focusId);
   const active = rows.find(r=>r.id===activeId);
@@ -4228,12 +4241,12 @@ function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onR
         difficulty={<DifficultyBadge party={encounter.party} monsters={encounter.round.monsters}/>}/>
       <div className="top-drops" style={{marginBottom:18}}><MapIdeasStrip scene={encounter.scene}/><PlanStrip axes={encounter.axes}/></div>
       <div className="run">
-        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote} groupRoll={groupRoll} onToggleGroupRoll={onToggleGroupRoll} onMove={onMove}/>
+        <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} onRollPlayers={onRollPlayers} initiativeNote={initiativeNote} onDismissNote={onDismissNote} groupRoll={groupRoll} onToggleGroupRoll={onToggleGroupRoll} onMove={onMove}/>
         <div>
-          {monster && <MonsterFocus key={monster.id} m={monster} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
+          {monster && <MonsterFocus key={monster.id} m={monster} onRollInitiative={handlers.onRollMonsterOne} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
             onDelta={handlers.onMonsterDelta} onSetTemp={handlers.onSetTemp} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
             onToggleCondition={(id,c,r)=>handlers.onToggleCondition('monster', id, c, r)} onPosture={handlers.onPosture} onDamageParty={handlers.onPartyDelta}/>}
-          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c,r)=>handlers.onToggleCondition('pc', id, c, r)}
+          {pc && <PartyFocus key={pc.id} p={pc} onRollInitiative={handlers.onRollPlayerOne} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c,r)=>handlers.onToggleCondition('pc', id, c, r)}
             onSetTemp={handlers.onSetTemp} onSetDeathSaves={handlers.onSetDeathSaves} onRollDeathSave={handlers.onRollDeathSave} onStabilize={handlers.onStabilize}/>}
           <div style={{marginTop:18}}><CombatLog log={encounter.log}/></div>
         </div>
@@ -5020,11 +5033,12 @@ function App(){
     locked: encounter.axesLocked || {win:false, opt:false, hazard:false}, onToggleLock: toggleAxisLock,
     customHazards, onApplyHazard: applyHazard, onSaveCustomHazard: addCustomHazard, onRemoveCustomHazard: removeCustomHazard,
   };
-  const monsterHandlers = { onRollInitiative:rollMonsterInitiative, onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
-  const partyHandlers = { onRollInitiative:rollPlayerInitiative, onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
+  const monsterHandlers = { onSetStats:setMonsterStats, onToggleTeam:toggleMonsterTeam, onRemove:removeMonster, onRevive:reviveMonster, onPosture:setMonsterPosture, onDamageParty:updatePartyHp };
+  const partyHandlers = { onChange:setPartyStat, onAdd:addPartyMember, onRemove:removePartyMember, onToggleActive:togglePartyActive };
   const runHandlers = {
     onMonsterDelta:updateMonsterHp, onPartyDelta:updatePartyHp, onSetStats:setMonsterStats, onSetPartyStat:setPartyStat,
     onToggleDefeated:toggleDefeated, onToggleTeam:toggleMonsterTeam, onToggleCondition:toggleCondition, onPosture:setMonsterPosture,
+    onRollMonsterOne:rollMonsterInitiative, onRollPlayerOne:rollPlayerInitiative,
     onSetTemp:setTempHp, onSetDeathSaves:setDeathSaves, onRollDeathSave:rollDeathSave, onStabilize:stabilizePc,
   };
   const turn = {
@@ -5080,12 +5094,11 @@ function App(){
             onAddMonster={addMonster} onSaveCustom={addCustomMonster} onRemoveCustom={removeCustomMonster}
             onSetScene={setScene} onGenerate={handleGenerateEncounter} axesProps={axesProps}
             onStart={startCombat} inProgress={inProgress} canStart={turnOrder.length>0} onOpenHelp={()=>setHelpOpen(true)}
-            initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
             showSample={encounter.id===SAMPLE_ID && !sampleDismissed} onStartFresh={startFresh} onDismissSample={()=>{ try{ localStorage.setItem('tactics-table-sample-dismissed','1'); }catch(e){} setSampleDismissed(true); }}/>
         ) : (
           <RunView encounter={encounter} rows={rows} activeId={activeId} selectedId={selectedId} onSelect={setSelectedId}
             defeated={defeated} onRevive={d=> d.kind==='pc' ? revivePc(d.id) : reviveMonster(d.id)} onSetInitiative={setInitiative} party={activeParty}
-            onRollInitiative={()=>rollMonsterInitiative()} initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
+            onRollInitiative={()=>rollMonsterInitiative()} onRollPlayers={()=>rollPlayerInitiative()} initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
             groupRoll={groupRoll} onToggleGroupRoll={setGroupRoll} onMove={moveInOrder}
             handlers={runHandlers} turn={turn} onGoPrep={()=>setMode('prep')}/>
         )}
