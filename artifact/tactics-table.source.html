@@ -75,6 +75,17 @@
   .sample-banner{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 18px; background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 35%, transparent); }
   .check-row{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:15px; cursor:pointer; }
   .check-row input{ width:18px; height:18px; flex-shrink:0; }
+  .hp-actions .type-select{ width:170px; }
+  .dmg-preview{ margin:0; padding:8px 12px; border-radius:8px; background:var(--amber-soft); border:1px solid color-mix(in srgb, var(--amber) 35%, transparent); color:var(--amber-text); font-size:14px; }
+  .inline-check{ display:inline-flex; align-items:center; gap:6px; margin-left:6px; font-size:13px; cursor:pointer; }
+  .temp-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px; }
+  .temp-row .text-input{ width:80px; text-align:center; }
+  .death-pips{ display:flex; gap:26px; flex-wrap:wrap; }
+  .pip-group{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--parchment-dim); }
+  .pip{ width:26px; height:26px; border-radius:50%; border:2px solid var(--line); background:transparent; padding:0; }
+  .pip.ok.on{ background:var(--moss); border-color:var(--moss); }
+  .pip.bad.on{ background:var(--blood); border-color:var(--blood); }
+  .pip:hover{ border-color:var(--parchment-faint); }
   @media (max-width:760px){
     .topbar-inner{ flex-wrap:wrap; gap:10px; padding:10px 14px; }
     .brand{ flex:1; }
@@ -2062,7 +2073,7 @@ function computeAutoPosture(m){ if(m.hpMax<=0) return m.activePosture; const pct
 
 /** Combined PC + monster turn order, sorted by initiative (highest first). Defeated monsters are dropped; PCs always stay in the order. */
 function getTurnOrder(encounter, includeDefeated=false){
-  const pcs = encounter.party.filter(p=>p.active !== false).map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, tiebreak: p.tiebreak ?? 0, kind:'pc' }));
+  const pcs = encounter.party.filter(p=>p.active !== false && (includeDefeated || !p.dead)).map(p=>({ id:p.id, name:p.name, initiative: p.initiative ?? 10, tiebreak: p.tiebreak ?? 0, kind:'pc' }));
   const mons = encounter.round.monsters.filter(m=>includeDefeated || !m.isDefeated).map(m=>({ id:m.id, name:m.name, initiative: m.initiative ?? 10, tiebreak: m.tiebreak ?? 0, kind:'monster', team: m.team || 'enemy' }));
   return [...pcs, ...mons].sort((a,b)=> (b.initiative - a.initiative) || (b.tiebreak - a.tiebreak));
 }
@@ -2898,7 +2909,7 @@ function withLog(enc, text){ return {...enc, log:[...(enc.log || []), {r: enc.ro
    Character sheet fields live once in store.party and apply to every encounter. Per-fight state
    (current HP, conditions, initiative roll, absent) lives in each encounter's pcState. */
 const PC_SHARED_FIELDS = ['id','name','role','species','level','ac','hpMax','initiativeBonus','abilityScores','saves','referenceLink','tacticalPriority'];
-const PC_STATE_FIELDS = ['hpCurrent','conditions','conditionDurations','initiative','tiebreak','active'];
+const PC_STATE_FIELDS = ['hpCurrent','tempHp','deathSaves','stable','dead','conditions','conditionDurations','initiative','tiebreak','active'];
 function pickFields(obj, keys){ const o = {}; keys.forEach(k=>{ if(obj[k] !== undefined) o[k] = obj[k]; }); return o; }
 function composeParty(roster, pcState){
   return (roster||[]).map(p=>{
@@ -3150,6 +3161,13 @@ function PlayerView({uid}){
                   {pc && <span className="ac-badge" title="Armor Class"><Icon name="shield" size={13}/>{pc.ac}</span>}
                 </div>
                 {pc && <HpBar current={pc.hpCurrent} max={pc.hpMax} height={8}/>}
+                {pc && (pc.tempHp > 0 || pc.status) && (
+                  <div className="player-view-conditions">
+                    {pc.tempHp > 0 && <span className="pill pill-arcane">+{pc.tempHp} temp HP</span>}
+                    {pc.status === 'down' && <span className="pill pill-blood">Down</span>}
+                    {pc.status === 'stable' && <span className="pill pill-moss">Stable</span>}
+                  </div>
+                )}
                 {conditions?.length > 0 && (
                   <div className="player-view-conditions">
                     {conditions.map(cond=><span key={cond} className="condition-chip active" style={{'--c':CONDITION_COLORS[cond]}}>{cond}</span>)}
@@ -3786,18 +3804,63 @@ function PrepView({encounter, customMonsters, party, partyHandlers, monsterHandl
 }
 
 /* ---------- RUN mode ---------- */
-function HpControls({current, max, onDelta, onSetExact}){
+/* ---------- damage types ---------- */
+const DAMAGE_TYPES = ['acid','bludgeoning','cold','fire','force','lightning','necrotic','piercing','poison','psychic','radiant','slashing','thunder'];
+const PHYSICAL_TYPES = ['bludgeoning','piercing','slashing'];
+/** Turns a monster's resistance/immunity/vulnerability text into {types, nonmagical} entries. Condition names like "poisoned" are ignored. */
+function damageModifierEntries(list){
+  return (list || []).map(txt=>{
+    const t = String(txt).toLowerCase();
+    return { types: DAMAGE_TYPES.filter(d=>new RegExp('\\b' + d + '\\b').test(t)), nonmagical: /non-?magical/.test(t) };
+  }).filter(e=>e.types.length > 0);
+}
+function typeMatches(entries, type, magical){ return entries.some(e=>e.types.includes(type) && (!e.nonmagical || !magical)); }
+/** How a monster's resistances change a hit of this type: null when nothing applies, otherwise {amount, label}. */
+function damageAdjustment(monster, type, magical, amount){
+  if(!monster || !type) return null;
+  if(typeMatches(damageModifierEntries(monster.immunities), type, magical)) return {amount:0, label:'immune'};
+  const res = typeMatches(damageModifierEntries(monster.resistances), type, magical);
+  const vul = typeMatches(damageModifierEntries(monster.vulnerabilities), type, magical);
+  let out = amount; const parts = [];
+  if(res){ out = Math.floor(out / 2); parts.push('resistant'); }
+  if(vul){ out = out * 2; parts.push('vulnerable'); }
+  return parts.length ? {amount:out, label:parts.join(' and ')} : null;
+}
+function capitalize(s){ return s ? s[0].toUpperCase() + s.slice(1) : s; }
+
+function HpControls({current, max, tempHp, onDelta, onSetExact, onSetTemp, modifiers}){
   const [amount, setAmount] = useState('');
+  const [type, setType] = useState('');
+  const [magical, setMagical] = useState(false);
+  const [fullDamage, setFullDamage] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [tempAmount, setTempAmount] = useState('');
   const pct = clampPct(current, max);
   const n = Number(amount);
   const valid = amount.trim() !== '' && !Number.isNaN(n) && n > 0;
-  function apply(sign){ if(!valid) return; onDelta(sign * Math.abs(n)); setAmount(''); }
+  const physical = PHYSICAL_TYPES.includes(type);
+  const hasNonmagical = !!(modifiers && physical && ['resistances','immunities','vulnerabilities'].some(k=>damageModifierEntries(modifiers[k]).some(e=>e.nonmagical && e.types.includes(type))));
+  const adjRaw = (valid && type && modifiers) ? damageAdjustment(modifiers, type, magical, n) : null;
+  const adj = fullDamage ? null : adjRaw;
+  function apply(sign){
+    if(!valid) return;
+    if(sign < 0){
+      const dealt = adj ? adj.amount : n;
+      onDelta(-dealt, {damage:true, type, original:n, label: adj ? adj.label : ''});
+    } else onDelta(n);
+    setAmount(''); setFullDamage(false);
+  }
+  function applyTemp(){
+    if(tempAmount.trim() === '') return;
+    onSetTemp(Math.max(0, Math.floor(Number(tempAmount) || 0)));
+    setTempAmount('');
+  }
   return (
     <div className="hp-panel">
       <div className="hp-big">
         <span className="hp-big-num mono" style={{color:hpColor(pct)}}>{current}</span>
         <span className="hp-big-max mono">/ {max} HP</span>
+        {tempHp > 0 && <span className="pill pill-arcane" title="Temporary hit points absorb damage first">+{tempHp} temp</span>}
         <button className="link-btn" style={{marginLeft:'auto'}} onClick={()=>setEditing(v=>!v)}>{editing ? 'Done' : 'Edit exact HP'}</button>
       </div>
       <div className="hp-meter" role="img" aria-label={`${current} of ${max} hit points`}><div style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>
@@ -3810,15 +3873,37 @@ function HpControls({current, max, onDelta, onSetExact}){
       <div className="hp-actions">
         <input className="text-input amount" type="number" min="0" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)}
           onKeyDown={e=>{ if(e.key==='Enter') apply(e.shiftKey ? 1 : -1); }} aria-label="Hit point amount — Enter applies damage, Shift+Enter heals"/>
+        <select className="text-input type-select" value={type} onChange={e=>{ setType(e.target.value); setMagical(false); setFullDamage(false); }} aria-label="Damage type" title="Damage type. For monsters with resistances, immunities or vulnerabilities the amount is adjusted for you.">
+          <option value="">No damage type</option>
+          {DAMAGE_TYPES.map(t=><option key={t} value={t}>{capitalize(t)}</option>)}
+        </select>
         <button className="btn btn-blood" onClick={()=>apply(-1)} disabled={!valid}>Damage</button>
         <button className="btn btn-moss" onClick={()=>apply(1)} disabled={!valid}>Heal</button>
-        <span className="muted" style={{fontSize:13}}>Enter deals damage · Shift+Enter heals</span>
       </div>
+      {hasNonmagical && (
+        <label className="check-row" style={{padding:'2px 0'}}><input type="checkbox" checked={magical} onChange={e=>setMagical(e.target.checked)}/>Magical attack (nonmagical damage is resisted)</label>
+      )}
+      {adjRaw && (
+        <p className="dmg-preview">
+          {capitalize(type)} — <b>{adjRaw.label}</b>: {n} becomes <b>{fullDamage ? n : adjRaw.amount}</b>.{' '}
+          <label className="inline-check"><input type="checkbox" checked={fullDamage} onChange={e=>setFullDamage(e.target.checked)}/>Ignore it this time</label>
+        </p>
+      )}
+      <p className="muted" style={{margin:0, fontSize:13}}>Enter deals damage · Shift+Enter heals</p>
+      {onSetTemp && (
+        <div className="temp-row">
+          <label className="init-label" title="Temporary hit points absorb damage before real hit points. They don't stack and healing doesn't restore them."><span>Temp HP</span>
+            <input className="text-input" type="number" min="0" placeholder="0" value={tempAmount} onChange={e=>setTempAmount(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter') applyTemp(); }}/></label>
+          <button className="btn btn-sm" onClick={applyTemp} disabled={tempAmount.trim() === ''}>Set</button>
+          {tempHp > 0 && <button className="link-btn" onClick={()=>onSetTemp(0)}>Clear</button>}
+        </div>
+      )}
     </div>
   );
 }
 
-function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetStats, onToggleDefeated, onToggleTeam, onToggleCondition, onPosture, onDamageParty}){
+function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetTemp, onSetStats, onToggleDefeated, onToggleTeam, onToggleCondition, onPosture, onDamageParty}){
   const isAlly = m.team === 'ally';
   const color = kindColor({kind:'monster', team:m.team});
   return (
@@ -3854,7 +3939,7 @@ function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetSt
             <button className="stepper" onClick={()=>{ const n=(m.mobCount||1)+1; onSetStats(m.id, {mobCount:n, mobHpPool:n*(m.hpMax||0)}); }} aria-label="One more creature">+</button>
           </div>
         ) : (
-          <HpControls current={m.hpCurrent} max={m.hpMax} onDelta={d=>onDelta(m.id, d)} onSetExact={patch=>onSetStats(m.id, patch)}/>
+          <HpControls current={m.hpCurrent} max={m.hpMax} tempHp={m.tempHp} modifiers={m} onDelta={(d,meta)=>onDelta(m.id, d, meta)} onSetExact={patch=>onSetStats(m.id, patch)} onSetTemp={v=>onSetTemp('monster', m.id, v)}/>
         )}
       </div>
 
@@ -3877,8 +3962,13 @@ function MonsterFocus({m, isActive, axes, traitTriggers, party, onDelta, onSetSt
   );
 }
 
-function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
+function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition, onSetTemp, onSetDeathSaves, onRollDeathSave, onStabilize}){
   const color = 'var(--arcane)';
+  const saves = p.deathSaves || {s:0, f:0};
+  const pips = (kind, count)=>[0,1,2].map(i=>(
+    <button key={i} className={"pip " + kind + (count > i ? ' on' : '')} aria-label={`${kind === 'ok' ? 'Success' : 'Failure'} ${i+1}`}
+      onClick={()=>onSetDeathSaves(p.id, kind === 'ok' ? {s: count === i+1 ? i : i+1, f: saves.f} : {s: saves.s, f: count === i+1 ? i : i+1})}/>
+  ));
   return (
     <section className={"card focus"+(isActive?" is-active":"")} style={{'--c':color}}>
       <div className="focus-head">
@@ -3886,6 +3976,7 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
           <h2 className="focus-name">
             <span className="kind-dot" style={{'--c':color, width:14, height:14}}/>{p.name}
             {isActive && <span className="pill pill-accent">Acting now</span>}
+            {p.hpCurrent <= 0 && (p.stable ? <span className="pill pill-moss">Stable</span> : <span className="pill pill-blood">Down</span>)}
           </h2>
           <p className="focus-sub">
             <span>{[p.species, p.role].filter(Boolean).join(' ')}{p.level ? ` · Level ${p.level}` : ''}</span>
@@ -3899,8 +3990,28 @@ function PartyFocus({p, isActive, onDelta, onSetStat, onToggleCondition}){
       </div>
       <div className="focus-section">
         <p className="focus-section-title">Hit points</p>
-        <HpControls current={p.hpCurrent} max={p.hpMax} onDelta={d=>onDelta(p.id, d)} onSetExact={patch=>onSetStat(p.id, patch)}/>
+        <HpControls current={p.hpCurrent} max={p.hpMax} tempHp={p.tempHp} onDelta={(d,meta)=>onDelta(p.id, d, meta)} onSetExact={patch=>onSetStat(p.id, patch)} onSetTemp={v=>onSetTemp('pc', p.id, v)}/>
       </div>
+      {p.hpCurrent <= 0 && (
+        <div className="focus-section">
+          <p className="focus-section-title">Death saves</p>
+          {p.stable ? (
+            <p className="muted" style={{margin:0, fontSize:14.5}}><b style={{color:'var(--moss)'}}>Stable.</b> Unconscious at 0 HP but no longer dying. Any healing brings them back.</p>
+          ) : (
+            <React.Fragment>
+              <div className="death-pips">
+                <div className="pip-group"><span>Successes</span>{pips('ok', saves.s)}</div>
+                <div className="pip-group"><span>Failures</span>{pips('bad', saves.f)}</div>
+              </div>
+              <div className="focus-actions" style={{marginTop:12}}>
+                <button className="btn btn-primary" onClick={()=>onRollDeathSave(p.id)}><Icon name="dice" size={16}/>Roll death save</button>
+                <button className="btn" onClick={()=>onStabilize(p.id)} title="For example, a successful Medicine check or Spare the Dying">Stabilize</button>
+              </div>
+              <p className="muted" style={{margin:'10px 0 0', fontSize:13}}>10 or higher is a success, a natural 20 brings them back with 1 HP, and a natural 1 counts as two failures. Damage at 0 HP adds a failure automatically; add a second yourself for a critical hit.</p>
+            </React.Fragment>
+          )}
+        </div>
+      )}
       <div className="focus-section">
         <p className="focus-section-title">Conditions</p>
         <ConditionRow conditions={p.conditions} durations={p.conditionDurations} onToggle={(c,r)=>onToggleCondition(p.id, c, r)}/>
@@ -3973,7 +4084,7 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
                   : (
                     <React.Fragment>
                       <div className="rail-hp"><div style={{width:(pct*100)+'%', background:hpColor(pct)}}/></div>
-                      <span className={"rail-hp-num"+(r.hpCurrent<=0?" down":"")}>{r.hpCurrent<=0 ? 'Down' : `${r.hpCurrent}/${r.hpMax}`}</span>
+                      <span className={"rail-hp-num"+(r.hpCurrent<=0?" down":"")}>{r.hpCurrent<=0 ? (r.kind==='pc' ? (r.stable ? 'Stable' : 'Down' + (r.deathSaves && (r.deathSaves.s || r.deathSaves.f) ? ' ' + r.deathSaves.s + '✓ ' + r.deathSaves.f + '✗' : '')) : 'Down') : `${r.hpCurrent}/${r.hpMax}` + (r.tempHp>0 ? ' +' + r.tempHp : '')}</span>
                     </React.Fragment>
                   )}
                 {r.conditions.length>0 && (
@@ -3991,8 +4102,8 @@ function CombatRail({rows, activeId, selectedId, onSelect, onSetInitiative, defe
           <p className="focus-section-title" style={{marginBottom:4}}>Defeated ({defeated.length})</p>
           {defeated.map(m=>(
             <div className="rail-defeated" key={m.id}>
-              <span className="t">{m.name}</span>
-              <button className="link-btn" onClick={()=>onRevive(m.id)}>Bring back</button>
+              <span className="t">{m.name}</span>{m.kind==='pc' && <span className="muted" style={{fontSize:12.5}}>dead</span>}
+              <button className="link-btn" onClick={()=>onRevive(m)}>Bring back</button>
             </div>
           ))}
         </div>
@@ -4061,9 +4172,10 @@ function RunView({encounter, rows, activeId, selectedId, onSelect, defeated, onR
         <CombatRail rows={rows} activeId={activeId} selectedId={focusId} onSelect={onSelect} onSetInitiative={onSetInitiative} defeated={defeated} onRevive={onRevive} onRollInitiative={onRollInitiative} initiativeNote={initiativeNote} onDismissNote={onDismissNote} groupRoll={groupRoll} onToggleGroupRoll={onToggleGroupRoll} onMove={onMove}/>
         <div>
           {monster && <MonsterFocus key={monster.id} m={monster} isActive={monster.id===activeId} axes={encounter.axes} traitTriggers={encounter.traitTriggers} party={party}
-            onDelta={handlers.onMonsterDelta} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
+            onDelta={handlers.onMonsterDelta} onSetTemp={handlers.onSetTemp} onSetStats={handlers.onSetStats} onToggleDefeated={handlers.onToggleDefeated} onToggleTeam={handlers.onToggleTeam}
             onToggleCondition={(id,c,r)=>handlers.onToggleCondition('monster', id, c, r)} onPosture={handlers.onPosture} onDamageParty={handlers.onPartyDelta}/>}
-          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c,r)=>handlers.onToggleCondition('pc', id, c, r)}/>}
+          {pc && <PartyFocus key={pc.id} p={pc} isActive={pc.id===activeId} onDelta={handlers.onPartyDelta} onSetStat={handlers.onSetPartyStat} onToggleCondition={(id,c,r)=>handlers.onToggleCondition('pc', id, c, r)}
+            onSetTemp={handlers.onSetTemp} onSetDeathSaves={handlers.onSetDeathSaves} onRollDeathSave={handlers.onRollDeathSave} onStabilize={handlers.onStabilize}/>}
           <div style={{marginTop:18}}><CombatLog log={encounter.log}/></div>
         </div>
       </div>
@@ -4094,7 +4206,7 @@ function HowToUseModal({open, onClose}){
       title: 'In Run Combat',
       body: [
         'The list on the left is the initiative order. Whoever is acting is highlighted. Press Next turn to move on; the round counter goes up when the order wraps around.',
-        'Click anyone in the list to see their details on the right. Type an amount and press Enter (or Damage / Heal) to change hit points. Add conditions like Prone or Frightened under Conditions. You can change anyone\'s initiative number right in the list.',
+        'Click anyone in the list to see their details on the right. Type an amount and press Enter (or Damage / Heal) to change hit points. Pick a damage type and the monster\'s resistances, immunities and vulnerabilities are applied for you. Temp HP absorb damage first, and a player at 0 HP gets a death-save tracker. Add conditions like Prone or Frightened under Conditions. You can change anyone\'s initiative number right in the list.',
         'For monsters, the tabs show their Actions (attacks and multiattack), Stats (ability scores — click one to roll a check, or a save to roll it) and Tactics (how the creature fights right now). A player\'s ability scores and saves appear on their panel once you import their sheet.',
         'Defeated monsters drop out of the order and wait at the bottom of the list in case you need to bring them back. For a big group, add them as a mob in Prep to track them with one shared headcount.',
       ],
@@ -4472,7 +4584,7 @@ function App(){
         const m = encounter.round.monsters.find(x=>x.id===c.id);
         return { id:c.id, name:c.name, kind:'monster', team:c.team, conditions: m?.conditions || [], health: m ? healthOf(m) : undefined };
       }),
-      party: party.map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[] })),
+      party: party.filter(p=>!p.dead).map(p=>({ id:p.id, name:p.name, hpCurrent:p.hpCurrent, hpMax:p.hpMax, ac:p.ac, conditions:p.conditions||[], tempHp:p.tempHp||0, status: p.hpCurrent<=0 ? (p.stable ? 'stable' : 'down') : undefined })),
     };
   }, [encounter, shareHealth]);
   const playerShare = usePlayerShare(cloud.user?.uid, playerSnapshot, shareEnabled && !!cloud.user);
@@ -4484,42 +4596,14 @@ function App(){
   const monsterById = new Map(encounter.round.monsters.map(m=>[m.id, m]));
   const rows = turnOrder.map(c=>{
     const src = c.kind==='pc' ? partyById.get(c.id) : monsterById.get(c.id);
-    return {...c, hpCurrent:src.hpCurrent, hpMax:src.hpMax, conditions:src.conditions||[], isMob:!!src.isMob, mobCount:src.mobCount};
+    return {...c, hpCurrent:src.hpCurrent, hpMax:src.hpMax, conditions:src.conditions||[], isMob:!!src.isMob, mobCount:src.mobCount, tempHp:src.tempHp||0, deathSaves:src.deathSaves, stable:!!src.stable};
   });
-  const defeated = encounter.round.monsters.filter(m=>m.isDefeated);
+  const defeated = [
+    ...encounter.round.monsters.filter(m=>m.isDefeated).map(m=>({id:m.id, name:m.name, kind:'monster'})),
+    ...encounter.party.filter(p=>p.dead && p.active !== false).map(p=>({id:p.id, name:p.name, kind:'pc'})),
+  ];
   const inProgress = encounter.round.roundNumber > 1 || !!encounter.round.activeCombatantId;
 
-  function updateMonsterHp(id, delta){
-    const m = encounter.round.monsters.find(x=>x.id===id);
-    if(!m) return;
-    recordUndo((delta<0 ? 'damage to ' : 'healing for ') + m.name);
-    updateActive(enc=>{
-      let text = '';
-      const monsters = enc.round.monsters.map(mm=>{
-        if(mm.id!==id) return mm;
-        const hpCurrent = Math.max(0, Math.min(mm.hpMax, mm.hpCurrent+delta));
-        const next = {...mm, hpCurrent, isDefeated: hpCurrent<=0};
-        text = mm.name + (delta<0 ? ' took ' + (-delta) + ' damage' : ' healed ' + delta) + ' (' + mm.hpCurrent + '→' + hpCurrent + ')' + (hpCurrent<=0 && mm.hpCurrent>0 ? ' — defeated' : '');
-        return {...next, activePosture: computeAutoPosture(next)};
-      });
-      return withLog({...enc, round:{...enc.round, monsters}}, text);
-    });
-  }
-  function updatePartyHp(id, delta){
-    const pc = encounter.party.find(x=>x.id===id);
-    if(!pc) return;
-    recordUndo((delta<0 ? 'damage to ' : 'healing for ') + pc.name);
-    updateActive(enc=>{
-      let text = '';
-      const party = enc.party.map(p=>{
-        if(p.id!==id) return p;
-        const hpCurrent = Math.max(0, Math.min(p.hpMax, p.hpCurrent+delta));
-        text = p.name + (delta<0 ? ' took ' + (-delta) + ' damage' : ' healed ' + delta) + ' (' + p.hpCurrent + '→' + hpCurrent + ')' + (hpCurrent<=0 && p.hpCurrent>0 ? ' — down' : '');
-        return {...p, hpCurrent};
-      });
-      return withLog({...enc, party}, text);
-    });
-  }
   function toggleDefeated(id){
     const m = encounter.round.monsters.find(x=>x.id===id);
     if(!m) return;
@@ -4711,6 +4795,130 @@ function App(){
     showNotice('Cleared the example — add your own party and monsters', true);
   }
 
+  function damageText(name, total, meta, absorbed, before, after){
+    const notes = [];
+    if(meta && meta.label) notes.push(meta.label + ', ' + meta.original + '→' + total);
+    if(absorbed > 0) notes.push(absorbed + ' absorbed by temp HP');
+    notes.push(before + '→' + after);
+    return name + ' took ' + total + ' ' + (meta && meta.type ? meta.type + ' ' : '') + 'damage (' + notes.join('; ') + ')';
+  }
+  function updateMonsterHp(id, delta, meta){
+    const m = encounter.round.monsters.find(x=>x.id===id);
+    if(!m) return;
+    const isDamage = !!(meta && meta.damage) || delta < 0;
+    recordUndo((isDamage ? 'damage to ' : 'healing for ') + m.name);
+    updateActive(enc=>{
+      let text = '';
+      const monsters = enc.round.monsters.map(mm=>{
+        if(mm.id!==id) return mm;
+        let next;
+        if(isDamage){
+          let dmg = Math.max(0, -delta);
+          const temp = mm.tempHp || 0, absorbed = Math.min(temp, dmg);
+          dmg -= absorbed;
+          const hpCurrent = Math.max(0, mm.hpCurrent - dmg);
+          next = {...mm, hpCurrent, tempHp: temp - absorbed, isDefeated: hpCurrent<=0};
+          text = damageText(mm.name, Math.max(0, -delta), meta, absorbed, mm.hpCurrent, hpCurrent) + (hpCurrent<=0 && mm.hpCurrent>0 ? ' — defeated' : '');
+        } else {
+          const hpCurrent = Math.min(mm.hpMax, mm.hpCurrent + delta);
+          next = {...mm, hpCurrent, isDefeated: hpCurrent<=0};
+          text = mm.name + ' healed ' + delta + ' (' + mm.hpCurrent + '→' + hpCurrent + ')';
+        }
+        return {...next, activePosture: computeAutoPosture(next)};
+      });
+      return withLog({...enc, round:{...enc.round, monsters}}, text);
+    });
+  }
+  function updatePartyHp(id, delta, meta){
+    const pc = encounter.party.find(x=>x.id===id);
+    if(!pc) return;
+    const isDamage = !!(meta && meta.damage) || delta < 0;
+    recordUndo((isDamage ? 'damage to ' : 'healing for ') + pc.name);
+    updateActive(enc=>{
+      let text = '';
+      const party = enc.party.map(p=>{
+        if(p.id!==id) return p;
+        if(!isDamage){
+          const hpCurrent = Math.min(p.hpMax, p.hpCurrent + delta);
+          const backUp = p.hpCurrent <= 0 && hpCurrent > 0;
+          text = p.name + ' healed ' + delta + ' (' + p.hpCurrent + '→' + hpCurrent + ')' + (backUp ? ' — back up' : '');
+          return {...p, hpCurrent, ...(backUp ? {deathSaves:{s:0, f:0}, stable:false} : {})};
+        }
+        const total = Math.max(0, -delta);
+        const temp = p.tempHp || 0, absorbed = Math.min(temp, total);
+        const dmg = total - absorbed;
+        const wasUp = p.hpCurrent > 0;
+        const hpCurrent = Math.max(0, p.hpCurrent - dmg);
+        let next = {...p, hpCurrent, tempHp: temp - absorbed};
+        let tail = '';
+        if(wasUp && hpCurrent <= 0){ next.deathSaves = {s:0, f:0}; next.stable = false; tail = ' — down'; }
+        else if(!wasUp && dmg > 0){
+          const f = Math.min(3, ((p.deathSaves && p.deathSaves.f) || 0) + 1);
+          next.deathSaves = {s: (p.deathSaves && p.deathSaves.s) || 0, f}; next.stable = false;
+          tail = ' — death save failure'; if(f >= 3){ next.dead = true; tail = ' — dead'; }
+        }
+        text = damageText(p.name, total, meta, absorbed, p.hpCurrent, hpCurrent) + tail;
+        return next;
+      });
+      return withLog({...enc, party}, text);
+    });
+  }
+  function setTempHp(kind, id, value){
+    const src = kind === 'pc' ? encounter.party.find(p=>p.id===id) : encounter.round.monsters.find(m=>m.id===id);
+    if(!src) return;
+    recordUndo('temp HP for ' + src.name);
+    const set = o=>({...o, tempHp: value});
+    const text = value > 0 ? src.name + ' gains ' + value + ' temp HP' : src.name + "'s temp HP cleared";
+    updateActive(enc=>withLog(kind === 'pc'
+      ? {...enc, party: enc.party.map(p=> p.id===id ? set(p) : p)}
+      : {...enc, round:{...enc.round, monsters: enc.round.monsters.map(m=> m.id===id ? set(m) : m)}}, text));
+  }
+  function setDeathSaves(id, saves){
+    const pc = encounter.party.find(p=>p.id===id);
+    if(!pc) return;
+    recordUndo('death saves for ' + pc.name);
+    updateActive(enc=>{
+      let text = pc.name + ' death saves: ' + saves.s + ' success, ' + saves.f + ' failure';
+      const party = enc.party.map(p=>{
+        if(p.id!==id) return p;
+        if(saves.f >= 3){ text = pc.name + ' has died'; return {...p, deathSaves:saves, dead:true}; }
+        if(saves.s >= 3){ text = pc.name + ' is stable'; return {...p, deathSaves:{s:0, f:0}, stable:true}; }
+        return {...p, deathSaves:saves};
+      });
+      return withLog({...enc, party}, text);
+    });
+  }
+  function rollDeathSave(id){
+    const pc = encounter.party.find(p=>p.id===id);
+    if(!pc) return;
+    const die = rollD20();
+    let s = (pc.deathSaves && pc.deathSaves.s) || 0, f = (pc.deathSaves && pc.deathSaves.f) || 0;
+    let hp = pc.hpCurrent, stable = false, dead = false, text;
+    if(die === 20){ hp = 1; s = 0; f = 0; text = 'rolled a natural 20 on a death save and is back up with 1 HP'; }
+    else if(die === 1){ f += 2; text = 'rolled a natural 1 on a death save: two failures'; }
+    else if(die >= 10){ s += 1; text = 'rolled ' + die + ' on a death save: success'; }
+    else { f += 1; text = 'rolled ' + die + ' on a death save: failure'; }
+    if(die !== 20){
+      if(f >= 3){ dead = true; text += ' — has died'; }
+      else if(s >= 3){ stable = true; s = 0; f = 0; text += ' — now stable'; }
+    }
+    recordUndo('death save for ' + pc.name);
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, hpCurrent:hp, deathSaves:{s, f}, stable, dead} : p)}, pc.name + ' ' + text));
+    showNotice(pc.name + ' ' + text);
+  }
+  function stabilizePc(id){
+    const pc = encounter.party.find(p=>p.id===id);
+    if(!pc) return;
+    recordUndo('stabilizing ' + pc.name);
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, stable:true, deathSaves:{s:0, f:0}} : p)}, pc.name + ' is stabilized'));
+  }
+  function revivePc(id){
+    const pc = encounter.party.find(p=>p.id===id);
+    if(!pc) return;
+    recordUndo('bringing back ' + pc.name);
+    updateActive(enc=>withLog({...enc, party: enc.party.map(p=> p.id===id ? {...p, dead:false, stable:false, deathSaves:{s:0, f:0}, hpCurrent: Math.max(1, p.hpCurrent)} : p)}, pc.name + ' brought back'));
+  }
+
   function startCombat(){
     updateActive(enc=>({...enc, round:{...enc.round, activeCombatantId: resolveActiveId(enc)}}));
     setMode('run');
@@ -4755,6 +4963,7 @@ function App(){
   const runHandlers = {
     onMonsterDelta:updateMonsterHp, onPartyDelta:updatePartyHp, onSetStats:setMonsterStats, onSetPartyStat:setPartyStat,
     onToggleDefeated:toggleDefeated, onToggleTeam:toggleMonsterTeam, onToggleCondition:toggleCondition, onPosture:setMonsterPosture,
+    onSetTemp:setTempHp, onSetDeathSaves:setDeathSaves, onRollDeathSave:rollDeathSave, onStabilize:stabilizePc,
   };
   const turn = {
     onPrev:prevTurn, onNext:nextTurn,
@@ -4813,7 +5022,7 @@ function App(){
             showSample={encounter.id===SAMPLE_ID && !sampleDismissed} onStartFresh={startFresh} onDismissSample={()=>{ try{ localStorage.setItem('tactics-table-sample-dismissed','1'); }catch(e){} setSampleDismissed(true); }}/>
         ) : (
           <RunView encounter={encounter} rows={rows} activeId={activeId} selectedId={selectedId} onSelect={setSelectedId}
-            defeated={defeated} onRevive={reviveMonster} onSetInitiative={setInitiative} party={activeParty}
+            defeated={defeated} onRevive={d=> d.kind==='pc' ? revivePc(d.id) : reviveMonster(d.id)} onSetInitiative={setInitiative} party={activeParty}
             onRollInitiative={()=>rollMonsterInitiative()} initiativeNote={initiativeNote} onDismissNote={()=>setInitiativeNote('')}
             groupRoll={groupRoll} onToggleGroupRoll={setGroupRoll} onMove={moveInOrder}
             handlers={runHandlers} turn={turn} onGoPrep={()=>setMode('prep')}/>
